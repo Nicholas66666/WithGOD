@@ -8,7 +8,17 @@ test("parseBenchmarkArgs requires an explicit PCM fixture", () => {
   assert.deepEqual(parseBenchmarkArgs(["--pcm", "fixtures/sample.pcm"]), {
     pcmPath: "fixtures/sample.pcm",
     contextPath: "",
-    outputAudioPath: ""
+    outputAudioPath: "",
+    replayIntervalMs: 100
+  });
+});
+
+test("parseBenchmarkArgs accepts replay interval", () => {
+  assert.deepEqual(parseBenchmarkArgs(["--pcm", "fixtures/sample.pcm", "--replay-interval-ms", "20"]), {
+    pcmPath: "fixtures/sample.pcm",
+    contextPath: "",
+    outputAudioPath: "",
+    replayIntervalMs: 20
   });
 });
 

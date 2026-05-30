@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 
 export const DEFAULT_DEEP_RESPONSE_ENV = {
-  DEEP_RESPONSE_AUDIO_REPLAY_INTERVAL_MS: "0",
+  DEEP_RESPONSE_AUDIO_REPLAY_INTERVAL_MS: "50",
   ARK_BASE_URL: "https://ark.cn-beijing.volces.com/api/v3",
   ARK_MODEL: "doubao-seed-2-0-lite-260215",
   ARK_FALLBACK_MODEL: "doubao-seed-2-0-pro-260215",

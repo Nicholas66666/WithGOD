@@ -13,7 +13,8 @@ export function parseBenchmarkArgs(argv) {
   const args = {
     pcmPath: "",
     contextPath: "",
-    outputAudioPath: ""
+    outputAudioPath: "",
+    replayIntervalMs: 100
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -26,6 +27,9 @@ export function parseBenchmarkArgs(argv) {
       index += 1;
     } else if (arg === "--out-audio") {
       args.outputAudioPath = argv[index + 1] || "";
+      index += 1;
+    } else if (arg === "--replay-interval-ms") {
+      args.replayIntervalMs = Number(argv[index + 1] || 0);
       index += 1;
     } else if (arg === "--tts-http-fallback") {
       process.env.DEEP_RESPONSE_TTS_HTTP_FALLBACK = "1";
@@ -58,7 +62,7 @@ async function main() {
   requireDeepResponseCredentials(env);
 
   const audio = readFileSync(args.pcmPath);
-  const audioChunks = realtimeAudioChunks(chunkPCM16(audio, { sampleRate: 16_000, chunkMs: 100 }), 100);
+  const audioChunks = realtimeAudioChunks(chunkPCM16(audio, { sampleRate: 16_000, chunkMs: 100 }), args.replayIntervalMs);
   const context = args.contextPath ? JSON.parse(readFileSync(args.contextPath, "utf8")) : [];
   const pipeline = new VoicePipeline({
     asr: new DoubaoASRProvider({ env }),
@@ -114,6 +118,7 @@ Options:
   --pcm <path>          Required. Raw 16kHz mono int16 PCM speech fixture.
   --context <path>      Optional JSON array of chat messages for Ark context.
   --out-audio <path>    Optional path to write returned TTS audio bytes.
+  --replay-interval-ms  Optional delay between 100ms PCM chunks. Default 100.
   --tts-http-fallback   Allow diagnostic HTTP TTS fallback when WebSocket TTS fails.
 `);
 }
