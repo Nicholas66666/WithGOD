@@ -23,7 +23,7 @@ export async function startDeepResponseServer({
   log = true,
   env = loadDeepResponseEnv(),
   createPipeline = null,
-  audioReplayIntervalMs = Number(process.env.DEEP_RESPONSE_AUDIO_REPLAY_INTERVAL_MS || 100)
+  audioReplayIntervalMs = Number(process.env.DEEP_RESPONSE_AUDIO_REPLAY_INTERVAL_MS ?? env.DEEP_RESPONSE_AUDIO_REPLAY_INTERVAL_MS ?? 0)
 } = {}) {
   const events = [];
   const recordEvent = (type, details = {}) => {

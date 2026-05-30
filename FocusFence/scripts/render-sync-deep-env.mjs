@@ -9,6 +9,7 @@ const RENDER_API_BASE_URL = "https://api.render.com/v1";
 
 export const DEEP_RESPONSE_RENDER_ENV_KEYS = [
   "DEEP_RESPONSE_MODE",
+  "DEEP_RESPONSE_AUDIO_REPLAY_INTERVAL_MS",
   "ARK_API_KEY",
   "ARK_BASE_URL",
   "ARK_MODEL",
