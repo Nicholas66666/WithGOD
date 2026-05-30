@@ -16,12 +16,27 @@ final class DeepResponseRealtimeClient: ObservableObject {
     @Published private(set) var isConnected = false
     @Published private(set) var lastMessage: DeepResponseMessage?
     @Published private(set) var lastError: String?
+    @Published private(set) var lastHealthStatus: String?
+    @Published private(set) var endpointDisplay: String = (try? endpointURL().absoluteString) ?? "Endpoint missing"
     @Published private(set) var receivedAudioBytes = 0
     @Published private(set) var receivedAudioChunks = 0
 
     private var task: URLSessionWebSocketTask?
     private var receiveTask: Task<Void, Never>?
     private let player = DeepResponseAudioPlayer()
+
+    func checkHealth() async {
+        do {
+            let url = try Self.healthURL()
+            let (_, response) = try await URLSession.shared.data(from: url)
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+            lastHealthStatus = "Health \(statusCode)"
+            lastError = statusCode == 200 ? nil : "Health \(statusCode)"
+        } catch {
+            lastHealthStatus = "Health fail"
+            lastError = "Health: \(error.localizedDescription)"
+        }
+    }
 
     func connect() async throws {
         guard task == nil else { return }
@@ -30,12 +45,19 @@ final class DeepResponseRealtimeClient: ObservableObject {
         let task = URLSession.shared.webSocketTask(with: request)
         self.task = task
         task.resume()
-        isConnected = true
         lastError = nil
+        lastMessage = nil
         receiveTask = Task { [weak self] in
             await self?.receiveLoop()
         }
-        try await sendText(DeepResponseMessageEncoder.sessionStart(sessionID: UUID()))
+        do {
+            try await sendText(DeepResponseMessageEncoder.sessionStart(sessionID: UUID()))
+            try await waitForSessionReady()
+            isConnected = true
+        } catch {
+            disconnect()
+            throw error
+        }
     }
 
     func sendAudio(_ data: Data) async throws {
@@ -62,6 +84,24 @@ final class DeepResponseRealtimeClient: ObservableObject {
 
     private func sendText(_ text: String) async throws {
         try await task?.send(.string(text))
+    }
+
+    private func waitForSessionReady() async throws {
+        let startedAt = ContinuousClock.now
+        while startedAt.duration(to: .now).components.seconds < 5 {
+            if lastMessage?.type == DeepResponseEvent.sessionReady {
+                return
+            }
+            if let lastError {
+                throw NSError(domain: "DeepResponseRealtimeClient", code: -1, userInfo: [
+                    NSLocalizedDescriptionKey: lastError
+                ])
+            }
+            try await Task.sleep(nanoseconds: 100_000_000)
+        }
+        throw NSError(domain: "DeepResponseRealtimeClient", code: -1001, userInfo: [
+            NSLocalizedDescriptionKey: "WS timeout waiting for session_ready"
+        ])
     }
 
     private func receiveLoop() async {
@@ -112,5 +152,17 @@ final class DeepResponseRealtimeClient: ObservableObject {
             throw DeepResponseClientError.missingEndpoint
         }
         return fallback
+    }
+
+    private static func healthURL() throws -> URL {
+        let endpoint = try endpointURL()
+        var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
+        components?.scheme = endpoint.scheme == "wss" ? "https" : "http"
+        components?.path = "/health"
+        components?.query = nil
+        guard let url = components?.url else {
+            throw DeepResponseClientError.missingEndpoint
+        }
+        return url
     }
 }

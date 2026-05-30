@@ -17,7 +17,7 @@ import { DoubaoTTSProvider } from "./deep-response/providers/doubao-tts.mjs";
 import { VoicePipeline } from "./deep-response/pipeline/voice-pipeline.mjs";
 
 export async function startDeepResponseServer({
-  port = Number(process.env.DEEP_RESPONSE_PORT || 8797),
+  port = Number(process.env.PORT || process.env.DEEP_RESPONSE_PORT || 8797),
   host = "0.0.0.0",
   mode = process.env.DEEP_RESPONSE_MODE || "echo",
   log = true,
@@ -28,6 +28,9 @@ export async function startDeepResponseServer({
   const server = createServer((request, response) => {
     const url = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
     if (request.method === "GET" && url.pathname === "/health") {
+      if (log) {
+        console.log(`DeepResponse health from ${request.socket.remoteAddress || "unknown"}`);
+      }
       sendJSON(response, 200, {
         ok: true,
         service: "deep-response",
@@ -41,6 +44,9 @@ export async function startDeepResponseServer({
 
   server.on("upgrade", (request, socket) => {
     const url = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
+    if (log) {
+      console.log(`DeepResponse upgrade from ${request.socket.remoteAddress || "unknown"} path=${url.pathname}`);
+    }
     if (!isDeepResponseRealtimePath(url.pathname)) {
       socket.destroy();
       return;
@@ -49,7 +55,7 @@ export async function startDeepResponseServer({
     if (!ws) {
       return;
     }
-    handleRealtimeConnection(ws, { mode, env, createPipeline, audioReplayIntervalMs });
+    handleRealtimeConnection(ws, { mode, env, createPipeline, audioReplayIntervalMs, log });
   });
 
   await new Promise((resolve) => server.listen(port, host, resolve));
@@ -64,9 +70,12 @@ export async function startDeepResponseServer({
   };
 }
 
-function handleRealtimeConnection(ws, { mode, env, createPipeline, audioReplayIntervalMs }) {
+function handleRealtimeConnection(ws, { mode, env, createPipeline, audioReplayIntervalMs, log }) {
+  if (log) {
+    console.log(`DeepResponse realtime connection mode=${mode}`);
+  }
   if (mode === "echo") {
-    handleEchoConnection(ws);
+    handleEchoConnection(ws, { log });
     return;
   }
   if (mode === "provider") {
@@ -81,7 +90,7 @@ function handleRealtimeConnection(ws, { mode, env, createPipeline, audioReplayIn
     ws.close();
 }
 
-function handleEchoConnection(ws) {
+function handleEchoConnection(ws, { log }) {
   const startedAt = performance.now();
   let turnID = 0;
   let chunksIn = 0;
@@ -101,6 +110,9 @@ function handleEchoConnection(ws) {
     }
 
     if (message.type === DEEP_RESPONSE_EVENTS.SessionStart) {
+      if (log) {
+        console.log(`DeepResponse session_start sampleRate=${message.sampleRate || 16000}`);
+      }
       ws.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.SessionReady, {
         sessionID: message.sessionID || "",
         mode: "echo",
@@ -114,6 +126,9 @@ function handleEchoConnection(ws) {
         turnID
       }));
     } else if (message.type === DEEP_RESPONSE_EVENTS.InputStop) {
+      if (log) {
+        console.log(`DeepResponse input_stop chunks_in=${chunksIn} chunks_out=${chunksOut} barge_ins=${bargeIns}`);
+      }
       ws.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.AudioDone, {
         reason: "input_stop",
         turnID

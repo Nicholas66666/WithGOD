@@ -16,5 +16,7 @@ test("DeepResponseWatchLab is a separate Watch target with its own bundle id and
   assert(project.includes("PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_PREFIX).DeepResponseWatchLab"));
   assert(project.includes("DeepResponseRealtimeEndpoint: \"$(DEEP_RESPONSE_REALTIME_ENDPOINT)\""));
   assert(project.includes("WKWatchOnly: true"));
+  assert(project.includes("NSLocalNetworkUsageDescription:"));
+  assert(labInfo.includes("NSLocalNetworkUsageDescription"));
   assert(!labInfo.includes("WKRunsIndependentlyOfCompanionApp"));
 });

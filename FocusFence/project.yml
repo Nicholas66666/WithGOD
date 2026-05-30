@@ -167,6 +167,7 @@ targets:
         CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
+        NSLocalNetworkUsageDescription: "DeepLab connects directly to the local Mac realtime voice server for Watch proof-of-concept testing."
         NSMicrophoneUsageDescription: "DeepLab needs microphone access for Watch voice proof-of-concept testing."
         DeepResponseRealtimeEndpoint: "$(DEEP_RESPONSE_REALTIME_ENDPOINT)"
         WKApplication: true

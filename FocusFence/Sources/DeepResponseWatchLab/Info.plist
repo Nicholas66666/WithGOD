@@ -29,6 +29,8 @@
 	</dict>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>DeepLab needs microphone access for Watch voice proof-of-concept testing.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>DeepLab connects directly to the local Mac realtime voice server for Watch proof-of-concept testing.</string>
 	<key>WKApplication</key>
 	<true/>
 	<key>WKWatchOnly</key>

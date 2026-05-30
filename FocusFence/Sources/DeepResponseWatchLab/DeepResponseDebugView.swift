@@ -15,6 +15,17 @@ struct DeepResponseDebugView: View {
             statusBadge
 
             VStack(spacing: 4) {
+                Text(client.endpointDisplay)
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .minimumScaleFactor(0.6)
+                    .multilineTextAlignment(.center)
+                if let health = client.lastHealthStatus {
+                    Text(health)
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
                 Text("sent \(sentChunks) · recv \(client.receivedAudioChunks)")
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.secondary)
@@ -29,6 +40,13 @@ struct DeepResponseDebugView: View {
             }
 
             HStack(spacing: 8) {
+                Button {
+                    Task { await client.checkHealth() }
+                } label: {
+                    Image(systemName: "network")
+                }
+                .buttonStyle(.bordered)
+
                 Button {
                     Task { await toggleConnect() }
                 } label: {
