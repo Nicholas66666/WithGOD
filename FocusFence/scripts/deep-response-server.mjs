@@ -105,6 +105,7 @@ export async function startDeepResponseServer({
     }
     if (request.method === "POST" && url.pathname === "/deep-response/http-turn") {
       handleHTTPTurn(request, response, {
+        mode,
         env,
         createPipeline,
         audioReplayIntervalMs,
@@ -313,7 +314,7 @@ async function runProviderPipeline(ws, { chunks, env, createPipeline, audioRepla
   }
 }
 
-async function handleHTTPTurn(request, response, { env, createPipeline, audioReplayIntervalMs, recordEvent = () => {} }) {
+async function handleHTTPTurn(request, response, { mode, env, createPipeline, audioReplayIntervalMs, recordEvent = () => {} }) {
   try {
     const body = await readRequestBody(request);
     const sessionID = request.headers["x-deep-response-session"] || "";
@@ -324,6 +325,25 @@ async function handleHTTPTurn(request, response, { env, createPipeline, audioRep
       deepResponseClient: request.headers["x-deep-response-client"] || "",
       sessionID
     });
+
+    if (mode === "echo") {
+      recordEvent("http_turn_complete", {
+        audioByteLength: body.length,
+        sessionID,
+        mode: "echo"
+      });
+      sendJSON(response, 200, {
+        ok: true,
+        sessionID,
+        transcript: "",
+        text: "echo",
+        audioBase64: body.toString("base64"),
+        audioByteLength: body.length,
+        timing: {},
+        providerMeta: { mode: "echo" }
+      });
+      return;
+    }
 
     const pipeline = createPipeline ? createPipeline() : createDefaultPipeline(env);
     const result = await pipeline.run({

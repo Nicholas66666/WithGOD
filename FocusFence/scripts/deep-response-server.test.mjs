@@ -210,6 +210,39 @@ test("DeepResponse server completes an HTTP realtime turn with JSON audio respon
   }
 });
 
+test("DeepResponse server HTTP realtime turn echoes audio in echo mode", async () => {
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "echo",
+    log: false
+  });
+
+  try {
+    const payload = Buffer.from("watch-turn-audio");
+    const response = await fetch(`http://127.0.0.1:${server.port}/deep-response/http-turn`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "X-Deep-Response-Client": "http-turn-echo-test",
+        "X-Deep-Response-Session": "http-echo-session"
+      },
+      body: payload
+    });
+    assert.equal(response.ok, true);
+    const body = await response.json();
+    assert.equal(body.ok, true);
+    assert.equal(body.sessionID, "http-echo-session");
+    assert.equal(body.transcript, "");
+    assert.equal(body.text, "echo");
+    assert.equal(Buffer.from(body.audioBase64, "base64").toString("utf8"), "watch-turn-audio");
+    assert.equal(body.audioByteLength, payload.length);
+    assert.equal(body.providerMeta.mode, "echo");
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse server provider mode runs pipeline and emits transcript text audio and timing", async () => {
   const server = await startDeepResponseServer({
     port: 0,
