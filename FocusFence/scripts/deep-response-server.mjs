@@ -103,6 +103,15 @@ export async function startDeepResponseServer({
       });
       return;
     }
+    if (request.method === "POST" && url.pathname === "/deep-response/http-turn") {
+      handleHTTPTurn(request, response, {
+        env,
+        createPipeline,
+        audioReplayIntervalMs,
+        recordEvent
+      });
+      return;
+    }
     sendJSON(response, 404, { error: "not_found" });
   });
 
@@ -301,6 +310,48 @@ async function runProviderPipeline(ws, { chunks, env, createPipeline, audioRepla
     }));
   } catch (error) {
     sendError(ws, "provider_pipeline_failed", error);
+  }
+}
+
+async function handleHTTPTurn(request, response, { env, createPipeline, audioReplayIntervalMs, recordEvent = () => {} }) {
+  try {
+    const body = await readRequestBody(request);
+    const sessionID = request.headers["x-deep-response-session"] || "";
+    recordEvent("http_turn", {
+      bytes: body.length,
+      remoteAddress: request.socket.remoteAddress || "unknown",
+      userAgent: request.headers["user-agent"] || "",
+      deepResponseClient: request.headers["x-deep-response-client"] || "",
+      sessionID
+    });
+
+    const pipeline = createPipeline ? createPipeline() : createDefaultPipeline(env);
+    const result = await pipeline.run({
+      audioChunks: replayChunks([body], audioReplayIntervalMs)
+    });
+    const audio = Buffer.concat((result.audioChunks || []).map((chunk) => Buffer.from(chunk)));
+    recordEvent("http_turn_complete", {
+      audioByteLength: audio.length,
+      sessionID
+    });
+    sendJSON(response, 200, {
+      ok: true,
+      sessionID,
+      transcript: result.transcript || "",
+      text: result.firstPhrase || result.responseText || "",
+      audioBase64: audio.toString("base64"),
+      audioByteLength: result.audioByteLength ?? audio.length,
+      timing: result.timing || {},
+      providerMeta: result.providerMeta || {}
+    });
+  } catch (error) {
+    recordEvent("http_turn_failed", {
+      message: error instanceof Error ? error.message : String(error)
+    });
+    sendJSON(response, 500, {
+      ok: false,
+      error: error instanceof Error ? error.message : String(error)
+    });
   }
 }
 

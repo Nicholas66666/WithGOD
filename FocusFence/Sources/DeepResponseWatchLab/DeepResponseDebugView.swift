@@ -73,6 +73,13 @@ struct DeepResponseDebugView: View {
                 .buttonStyle(.bordered)
 
                 Button {
+                    Task { await runHTTPTurn() }
+                } label: {
+                    Image(systemName: "bubble.left.and.waveform")
+                }
+                .buttonStyle(.bordered)
+
+                Button {
                     Task { await toggleConnect() }
                 } label: {
                     Image(systemName: client.isConnected ? "xmark" : "bolt.horizontal")
@@ -116,6 +123,12 @@ struct DeepResponseDebugView: View {
         status = "HTTP echo"
         await client.runHTTPEcho(Self.tonePayload(duration: 0.5))
         status = client.lastError == nil ? "HTTP echoed" : "HTTP echo failed"
+    }
+
+    private func runHTTPTurn() async {
+        status = "HTTP turn"
+        await client.runHTTPTurn(Self.tonePayload(duration: 0.5))
+        status = client.lastError == nil ? "HTTP turn done" : "HTTP turn failed"
     }
 
     private func toggleConnect() async {

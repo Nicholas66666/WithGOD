@@ -150,6 +150,66 @@ test("DeepResponse server echoes HTTP audio payloads for Watch lab channel valid
   }
 });
 
+test("DeepResponse server completes an HTTP realtime turn with JSON audio response", async () => {
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async run({ audioChunks }) {
+        const collected = [];
+        for await (const chunk of audioChunks) {
+          collected.push(chunk);
+        }
+        return {
+          transcript: `chunks:${collected.length}`,
+          responseText: "HTTP fallback response",
+          firstPhrase: "HTTP fallback response",
+          audioChunks: [Buffer.from("http-provider-audio")],
+          audioByteLength: Buffer.byteLength("http-provider-audio"),
+          timing: { voice_pipeline_total_ms: 42 },
+          providerMeta: { transport: "http" }
+        };
+      }
+    })
+  });
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${server.port}/deep-response/http-turn`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "X-Deep-Response-Client": "http-turn-test",
+        "X-Deep-Response-Session": "http-session"
+      },
+      body: Buffer.from("watch-turn-audio")
+    });
+    assert.equal(response.ok, true);
+    const body = await response.json();
+    assert.equal(body.ok, true);
+    assert.equal(body.sessionID, "http-session");
+    assert.equal(body.transcript, "chunks:1");
+    assert.equal(body.text, "HTTP fallback response");
+    assert.equal(Buffer.from(body.audioBase64, "base64").toString("utf8"), "http-provider-audio");
+    assert.equal(body.audioByteLength, 19);
+    assert.equal(body.timing.voice_pipeline_total_ms, 42);
+    assert.deepEqual(body.providerMeta, { transport: "http" });
+
+    await waitFor(async () => {
+      const debug = await fetchJSON(`http://127.0.0.1:${server.port}/debug/events`);
+      return debug.events.some((event) => event.type === "http_turn"
+        && event.bytes === Buffer.byteLength("watch-turn-audio")
+        && event.deepResponseClient === "http-turn-test")
+        && debug.events.some((event) => event.type === "http_turn_complete"
+          && event.audioByteLength === 19);
+    });
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse server provider mode runs pipeline and emits transcript text audio and timing", async () => {
   const server = await startDeepResponseServer({
     port: 0,

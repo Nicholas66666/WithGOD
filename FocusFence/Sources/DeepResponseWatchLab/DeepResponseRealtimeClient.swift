@@ -101,6 +101,45 @@ final class DeepResponseRealtimeClient: ObservableObject {
         }
     }
 
+    func runHTTPTurn(_ audio: Data) async {
+        do {
+            connectionStage = "http_turn:start"
+            var request = URLRequest(url: try Self.httpTurnURL())
+            request.httpMethod = "POST"
+            request.timeoutInterval = 60
+            request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+            request.setValue("DeepLab-watchOS", forHTTPHeaderField: "X-Deep-Response-Client")
+            request.setValue(UUID().uuidString, forHTTPHeaderField: "X-Deep-Response-Session")
+
+            let (data, response) = try await URLSession.shared.upload(for: request, from: audio)
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+            lastHealthStatus = "Turn \(statusCode)"
+            guard statusCode == 200 else {
+                lastError = "Turn \(statusCode)"
+                lastErrorCode = nil
+                connectionStage = "http_turn:\(statusCode)"
+                return
+            }
+            let turn = try JSONDecoder().decode(DeepResponseHTTPTurnResponse.self, from: data)
+            guard turn.ok, let audioData = Data(base64Encoded: turn.audioBase64) else {
+                lastError = "Bad HTTP turn response"
+                lastErrorCode = nil
+                connectionStage = "http_turn:bad_response"
+                return
+            }
+            lastError = nil
+            lastErrorCode = nil
+            receivedAudioBytes += audioData.count
+            receivedAudioChunks += 1
+            player.enqueuePCM16(audioData, sampleRate: 16_000)
+            connectionStage = "http_turn:200"
+        } catch {
+            lastHealthStatus = "Turn fail"
+            setError("Turn: \(Self.describe(error))", error: error)
+            connectionStage = "http_turn:fail"
+        }
+    }
+
     func connect() async throws {
         guard task == nil else { return }
 
@@ -348,6 +387,18 @@ final class DeepResponseRealtimeClient: ObservableObject {
         return url
     }
 
+    private static func httpTurnURL() throws -> URL {
+        let endpoint = try endpointURL()
+        var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
+        components?.scheme = endpoint.scheme == "wss" ? "https" : "http"
+        components?.path = "/deep-response/http-turn"
+        components?.query = nil
+        guard let url = components?.url else {
+            throw DeepResponseClientError.missingEndpoint
+        }
+        return url
+    }
+
     private static func makeRealtimeSession(delegate: URLSessionWebSocketDelegate) -> URLSession {
         let configuration = URLSessionConfiguration.default
         configuration.waitsForConnectivity = true
@@ -375,6 +426,11 @@ final class DeepResponseRealtimeClient: ObservableObject {
         }
         return "\(nsError.domain) \(nsError.code)"
     }
+}
+
+private struct DeepResponseHTTPTurnResponse: Decodable {
+    let ok: Bool
+    let audioBase64: String
 }
 
 private final class DeepResponseWebSocketDelegate: NSObject, URLSessionWebSocketDelegate {
