@@ -47,6 +47,29 @@ final class DeepResponseRealtimeClient: ObservableObject {
         }
     }
 
+    func runHTTPProbe() async {
+        do {
+            connectionStage = "http_probe:start"
+            var request = URLRequest(url: try Self.httpProbeURL())
+            request.httpMethod = "POST"
+            request.timeoutInterval = 20
+            request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+            request.setValue("DeepLab-watchOS", forHTTPHeaderField: "X-Deep-Response-Client")
+
+            let payload = Data("watch-probe".utf8)
+            let (_, response) = try await URLSession.shared.upload(for: request, from: payload)
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+            lastHealthStatus = "Probe \(statusCode)"
+            lastError = statusCode == 200 ? nil : "Probe \(statusCode)"
+            lastErrorCode = nil
+            connectionStage = "http_probe:\(statusCode)"
+        } catch {
+            lastHealthStatus = "Probe fail"
+            setError("Probe: \(Self.describe(error))", error: error)
+            connectionStage = "http_probe:fail"
+        }
+    }
+
     func connect() async throws {
         guard task == nil else { return }
 
@@ -263,6 +286,18 @@ final class DeepResponseRealtimeClient: ObservableObject {
         var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
         components?.scheme = endpoint.scheme == "wss" ? "https" : "http"
         components?.path = "/health"
+        components?.query = nil
+        guard let url = components?.url else {
+            throw DeepResponseClientError.missingEndpoint
+        }
+        return url
+    }
+
+    private static func httpProbeURL() throws -> URL {
+        let endpoint = try endpointURL()
+        var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
+        components?.scheme = endpoint.scheme == "wss" ? "https" : "http"
+        components?.path = "/debug/http-probe"
         components?.query = nil
         guard let url = components?.url else {
             throw DeepResponseClientError.missingEndpoint

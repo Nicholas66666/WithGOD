@@ -64,6 +64,25 @@ export async function startDeepResponseServer({
       });
       return;
     }
+    if (request.method === "POST" && url.pathname === "/debug/http-probe") {
+      readRequestBody(request).then((body) => {
+        recordEvent("http_probe", {
+          bytes: body.length,
+          remoteAddress: request.socket.remoteAddress || "unknown",
+          userAgent: request.headers["user-agent"] || "",
+          deepResponseClient: request.headers["x-deep-response-client"] || ""
+        });
+        sendJSON(response, 200, {
+          ok: true,
+          bytes: body.length
+        });
+      }).catch((error) => {
+        sendJSON(response, 500, {
+          error: error instanceof Error ? error.message : String(error)
+        });
+      });
+      return;
+    }
     sendJSON(response, 404, { error: "not_found" });
   });
 
@@ -302,6 +321,14 @@ function sendJSON(response, statusCode, body) {
     "Cache-Control": "no-store"
   });
   response.end(JSON.stringify(body));
+}
+
+async function readRequestBody(request) {
+  const chunks = [];
+  for await (const chunk of request) {
+    chunks.push(Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks);
 }
 
 export function isDirectRun(importMetaURL, scriptPath) {

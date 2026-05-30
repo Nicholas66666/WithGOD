@@ -59,6 +59,13 @@ struct DeepResponseDebugView: View {
                 .buttonStyle(.bordered)
 
                 Button {
+                    Task { await client.runHTTPProbe() }
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                }
+                .buttonStyle(.bordered)
+
+                Button {
                     Task { await toggleConnect() }
                 } label: {
                     Image(systemName: client.isConnected ? "xmark" : "bolt.horizontal")

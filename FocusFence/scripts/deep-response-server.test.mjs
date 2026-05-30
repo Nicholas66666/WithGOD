@@ -83,6 +83,40 @@ test("DeepResponse server exposes recent debug events for lab diagnosis", async 
   }
 });
 
+test("DeepResponse server accepts HTTP probe payloads for Watch lab fallback diagnosis", async () => {
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "echo",
+    log: false
+  });
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${server.port}/debug/http-probe`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "X-Deep-Response-Client": "http-probe-test"
+      },
+      body: Buffer.from("watch-probe")
+    });
+    assert.equal(response.ok, true);
+    assert.deepEqual(await response.json(), {
+      ok: true,
+      bytes: 11
+    });
+
+    await waitFor(async () => {
+      const debug = await fetchJSON(`http://127.0.0.1:${server.port}/debug/events`);
+      return debug.events.some((event) => event.type === "http_probe"
+        && event.bytes === 11
+        && event.deepResponseClient === "http-probe-test");
+    });
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse server provider mode runs pipeline and emits transcript text audio and timing", async () => {
   const server = await startDeepResponseServer({
     port: 0,
