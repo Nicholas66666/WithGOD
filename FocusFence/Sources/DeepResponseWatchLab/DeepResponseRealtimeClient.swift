@@ -22,6 +22,9 @@ final class DeepResponseRealtimeClient: ObservableObject {
     @Published private(set) var connectionStage = "idle"
     @Published private(set) var receivedAudioBytes = 0
     @Published private(set) var receivedAudioChunks = 0
+    @Published private(set) var lastTurnTranscript: String?
+    @Published private(set) var lastTurnText: String?
+    @Published private(set) var lastTurnTotalMs: Int?
 
     private var task: URLSessionWebSocketTask?
     private var receiveTask: Task<Void, Never>?
@@ -129,6 +132,9 @@ final class DeepResponseRealtimeClient: ObservableObject {
             }
             lastError = nil
             lastErrorCode = nil
+            lastTurnTranscript = turn.transcript.isEmpty ? nil : turn.transcript
+            lastTurnText = turn.text.isEmpty ? nil : turn.text
+            lastTurnTotalMs = turn.timing?.voicePipelineTotalMs
             receivedAudioBytes += audioData.count
             receivedAudioChunks += 1
             player.enqueuePCM16(audioData, sampleRate: turn.sampleRate)
@@ -432,6 +438,9 @@ private struct DeepResponseHTTPTurnResponse: Decodable {
     let ok: Bool
     let audioBase64: String
     let sampleRate: Double
+    let transcript: String
+    let text: String
+    let timing: DeepResponseTiming?
 }
 
 private final class DeepResponseWebSocketDelegate: NSObject, URLSessionWebSocketDelegate {

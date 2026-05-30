@@ -356,7 +356,9 @@ async function handleHTTPTurn(request, response, { mode, env, createPipeline, au
     const audio = Buffer.concat((result.audioChunks || []).map((chunk) => Buffer.from(chunk)));
     recordEvent("http_turn_complete", {
       audioByteLength: audio.length,
-      sessionID
+      sessionID,
+      transcript: result.transcript || "",
+      text: result.firstPhrase || result.responseText || ""
     });
     sendJSON(response, 200, {
       ok: true,

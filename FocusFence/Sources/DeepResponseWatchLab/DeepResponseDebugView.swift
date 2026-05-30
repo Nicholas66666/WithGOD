@@ -45,6 +45,27 @@ struct DeepResponseDebugView: View {
                 Text("bytes \(client.receivedAudioBytes)")
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.secondary)
+                if let transcript = client.lastTurnTranscript {
+                    Text("you: \(transcript)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.65)
+                        .multilineTextAlignment(.center)
+                }
+                if let reply = client.lastTurnText {
+                    Text("god: \(reply)")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.65)
+                        .multilineTextAlignment(.center)
+                }
+                if let totalMs = client.lastTurnTotalMs {
+                    Text("turn \(totalMs)ms")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                }
                 if let timing = client.lastMessage?.timing {
                     Text("total \(timing.voicePipelineTotalMs ?? 0)ms")
                         .font(.caption2.monospacedDigit())

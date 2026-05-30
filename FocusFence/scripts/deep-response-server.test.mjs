@@ -204,7 +204,9 @@ test("DeepResponse server completes an HTTP realtime turn with JSON audio respon
         && event.bytes === Buffer.byteLength("watch-turn-audio")
         && event.deepResponseClient === "http-turn-test")
         && debug.events.some((event) => event.type === "http_turn_complete"
-          && event.audioByteLength === 19);
+          && event.audioByteLength === 19
+          && event.transcript === "chunks:1"
+          && event.text === "HTTP fallback response");
     });
   } finally {
     await server.close();
