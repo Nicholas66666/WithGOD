@@ -348,7 +348,10 @@ async function handleHTTPTurn(request, response, { mode, env, createPipeline, au
 
     const pipeline = createPipeline ? createPipeline() : createDefaultPipeline(env);
     const result = await pipeline.run({
-      audioChunks: replayChunks([body], audioReplayIntervalMs)
+      audioChunks: replayChunks(chunkPCM16(body, {
+        sampleRate: Number(env.DOUBAO_ASR_SAMPLE_RATE || 16000),
+        chunkMs: 100
+      }), audioReplayIntervalMs)
     });
     const audio = Buffer.concat((result.audioChunks || []).map((chunk) => Buffer.from(chunk)));
     recordEvent("http_turn_complete", {
@@ -385,6 +388,13 @@ async function* replayChunks(chunks, intervalMs) {
     }
     isFirst = false;
     yield chunk;
+  }
+}
+
+function* chunkPCM16(pcm, { sampleRate = 16_000, chunkMs = 100 } = {}) {
+  const bytesPerChunk = Math.max(2, Math.round(sampleRate * chunkMs / 1_000) * 2);
+  for (let offset = 0; offset < pcm.byteLength; offset += bytesPerChunk) {
+    yield pcm.subarray(offset, Math.min(offset + bytesPerChunk, pcm.byteLength));
   }
 }
 

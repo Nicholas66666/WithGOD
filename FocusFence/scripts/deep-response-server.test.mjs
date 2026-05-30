@@ -211,6 +211,48 @@ test("DeepResponse server completes an HTTP realtime turn with JSON audio respon
   }
 });
 
+test("DeepResponse server chunks HTTP realtime turn PCM before provider pipeline", async () => {
+  const seenChunkSizes = [];
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async run({ audioChunks }) {
+        for await (const chunk of audioChunks) {
+          seenChunkSizes.push(chunk.byteLength);
+        }
+        return {
+          transcript: `chunks:${seenChunkSizes.length}`,
+          responseText: "chunked",
+          firstPhrase: "chunked",
+          audioChunks: [Buffer.from("chunked-audio")],
+          audioByteLength: Buffer.byteLength("chunked-audio"),
+          timing: {},
+          providerMeta: {}
+        };
+      }
+    })
+  });
+
+  try {
+    const payload = Buffer.alloc(6_800, 1);
+    const response = await fetch(`http://127.0.0.1:${server.port}/deep-response/http-turn`, {
+      method: "POST",
+      headers: { "Content-Type": "application/octet-stream" },
+      body: payload
+    });
+    assert.equal(response.ok, true);
+    const body = await response.json();
+    assert.equal(body.transcript, "chunks:3");
+    assert.deepEqual(seenChunkSizes, [3_200, 3_200, 400]);
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse server HTTP realtime turn echoes audio in echo mode", async () => {
   const server = await startDeepResponseServer({
     port: 0,
