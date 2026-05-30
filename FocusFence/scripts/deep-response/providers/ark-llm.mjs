@@ -45,6 +45,10 @@ export class ArkLLMProvider {
       if (firstPhrase && timing.llm_first_phrase_ms === undefined) {
         timing.llm_first_phrase_ms = elapsed(this.clock, startedAt);
       }
+      if (firstPhrase && this.env.DEEP_RESPONSE_LLM_STREAM_FULL !== "true") {
+        text = firstPhrase;
+        break;
+      }
     }
 
     if (!firstPhrase) {

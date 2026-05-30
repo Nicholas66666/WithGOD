@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import zlib from "node:zlib";
 
 import { buildDoubaoASREndRequest, buildDoubaoASRInitRequest } from "./doubao-asr.mjs";
-import { extractArkStreamDelta, findSpeakableFirstPhrase, splitFirstPhrase } from "./ark-llm.mjs";
+import { ArkLLMProvider, extractArkStreamDelta, findSpeakableFirstPhrase, splitFirstPhrase } from "./ark-llm.mjs";
 import {
   buildDoubaoTTSEventRequest,
   parseDoubaoTTSResponse,
@@ -59,6 +59,44 @@ test("findSpeakableFirstPhrase waits until a partial stream is long enough to pl
   assert.equal(findSpeakableFirstPhrase("我听见你。后面继续"), "我听见你。");
 });
 
+test("ArkLLMProvider stops reading stream once first phrase is speakable", async (t) => {
+  const originalFetch = globalThis.fetch;
+  let chunksRead = 0;
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  globalThis.fetch = async () => ({
+    ok: true,
+    body: (async function* stream() {
+      const chunks = [
+        "data: {\"choices\":[{\"delta\":{\"content\":\"我懂\"}}]}\n\n",
+        "data: {\"choices\":[{\"delta\":{\"content\":\"这种沉甸甸的\"}}]}\n\n",
+        "data: {\"choices\":[{\"delta\":{\"content\":\"。后面不该等完\"}}]}\n\n"
+      ];
+      for (const chunk of chunks) {
+        chunksRead += 1;
+        yield Buffer.from(chunk);
+      }
+    })()
+  });
+
+  const provider = new ArkLLMProvider({
+    env: {
+      ARK_BASE_URL: "https://ark.example",
+      ARK_API_KEY: "key",
+      ARK_MODEL: "model"
+    },
+    clock: fakeClock([0, 10, 20])
+  });
+
+  const result = await provider.generate({ transcript: "我很累" });
+
+  assert.equal(result.firstPhrase, "我懂这种沉甸甸的");
+  assert.equal(result.text, "我懂这种沉甸甸的");
+  assert.equal(chunksRead, 2);
+});
+
 test("buildDoubaoTTSEventRequest emits binary event frame with session id and JSON payload", () => {
   const frame = buildDoubaoTTSEventRequest({
     event: TTS_EVENTS.StartSession,
@@ -101,4 +139,9 @@ function int32(value) {
   const buffer = Buffer.alloc(4);
   buffer.writeInt32BE(value, 0);
   return buffer;
+}
+
+function fakeClock(values) {
+  let index = 0;
+  return () => values[Math.min(index++, values.length - 1)];
 }
