@@ -37,6 +37,7 @@
 		A9E580ADEE8810CC2478B3BF /* PresenceRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CDA256A1DF50B8B1A93BC3C /* PresenceRecord.swift */; };
 		AC868C633D50F1EBF48AA84F /* TurningAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85A822DF16BC1422456A1788 /* TurningAppIntents.swift */; };
 		ACBCEF61AFDC39ED469066DE /* RuleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A042FA540F4C87F2086CEE32 /* RuleStore.swift */; };
+		B40C4117332AE89FCE09E7DF /* DeepResponseMicrophoneRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADB06F6E2205A0906CB7E793 /* DeepResponseMicrophoneRecorder.swift */; };
 		B71B1295731B64A416C0EE93 /* DeepResponseAudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F484237AEE09A9B1D98880E4 /* DeepResponseAudioPlayer.swift */; };
 		C01F648875E490E98BD7C6BF /* focus-icon.svg in Resources */ = {isa = PBXBuildFile; fileRef = 0F0DF53670656908858FB243 /* focus-icon.svg */; };
 		C0282C8927148E438DA7CFEC /* FocusFenceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20B7E73C2EBB617657A52F7 /* FocusFenceApp.swift */; };
@@ -153,6 +154,7 @@
 		A042FA540F4C87F2086CEE32 /* RuleStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleStore.swift; sourceTree = "<group>"; };
 		A20B7E73C2EBB617657A52F7 /* FocusFenceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusFenceApp.swift; sourceTree = "<group>"; };
 		AB70E51595615783C2F52BA2 /* FocusFenceShieldAction.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FocusFenceShieldAction.entitlements; sourceTree = "<group>"; };
+		ADB06F6E2205A0906CB7E793 /* DeepResponseMicrophoneRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepResponseMicrophoneRecorder.swift; sourceTree = "<group>"; };
 		B281E4BCF2B5A451ECF0129C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		B792DA95D9D9EBA8421A9381 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		C797F269170BD48CED503D9F /* FocusFenceMonitor.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FocusFenceMonitor.entitlements; sourceTree = "<group>"; };
@@ -247,6 +249,7 @@
 			children = (
 				F484237AEE09A9B1D98880E4 /* DeepResponseAudioPlayer.swift */,
 				947645C34194A9FDD586FE99 /* DeepResponseDebugView.swift */,
+				ADB06F6E2205A0906CB7E793 /* DeepResponseMicrophoneRecorder.swift */,
 				1E9246FA7D0DBD19E1EAF753 /* DeepResponseProtocol.swift */,
 				F316E2351F0B13E20DDBCBC3 /* DeepResponseRealtimeClient.swift */,
 				53F123EB364B10B926792F59 /* DeepResponseWatchLabApp.swift */,
@@ -603,6 +606,7 @@
 			files = (
 				B71B1295731B64A416C0EE93 /* DeepResponseAudioPlayer.swift in Sources */,
 				A95F1CA4F63CE32C04F8EAB2 /* DeepResponseDebugView.swift in Sources */,
+				B40C4117332AE89FCE09E7DF /* DeepResponseMicrophoneRecorder.swift in Sources */,
 				9936550B7054DA6419119212 /* DeepResponseProtocol.swift in Sources */,
 				EE4D6651629EAFB9E432F453 /* DeepResponseRealtimeClient.swift in Sources */,
 				E711B4E8889B89E77112C52D /* DeepResponseWatchLabApp.swift in Sources */,

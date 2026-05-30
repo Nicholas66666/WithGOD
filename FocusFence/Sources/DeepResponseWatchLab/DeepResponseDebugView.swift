@@ -3,9 +3,11 @@ import SwiftUI
 struct DeepResponseDebugView: View {
     @StateObject private var client = DeepResponseRealtimeClient()
     @State private var isStreaming = false
+    @State private var isRecording = false
     @State private var sentChunks = 0
     @State private var status = "Ready"
     @State private var streamTask: Task<Void, Never>?
+    @State private var recorder = DeepResponseMicrophoneRecorder()
 
     var body: some View {
         VStack(spacing: 10) {
@@ -80,6 +82,13 @@ struct DeepResponseDebugView: View {
                 .buttonStyle(.bordered)
 
                 Button {
+                    Task { await toggleMicrophoneTurn() }
+                } label: {
+                    Image(systemName: isRecording ? "stop.circle.fill" : "mic.circle.fill")
+                }
+                .buttonStyle(.borderedProminent)
+
+                Button {
                     Task { await toggleConnect() }
                 } label: {
                     Image(systemName: client.isConnected ? "xmark" : "bolt.horizontal")
@@ -106,6 +115,10 @@ struct DeepResponseDebugView: View {
         .padding()
         .onDisappear {
             streamTask?.cancel()
+            if isRecording {
+                _ = recorder.stop()
+                isRecording = false
+            }
             client.disconnect()
         }
     }
@@ -129,6 +142,31 @@ struct DeepResponseDebugView: View {
         status = "HTTP turn"
         await client.runHTTPTurn(Self.tonePayload(duration: 0.5))
         status = client.lastError == nil ? "HTTP turn done" : "HTTP turn failed"
+    }
+
+    private func toggleMicrophoneTurn() async {
+        if isRecording {
+            isRecording = false
+            status = "Sending voice"
+            let audio = recorder.stop()
+            sentChunks = max(1, audio.count / 3_200)
+            guard !audio.isEmpty else {
+                status = "No audio"
+                return
+            }
+            await client.runHTTPTurn(audio)
+            status = client.lastError == nil ? "Voice turn done" : "Voice turn failed"
+            return
+        }
+
+        do {
+            sentChunks = 0
+            status = "Recording"
+            try await recorder.start()
+            isRecording = true
+        } catch {
+            status = error.localizedDescription
+        }
     }
 
     private func toggleConnect() async {
