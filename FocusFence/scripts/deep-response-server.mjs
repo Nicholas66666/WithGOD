@@ -64,6 +64,17 @@ export async function startDeepResponseServer({
       });
       return;
     }
+    if (request.method === "GET" && url.pathname === "/debug/config") {
+      sendJSON(response, 200, {
+        ok: true,
+        mode,
+        audioReplayIntervalMs,
+        arkModel: env.ARK_MODEL || "",
+        asrModelName: env.DOUBAO_ASR_MODEL_NAME || "",
+        ttsSpeakerID: env.DOUBAO_TTS_SPEAKER_ID || ""
+      });
+      return;
+    }
     if (request.method === "POST" && url.pathname === "/debug/http-probe") {
       readRequestBody(request).then((body) => {
         recordEvent("http_probe", {

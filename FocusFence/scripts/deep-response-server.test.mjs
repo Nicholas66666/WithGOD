@@ -83,6 +83,31 @@ test("DeepResponse server exposes recent debug events for lab diagnosis", async 
   }
 });
 
+test("DeepResponse server exposes non-secret debug config", async () => {
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    env: {
+      ARK_MODEL: "ark-model",
+      DOUBAO_ASR_MODEL_NAME: "asr-model",
+      DEEP_RESPONSE_AUDIO_REPLAY_INTERVAL_MS: "25"
+    }
+  });
+
+  try {
+    const config = await fetchJSON(`http://127.0.0.1:${server.port}/debug/config`);
+    assert.equal(config.ok, true);
+    assert.equal(config.mode, "provider");
+    assert.equal(config.audioReplayIntervalMs, 25);
+    assert.equal(config.arkModel, "ark-model");
+    assert.equal(config.asrModelName, "asr-model");
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse server accepts HTTP probe payloads for Watch lab fallback diagnosis", async () => {
   const server = await startDeepResponseServer({
     port: 0,
