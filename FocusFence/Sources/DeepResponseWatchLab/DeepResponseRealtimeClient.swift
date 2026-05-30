@@ -24,6 +24,8 @@ final class DeepResponseRealtimeClient: ObservableObject {
     @Published private(set) var receivedAudioChunks = 0
     @Published private(set) var lastTurnTranscript: String?
     @Published private(set) var lastTurnText: String?
+    @Published private(set) var lastTurnFirstText: String?
+    @Published private(set) var lastTurnFollowupText: String?
     @Published private(set) var lastTurnTotalMs: Int?
     @Published private(set) var lastTurnTiming: DeepResponseTiming?
 
@@ -145,6 +147,64 @@ final class DeepResponseRealtimeClient: ObservableObject {
             lastHealthStatus = "Turn fail"
             setError("Turn: \(Self.describe(error))", error: error)
             connectionStage = "http_turn:fail"
+        }
+    }
+
+    func runSegmentedHTTPTurn(_ audio: Data) async {
+        do {
+            connectionStage = "http_turn_v2:start"
+            var request = URLRequest(url: try Self.httpTurnV2URL())
+            request.httpMethod = "POST"
+            request.timeoutInterval = 90
+            request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+            request.setValue("DeepLab-watchOS", forHTTPHeaderField: "X-Deep-Response-Client")
+            request.setValue(UUID().uuidString, forHTTPHeaderField: "X-Deep-Response-Session")
+
+            let (data, response) = try await URLSession.shared.upload(for: request, from: audio)
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+            lastHealthStatus = "Turn2 \(statusCode)"
+            guard statusCode == 200 else {
+                lastError = "Turn2 \(statusCode)"
+                lastErrorCode = nil
+                connectionStage = "http_turn_v2:\(statusCode)"
+                return
+            }
+            let turn = try JSONDecoder().decode(DeepResponseSegmentedHTTPTurnResponse.self, from: data)
+            guard turn.ok else {
+                lastError = "Bad HTTP turn v2 response"
+                lastErrorCode = nil
+                connectionStage = "http_turn_v2:bad_response"
+                return
+            }
+
+            lastError = nil
+            lastErrorCode = nil
+            lastTurnTranscript = turn.transcript.isEmpty ? nil : turn.transcript
+            lastTurnFirstText = turn.segment(kind: "first")?.text
+            lastTurnFollowupText = turn.segment(kind: "followup")?.text
+            lastTurnText = [lastTurnFirstText, lastTurnFollowupText]
+                .compactMap { $0 }
+                .filter { !$0.isEmpty }
+                .joined(separator: " ")
+            if lastTurnText?.isEmpty == true {
+                lastTurnText = nil
+            }
+            lastTurnTotalMs = turn.timing?.voicePipelineTotalMs
+            lastTurnTiming = turn.timing
+
+            for segment in turn.segments {
+                guard let audioData = Data(base64Encoded: segment.audioBase64), !audioData.isEmpty else {
+                    continue
+                }
+                receivedAudioBytes += audioData.count
+                receivedAudioChunks += 1
+                player.enqueuePCM16(audioData, sampleRate: turn.sampleRate)
+            }
+            connectionStage = "http_turn_v2:200"
+        } catch {
+            lastHealthStatus = "Turn2 fail"
+            setError("Turn2: \(Self.describe(error))", error: error)
+            connectionStage = "http_turn_v2:fail"
         }
     }
 
@@ -407,6 +467,18 @@ final class DeepResponseRealtimeClient: ObservableObject {
         return url
     }
 
+    private static func httpTurnV2URL() throws -> URL {
+        let endpoint = try endpointURL()
+        var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
+        components?.scheme = endpoint.scheme == "wss" ? "https" : "http"
+        components?.path = "/deep-response/http-turn-v2"
+        components?.query = nil
+        guard let url = components?.url else {
+            throw DeepResponseClientError.missingEndpoint
+        }
+        return url
+    }
+
     private static func makeRealtimeSession(delegate: URLSessionWebSocketDelegate) -> URLSession {
         let configuration = URLSessionConfiguration.default
         configuration.waitsForConnectivity = true
@@ -443,6 +515,25 @@ private struct DeepResponseHTTPTurnResponse: Decodable {
     let transcript: String
     let text: String
     let timing: DeepResponseTiming?
+}
+
+private struct DeepResponseSegmentedHTTPTurnResponse: Decodable {
+    let ok: Bool
+    let transcript: String
+    let segments: [DeepResponseHTTPTurnSegment]
+    let sampleRate: Double
+    let timing: DeepResponseTiming?
+
+    func segment(kind: String) -> DeepResponseHTTPTurnSegment? {
+        segments.first { $0.kind == kind }
+    }
+}
+
+private struct DeepResponseHTTPTurnSegment: Decodable {
+    let kind: String
+    let text: String
+    let audioBase64: String
+    let audioByteLength: Int
 }
 
 private final class DeepResponseWebSocketDelegate: NSObject, URLSessionWebSocketDelegate {

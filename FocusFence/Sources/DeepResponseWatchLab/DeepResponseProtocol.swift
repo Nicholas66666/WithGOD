@@ -34,6 +34,9 @@ struct DeepResponseTiming: Decodable, Equatable {
     let transcriptFinalMs: Int?
     let llmFirstPhraseMs: Int?
     let ttsFirstAudioMs: Int?
+    let firstTTSFirstAudioMs: Int?
+    let followupLLMFirstPhraseMs: Int?
+    let followupTTSFirstAudioMs: Int?
     let chunksIn: Int?
     let chunksOut: Int?
     let bargeIns: Int?
@@ -43,6 +46,9 @@ struct DeepResponseTiming: Decodable, Equatable {
         case transcriptFinalMs = "transcript_final_ms"
         case llmFirstPhraseMs = "llm_first_phrase_ms"
         case ttsFirstAudioMs = "tts_first_audio_ms"
+        case firstTTSFirstAudioMs = "first_tts_first_audio_ms"
+        case followupLLMFirstPhraseMs = "followup_llm_first_phrase_ms"
+        case followupTTSFirstAudioMs = "followup_tts_first_audio_ms"
         case chunksIn = "chunks_in"
         case chunksOut = "chunks_out"
         case bargeIns = "barge_ins"

@@ -61,13 +61,37 @@ struct DeepResponseDebugView: View {
                         .minimumScaleFactor(0.65)
                         .multilineTextAlignment(.center)
                 }
+                if let first = client.lastTurnFirstText {
+                    Text("first: \(first)")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.65)
+                        .multilineTextAlignment(.center)
+                }
+                if let followup = client.lastTurnFollowupText {
+                    Text("more: \(followup)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.65)
+                        .multilineTextAlignment(.center)
+                }
                 if let totalMs = client.lastTurnTotalMs {
                     Text("turn \(totalMs)ms")
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
                 if let timing = client.lastTurnTiming {
-                    Text("asr \(timing.transcriptFinalMs ?? 0) · llm \(timing.llmFirstPhraseMs ?? 0) · tts \(timing.ttsFirstAudioMs ?? 0)")
+                    Text("asr \(timing.transcriptFinalMs ?? 0) · llm \(timing.llmFirstPhraseMs ?? 0) · tts \(timing.ttsFirstAudioMs ?? timing.firstTTSFirstAudioMs ?? 0)")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.55)
+                }
+                if let timing = client.lastTurnTiming,
+                   timing.followupLLMFirstPhraseMs != nil || timing.followupTTSFirstAudioMs != nil {
+                    Text("more llm \(timing.followupLLMFirstPhraseMs ?? 0) · tts \(timing.followupTTSFirstAudioMs ?? 0)")
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
@@ -182,8 +206,8 @@ struct DeepResponseDebugView: View {
                 status = "No audio"
                 return
             }
-            await client.runHTTPTurn(audio)
-            status = client.lastError == nil ? "Voice turn done" : "Voice turn failed"
+            await client.runSegmentedHTTPTurn(audio)
+            status = client.lastError == nil ? "Voice turn v2 done" : "Voice turn v2 failed"
             return
         }
 
