@@ -31,12 +31,18 @@ struct DeepResponseMessage: Decodable {
 
 struct DeepResponseTiming: Decodable, Equatable {
     let voicePipelineTotalMs: Int?
+    let transcriptFinalMs: Int?
+    let llmFirstPhraseMs: Int?
+    let ttsFirstAudioMs: Int?
     let chunksIn: Int?
     let chunksOut: Int?
     let bargeIns: Int?
 
     enum CodingKeys: String, CodingKey {
         case voicePipelineTotalMs = "voice_pipeline_total_ms"
+        case transcriptFinalMs = "transcript_final_ms"
+        case llmFirstPhraseMs = "llm_first_phrase_ms"
+        case ttsFirstAudioMs = "tts_first_audio_ms"
         case chunksIn = "chunks_in"
         case chunksOut = "chunks_out"
         case bargeIns = "barge_ins"

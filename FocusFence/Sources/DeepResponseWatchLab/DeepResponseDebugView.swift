@@ -66,6 +66,13 @@ struct DeepResponseDebugView: View {
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
+                if let timing = client.lastTurnTiming {
+                    Text("asr \(timing.transcriptFinalMs ?? 0) · llm \(timing.llmFirstPhraseMs ?? 0) · tts \(timing.ttsFirstAudioMs ?? 0)")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.55)
+                }
                 if let timing = client.lastMessage?.timing {
                     Text("total \(timing.voicePipelineTotalMs ?? 0)ms")
                         .font(.caption2.monospacedDigit())

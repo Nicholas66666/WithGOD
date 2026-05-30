@@ -25,6 +25,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
     @Published private(set) var lastTurnTranscript: String?
     @Published private(set) var lastTurnText: String?
     @Published private(set) var lastTurnTotalMs: Int?
+    @Published private(set) var lastTurnTiming: DeepResponseTiming?
 
     private var task: URLSessionWebSocketTask?
     private var receiveTask: Task<Void, Never>?
@@ -135,6 +136,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
             lastTurnTranscript = turn.transcript.isEmpty ? nil : turn.transcript
             lastTurnText = turn.text.isEmpty ? nil : turn.text
             lastTurnTotalMs = turn.timing?.voicePipelineTotalMs
+            lastTurnTiming = turn.timing
             receivedAudioBytes += audioData.count
             receivedAudioChunks += 1
             player.enqueuePCM16(audioData, sampleRate: turn.sampleRate)

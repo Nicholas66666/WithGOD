@@ -206,7 +206,8 @@ test("DeepResponse server completes an HTTP realtime turn with JSON audio respon
         && debug.events.some((event) => event.type === "http_turn_complete"
           && event.audioByteLength === 19
           && event.transcript === "chunks:1"
-          && event.text === "HTTP fallback response");
+          && event.text === "HTTP fallback response"
+          && event.timing?.voice_pipeline_total_ms === 42);
     });
   } finally {
     await server.close();

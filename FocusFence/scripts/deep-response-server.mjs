@@ -358,7 +358,8 @@ async function handleHTTPTurn(request, response, { mode, env, createPipeline, au
       audioByteLength: audio.length,
       sessionID,
       transcript: result.transcript || "",
-      text: result.firstPhrase || result.responseText || ""
+      text: result.firstPhrase || result.responseText || "",
+      timing: result.timing || {}
     });
     sendJSON(response, 200, {
       ok: true,
