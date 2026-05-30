@@ -239,6 +239,76 @@ test("DeepResponse server completes an HTTP realtime turn with JSON audio respon
   }
 });
 
+test("DeepResponse server completes a segmented HTTP turn with first and followup audio", async () => {
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async runSegmented({ audioChunks }) {
+        const collected = [];
+        for await (const chunk of audioChunks) {
+          collected.push(chunk);
+        }
+        return {
+          transcript: `chunks:${collected.length}`,
+          first: {
+            text: "first phrase",
+            audioChunks: [Buffer.from("first-audio")],
+            audioByteLength: Buffer.byteLength("first-audio")
+          },
+          followup: {
+            text: "followup phrase",
+            audioChunks: [Buffer.from("followup-audio")],
+            audioByteLength: Buffer.byteLength("followup-audio")
+          },
+          timing: { voice_pipeline_total_ms: 84 },
+          providerMeta: { transport: "segmented" }
+        };
+      }
+    })
+  });
+
+  try {
+    const response = await fetch(`http://127.0.0.1:${server.port}/deep-response/http-turn-v2`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "X-Deep-Response-Client": "http-turn-v2-test",
+        "X-Deep-Response-Session": "segmented-session"
+      },
+      body: Buffer.from("watch-turn-audio")
+    });
+    assert.equal(response.ok, true);
+    const body = await response.json();
+    assert.equal(body.ok, true);
+    assert.equal(body.sessionID, "segmented-session");
+    assert.equal(body.transcript, "chunks:1");
+    assert.equal(body.segments.length, 2);
+    assert.equal(body.segments[0].kind, "first");
+    assert.equal(body.segments[0].text, "first phrase");
+    assert.equal(Buffer.from(body.segments[0].audioBase64, "base64").toString("utf8"), "first-audio");
+    assert.equal(body.segments[1].kind, "followup");
+    assert.equal(body.segments[1].text, "followup phrase");
+    assert.equal(Buffer.from(body.segments[1].audioBase64, "base64").toString("utf8"), "followup-audio");
+    assert.equal(body.audioByteLength, 25);
+    assert.equal(body.sampleRate, 24000);
+
+    await waitFor(async () => {
+      const debug = await fetchJSON(`http://127.0.0.1:${server.port}/debug/events`);
+      return debug.events.some((event) => event.type === "http_turn_v2_complete"
+        && event.audioByteLength === 25
+        && event.transcript === "chunks:1"
+        && event.firstText === "first phrase"
+        && event.followupText === "followup phrase");
+    });
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse server chunks HTTP realtime turn PCM before provider pipeline", async () => {
   const seenChunkSizes = [];
   const server = await startDeepResponseServer({

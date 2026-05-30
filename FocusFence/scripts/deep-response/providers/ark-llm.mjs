@@ -4,7 +4,7 @@ export class ArkLLMProvider {
     this.clock = clock;
   }
 
-  async generate({ transcript, context = [], signal } = {}) {
+  async generate({ transcript, context = [], signal, streamFull = false, maxTokens = 180, minChars = 14 } = {}) {
     const startedAt = this.clock();
     const timing = {};
     let text = "";
@@ -21,7 +21,7 @@ export class ArkLLMProvider {
         model: this.env.ARK_MODEL,
         stream: true,
         temperature: 0.4,
-        max_tokens: 180,
+        max_tokens: maxTokens,
         messages: [
           { role: "system", content: deepResponseSystemPrompt() },
           ...context,
@@ -41,11 +41,11 @@ export class ArkLLMProvider {
       }
       timing.llm_first_token_ms ??= elapsed(this.clock, startedAt);
       text += delta;
-      firstPhrase ||= findSpeakableFirstPhrase(text);
+      firstPhrase ||= findSpeakableFirstPhrase(text, { minChars });
       if (firstPhrase && timing.llm_first_phrase_ms === undefined) {
         timing.llm_first_phrase_ms = elapsed(this.clock, startedAt);
       }
-      if (firstPhrase && this.env.DEEP_RESPONSE_LLM_STREAM_FULL !== "true") {
+      if (firstPhrase && !streamFull && this.env.DEEP_RESPONSE_LLM_STREAM_FULL !== "true") {
         text = firstPhrase;
         break;
       }

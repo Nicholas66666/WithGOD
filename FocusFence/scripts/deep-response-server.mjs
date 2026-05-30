@@ -124,6 +124,16 @@ export async function startDeepResponseServer({
       });
       return;
     }
+    if (request.method === "POST" && url.pathname === "/deep-response/http-turn-v2") {
+      handleSegmentedHTTPTurn(request, response, {
+        mode,
+        env,
+        createPipeline,
+        audioReplayIntervalMs,
+        recordEvent
+      });
+      return;
+    }
     sendJSON(response, 404, { error: "not_found" });
   });
 
@@ -392,6 +402,93 @@ async function handleHTTPTurn(request, response, { mode, env, createPipeline, au
       error: error instanceof Error ? error.message : String(error)
     });
   }
+}
+
+async function handleSegmentedHTTPTurn(request, response, { mode, env, createPipeline, audioReplayIntervalMs, recordEvent = () => {} }) {
+  try {
+    const body = await readRequestBody(request);
+    const sessionID = request.headers["x-deep-response-session"] || "";
+    recordEvent("http_turn_v2", {
+      bytes: body.length,
+      remoteAddress: request.socket.remoteAddress || "unknown",
+      userAgent: request.headers["user-agent"] || "",
+      deepResponseClient: request.headers["x-deep-response-client"] || "",
+      sessionID
+    });
+
+    if (mode === "echo") {
+      const first = body.subarray(0, Math.ceil(body.length / 2));
+      const followup = body.subarray(first.length);
+      recordEvent("http_turn_v2_complete", {
+        audioByteLength: body.length,
+        sessionID,
+        mode: "echo"
+      });
+      sendJSON(response, 200, {
+        ok: true,
+        sessionID,
+        transcript: "",
+        segments: [
+          buildHTTPSegment("first", "echo first", first),
+          buildHTTPSegment("followup", "echo followup", followup)
+        ],
+        audioByteLength: body.length,
+        sampleRate: 16000,
+        timing: {},
+        providerMeta: { mode: "echo" }
+      });
+      return;
+    }
+
+    const pipeline = createPipeline ? createPipeline() : createDefaultPipeline(env);
+    const result = await pipeline.runSegmented({
+      audioChunks: replayChunks(chunkPCM16(body, {
+        sampleRate: Number(env.DOUBAO_ASR_SAMPLE_RATE || 16000),
+        chunkMs: 100
+      }), audioReplayIntervalMs)
+    });
+    const firstAudio = Buffer.concat((result.first?.audioChunks || []).map((chunk) => Buffer.from(chunk)));
+    const followupAudio = Buffer.concat((result.followup?.audioChunks || []).map((chunk) => Buffer.from(chunk)));
+    const audioByteLength = firstAudio.length + followupAudio.length;
+    recordEvent("http_turn_v2_complete", {
+      audioByteLength,
+      sessionID,
+      transcript: result.transcript || "",
+      firstText: result.first?.text || "",
+      followupText: result.followup?.text || "",
+      timing: result.timing || {}
+    });
+    sendJSON(response, 200, {
+      ok: true,
+      sessionID,
+      transcript: result.transcript || "",
+      segments: [
+        buildHTTPSegment("first", result.first?.text || "", firstAudio),
+        buildHTTPSegment("followup", result.followup?.text || "", followupAudio)
+      ],
+      audioByteLength,
+      sampleRate: Number(env.DOUBAO_TTS_SAMPLE_RATE || 24000),
+      timing: result.timing || {},
+      providerMeta: result.providerMeta || {}
+    });
+  } catch (error) {
+    recordEvent("http_turn_v2_failed", {
+      message: error instanceof Error ? error.message : String(error)
+    });
+    sendJSON(response, 500, {
+      ok: false,
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+}
+
+function buildHTTPSegment(kind, text, audio) {
+  return {
+    kind,
+    text,
+    audioBase64: Buffer.from(audio).toString("base64"),
+    audioByteLength: audio.byteLength
+  };
 }
 
 async function* replayChunks(chunks, intervalMs) {

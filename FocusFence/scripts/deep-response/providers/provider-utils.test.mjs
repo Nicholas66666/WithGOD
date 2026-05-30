@@ -92,9 +92,77 @@ test("ArkLLMProvider stops reading stream once first phrase is speakable", async
 
   const result = await provider.generate({ transcript: "我很累" });
 
-  assert.equal(result.firstPhrase, "我懂这种沉甸甸的");
-  assert.equal(result.text, "我懂这种沉甸甸的");
-  assert.equal(chunksRead, 2);
+  assert.equal(result.firstPhrase, "我懂这种沉甸甸的。");
+  assert.equal(result.text, "我懂这种沉甸甸的。");
+  assert.equal(chunksRead, 3);
+});
+
+test("ArkLLMProvider reads full stream when streamFull is true", async (t) => {
+  const originalFetch = globalThis.fetch;
+  let chunksRead = 0;
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  globalThis.fetch = async () => ({
+    ok: true,
+    body: (async function* stream() {
+      const chunks = [
+        "data: {\"choices\":[{\"delta\":{\"content\":\"第一句。\"}}]}\n\n",
+        "data: {\"choices\":[{\"delta\":{\"content\":\"第二句。\"}}]}\n\n",
+        "data: [DONE]\n\n"
+      ];
+      for (const chunk of chunks) {
+        chunksRead += 1;
+        yield Buffer.from(chunk);
+      }
+    })()
+  });
+
+  const provider = new ArkLLMProvider({
+    env: {
+      ARK_BASE_URL: "https://ark.example",
+      ARK_API_KEY: "key",
+      ARK_MODEL: "model"
+    },
+    clock: fakeClock([0, 10, 20])
+  });
+
+  const result = await provider.generate({ transcript: "继续", streamFull: true });
+
+  assert.equal(result.firstPhrase, "第一句。");
+  assert.equal(result.text, "第一句。第二句。");
+  assert.equal(chunksRead, 3);
+});
+
+test("ArkLLMProvider sends requested max tokens", async (t) => {
+  const originalFetch = globalThis.fetch;
+  let requestBody = null;
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  globalThis.fetch = async (_url, options) => {
+    requestBody = JSON.parse(options.body);
+    return {
+      ok: true,
+      body: (async function* stream() {
+        yield Buffer.from("data: {\"choices\":[{\"delta\":{\"content\":\"收到。\"}}]}\n\n");
+      })()
+    };
+  };
+
+  const provider = new ArkLLMProvider({
+    env: {
+      ARK_BASE_URL: "https://ark.example",
+      ARK_API_KEY: "key",
+      ARK_MODEL: "model"
+    }
+  });
+
+  await provider.generate({ transcript: "继续", maxTokens: 48 });
+
+  assert.equal(requestBody.max_tokens, 48);
 });
 
 test("buildDoubaoTTSEventRequest emits binary event frame with session id and JSON payload", () => {
