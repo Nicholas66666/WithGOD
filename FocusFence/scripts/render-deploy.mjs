@@ -43,8 +43,25 @@ export function buildTriggerDeployRequest({ serviceId, apiKey, clearCache = fals
   };
 }
 
+export function buildListDeploysRequest({ serviceId, apiKey, limit = 1 }) {
+  return {
+    url: `${RENDER_API_BASE_URL}/services/${serviceId}/deploys?limit=${limit}`,
+    options: {
+      method: "GET",
+      headers: {
+        Accept: "application/json",
+        Authorization: `Bearer ${apiKey}`
+      }
+    }
+  };
+}
+
 export function isTerminalDeployStatus(status) {
   return TERMINAL_DEPLOY_STATUSES.has(status);
+}
+
+export function getDeployRecord(body) {
+  return body?.deploy || body;
 }
 
 export function redactRenderKey(apiKey) {
@@ -86,17 +103,23 @@ async function renderFetch(url, options, { fetchImpl = fetch } = {}) {
 
 async function triggerDeploy(config, { clearCache = false, fetchImpl = fetch } = {}) {
   const request = buildTriggerDeployRequest({ ...config, clearCache });
-  return renderFetch(request.url, request.options, { fetchImpl });
+  return getDeployRecord(await renderFetch(request.url, request.options, { fetchImpl }));
+}
+
+async function listDeploys(config, { limit = 1, fetchImpl = fetch } = {}) {
+  const request = buildListDeploysRequest({ ...config, limit });
+  const body = await renderFetch(request.url, request.options, { fetchImpl });
+  return Array.isArray(body) ? body.map(getDeployRecord) : [];
 }
 
 async function getDeploy(config, deployId, { fetchImpl = fetch } = {}) {
-  return renderFetch(`${RENDER_API_BASE_URL}/services/${config.serviceId}/deploys/${deployId}`, {
+  return getDeployRecord(await renderFetch(`${RENDER_API_BASE_URL}/services/${config.serviceId}/deploys/${deployId}`, {
     method: "GET",
     headers: {
       Accept: "application/json",
       Authorization: `Bearer ${config.apiKey}`
     }
-  }, { fetchImpl });
+  }, { fetchImpl }));
 }
 
 async function waitForDeploy(config, deployId, { fetchImpl = fetch, timeoutMs = 600_000, intervalMs = 5_000 } = {}) {
@@ -119,7 +142,14 @@ export async function runRenderDeploy(argv = process.argv.slice(2), { fetchImpl 
   const clearCache = argv.includes("--clear-cache");
 
   console.log(`Render service=${config.serviceId} key=${redactRenderKey(config.apiKey)}`);
-  const deploy = await triggerDeploy(config, { clearCache, fetchImpl });
+  let deploy = await triggerDeploy(config, { clearCache, fetchImpl });
+  if (!deploy?.id) {
+    const [latest] = await listDeploys(config, { limit: 1, fetchImpl });
+    deploy = latest;
+  }
+  if (!deploy?.id) {
+    throw new Error("Render deploy was triggered but no deploy id was returned");
+  }
   console.log(`Render deploy ${deploy.id} status=${deploy.status}`);
   if (!shouldWait) {
     return deploy;

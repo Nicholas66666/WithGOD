@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 
 import {
   buildRenderConfig,
+  buildListDeploysRequest,
   buildTriggerDeployRequest,
+  getDeployRecord,
   isTerminalDeployStatus,
   redactRenderKey
 } from "./render-deploy.mjs";
@@ -40,8 +42,31 @@ test("buildTriggerDeployRequest creates latest-commit deploy payload", () => {
   });
 });
 
+test("buildListDeploysRequest lists latest deploys for a service", () => {
+  const request = buildListDeploysRequest({
+    serviceId: "srv_test",
+    apiKey: "rnd_secret",
+    limit: 1
+  });
+
+  assert.equal(request.url, "https://api.render.com/v1/services/srv_test/deploys?limit=1");
+  assert.equal(request.options.method, "GET");
+  assert.equal(request.options.headers.Authorization, "Bearer rnd_secret");
+});
+
 test("isTerminalDeployStatus recognizes Render deploy terminal states", () => {
   assert.equal(isTerminalDeployStatus("live"), true);
   assert.equal(isTerminalDeployStatus("build_failed"), true);
   assert.equal(isTerminalDeployStatus("queued"), false);
+});
+
+test("getDeployRecord accepts both documented and wrapped Render deploy responses", () => {
+  assert.deepEqual(getDeployRecord({ id: "dep_top", status: "live" }), {
+    id: "dep_top",
+    status: "live"
+  });
+  assert.deepEqual(getDeployRecord({ deploy: { id: "dep_wrapped", status: "queued" } }), {
+    id: "dep_wrapped",
+    status: "queued"
+  });
 });
