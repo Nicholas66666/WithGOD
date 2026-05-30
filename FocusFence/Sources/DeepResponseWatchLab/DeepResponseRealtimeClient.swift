@@ -131,7 +131,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
             lastErrorCode = nil
             receivedAudioBytes += audioData.count
             receivedAudioChunks += 1
-            player.enqueuePCM16(audioData, sampleRate: 16_000)
+            player.enqueuePCM16(audioData, sampleRate: turn.sampleRate)
             connectionStage = "http_turn:200"
         } catch {
             lastHealthStatus = "Turn fail"
@@ -431,6 +431,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
 private struct DeepResponseHTTPTurnResponse: Decodable {
     let ok: Bool
     let audioBase64: String
+    let sampleRate: Double
 }
 
 private final class DeepResponseWebSocketDelegate: NSObject, URLSessionWebSocketDelegate {

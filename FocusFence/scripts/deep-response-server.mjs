@@ -339,6 +339,7 @@ async function handleHTTPTurn(request, response, { mode, env, createPipeline, au
         text: "echo",
         audioBase64: body.toString("base64"),
         audioByteLength: body.length,
+        sampleRate: 16000,
         timing: {},
         providerMeta: { mode: "echo" }
       });
@@ -361,6 +362,7 @@ async function handleHTTPTurn(request, response, { mode, env, createPipeline, au
       text: result.firstPhrase || result.responseText || "",
       audioBase64: audio.toString("base64"),
       audioByteLength: result.audioByteLength ?? audio.length,
+      sampleRate: Number(env.DOUBAO_TTS_SAMPLE_RATE || 24000),
       timing: result.timing || {},
       providerMeta: result.providerMeta || {}
     });

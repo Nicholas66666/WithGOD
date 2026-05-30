@@ -194,6 +194,7 @@ test("DeepResponse server completes an HTTP realtime turn with JSON audio respon
     assert.equal(body.text, "HTTP fallback response");
     assert.equal(Buffer.from(body.audioBase64, "base64").toString("utf8"), "http-provider-audio");
     assert.equal(body.audioByteLength, 19);
+    assert.equal(body.sampleRate, 24000);
     assert.equal(body.timing.voice_pipeline_total_ms, 42);
     assert.deepEqual(body.providerMeta, { transport: "http" });
 
@@ -237,6 +238,7 @@ test("DeepResponse server HTTP realtime turn echoes audio in echo mode", async (
     assert.equal(body.text, "echo");
     assert.equal(Buffer.from(body.audioBase64, "base64").toString("utf8"), "watch-turn-audio");
     assert.equal(body.audioByteLength, payload.length);
+    assert.equal(body.sampleRate, 16000);
     assert.equal(body.providerMeta.mode, "echo");
   } finally {
     await server.close();
