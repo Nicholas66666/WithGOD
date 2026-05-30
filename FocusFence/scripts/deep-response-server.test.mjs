@@ -48,6 +48,41 @@ test("DeepResponse server echo mode streams audio and drops old audio after barg
   }
 });
 
+test("DeepResponse server exposes recent debug events for lab diagnosis", async () => {
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "echo",
+    log: false
+  });
+  let client = null;
+
+  try {
+    const health = await fetchJSON(`http://127.0.0.1:${server.port}/health`);
+    assert.equal(health.ok, true);
+
+    const url = buildDeepResponseURL(`http://127.0.0.1:${server.port}`);
+    client = await RawWebSocketClient.connect(url, {
+      "X-Deep-Response-Client": "debug-test"
+    });
+    client.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.SessionStart, {
+      sessionID: "debug-session",
+      sampleRate: 16000
+    }));
+
+    await waitFor(async () => {
+      const debug = await fetchJSON(`http://127.0.0.1:${server.port}/debug/events`);
+      return debug.events.some((event) => event.type === "health")
+        && debug.events.some((event) => event.type === "upgrade" && event.deepResponseClient === "debug-test")
+        && debug.events.some((event) => event.type === "realtime_connection")
+        && debug.events.some((event) => event.type === "session_start");
+    });
+  } finally {
+    client?.close();
+    await server.close();
+  }
+});
+
 test("DeepResponse server provider mode runs pipeline and emits transcript text audio and timing", async () => {
   const server = await startDeepResponseServer({
     port: 0,
@@ -108,10 +143,16 @@ test("DeepResponse server provider mode runs pipeline and emits transcript text 
 async function waitFor(predicate, { timeoutMs = 2_000 } = {}) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < timeoutMs) {
-    if (predicate()) {
+    if (await predicate()) {
       return;
     }
     await new Promise((resolve) => setTimeout(resolve, 20));
   }
   throw new Error("waitFor timeout");
+}
+
+async function fetchJSON(url) {
+  const response = await fetch(url);
+  assert.equal(response.ok, true);
+  return response.json();
 }

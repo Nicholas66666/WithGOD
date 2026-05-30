@@ -16,46 +16,69 @@ final class DeepResponseRealtimeClient: ObservableObject {
     @Published private(set) var isConnected = false
     @Published private(set) var lastMessage: DeepResponseMessage?
     @Published private(set) var lastError: String?
+    @Published private(set) var lastErrorCode: String?
     @Published private(set) var lastHealthStatus: String?
     @Published private(set) var endpointDisplay: String = (try? endpointURL().absoluteString) ?? "Endpoint missing"
+    @Published private(set) var connectionStage = "idle"
     @Published private(set) var receivedAudioBytes = 0
     @Published private(set) var receivedAudioChunks = 0
 
     private var task: URLSessionWebSocketTask?
     private var receiveTask: Task<Void, Never>?
+    private var session: URLSession?
+    private var sessionDelegate: DeepResponseWebSocketDelegate?
+    private var openContinuation: CheckedContinuation<Void, Error>?
+    private var isIntentionalDisconnect = false
     private let player = DeepResponseAudioPlayer()
 
     func checkHealth() async {
         do {
+            connectionStage = "health:start"
             let url = try Self.healthURL()
             let (_, response) = try await URLSession.shared.data(from: url)
             let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
             lastHealthStatus = "Health \(statusCode)"
             lastError = statusCode == 200 ? nil : "Health \(statusCode)"
+            connectionStage = "health:\(statusCode)"
         } catch {
             lastHealthStatus = "Health fail"
-            lastError = "Health: \(error.localizedDescription)"
+            setError("Health: \(Self.describe(error))", error: error)
+            connectionStage = "health:fail"
         }
     }
 
     func connect() async throws {
         guard task == nil else { return }
 
-        let request = URLRequest(url: try Self.endpointURL())
-        let task = URLSession.shared.webSocketTask(with: request)
+        connectionStage = "ws:open"
+        var request = URLRequest(url: try Self.endpointURL())
+        request.timeoutInterval = 20
+        let sessionDelegate = DeepResponseWebSocketDelegate(client: self)
+        let session = Self.makeRealtimeSession(delegate: sessionDelegate)
+        self.sessionDelegate = sessionDelegate
+        let task = session.webSocketTask(with: request)
+        self.session = session
         self.task = task
+        isIntentionalDisconnect = false
         task.resume()
         lastError = nil
+        lastErrorCode = nil
         lastMessage = nil
-        receiveTask = Task { [weak self] in
-            await self?.receiveLoop()
-        }
         do {
+            try await waitForWebSocketOpen()
+            connectionStage = "ws:receive"
+            receiveTask = Task { [weak self] in
+                await self?.receiveLoop()
+            }
+            connectionStage = "ws:session_start"
             try await sendText(DeepResponseMessageEncoder.sessionStart(sessionID: UUID()))
             try await waitForSessionReady()
+            connectionStage = "ws:ready"
             isConnected = true
         } catch {
             disconnect()
+            setError(Self.describe(error), error: error)
+            connectionStage = "ws:failed"
             throw error
         }
     }
@@ -76,14 +99,25 @@ final class DeepResponseRealtimeClient: ObservableObject {
     func disconnect() {
         receiveTask?.cancel()
         receiveTask = nil
+        isIntentionalDisconnect = true
         task?.cancel(with: .goingAway, reason: nil)
         task = nil
+        session?.invalidateAndCancel()
+        session = nil
+        sessionDelegate = nil
+        openContinuation?.resume(throwing: CancellationError())
+        openContinuation = nil
         isConnected = false
         player.stop()
     }
 
     private func sendText(_ text: String) async throws {
         try await task?.send(.string(text))
+    }
+
+    fileprivate func setError(_ message: String, error: Error? = nil) {
+        lastError = message
+        lastErrorCode = error.map(Self.compactCode)
     }
 
     private func waitForSessionReady() async throws {
@@ -104,6 +138,75 @@ final class DeepResponseRealtimeClient: ObservableObject {
         ])
     }
 
+    private func waitForWebSocketOpen() async throws {
+        if connectionStage == "ws:didOpen" {
+            return
+        }
+
+        let startedAt = ContinuousClock.now
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                openContinuation = continuation
+                Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    while startedAt.duration(to: .now).components.seconds < 10 {
+                        if self.connectionStage.hasPrefix("ws:didOpen") {
+                            return
+                        }
+                        if let lastError = self.lastError {
+                            self.openContinuation?.resume(throwing: NSError(domain: "DeepResponseRealtimeClient", code: -1, userInfo: [
+                                NSLocalizedDescriptionKey: lastError
+                            ]))
+                            self.openContinuation = nil
+                            return
+                        }
+                        try? await Task.sleep(nanoseconds: 100_000_000)
+                    }
+                    let timeout = NSError(domain: "DeepResponseRealtimeClient", code: -1001, userInfo: [
+                        NSLocalizedDescriptionKey: "WS timeout waiting for didOpen"
+                    ])
+                    self.setError(Self.describe(timeout), error: timeout)
+                    self.connectionStage = "ws:didOpen_timeout"
+                    self.openContinuation?.resume(throwing: timeout)
+                    self.openContinuation = nil
+                }
+            }
+        } onCancel: {
+            Task { @MainActor in
+                self.openContinuation?.resume(throwing: CancellationError())
+                self.openContinuation = nil
+            }
+        }
+    }
+
+    fileprivate func handleWebSocketOpen(protocolName: String?) {
+        connectionStage = protocolName.map { "ws:didOpen \($0)" } ?? "ws:didOpen"
+        openContinuation?.resume()
+        openContinuation = nil
+    }
+
+    fileprivate func handleWebSocketClose(code: URLSessionWebSocketTask.CloseCode, reason: Data?) {
+        let reasonText = reason.flatMap { String(data: $0, encoding: .utf8) }
+        connectionStage = reasonText.map { "ws:didClose \(code.rawValue) \($0)" } ?? "ws:didClose \(code.rawValue)"
+        openContinuation?.resume(throwing: NSError(domain: "DeepResponseRealtimeClient", code: Int(code.rawValue), userInfo: [
+            NSLocalizedDescriptionKey: "WebSocket closed before ready: \(code.rawValue)"
+        ]))
+        openContinuation = nil
+    }
+
+    fileprivate func handleTaskComplete(error: Error?) {
+        guard let error else { return }
+        if isIntentionalDisconnect && openContinuation == nil {
+            return
+        }
+        if !connectionStage.hasPrefix("ws:didOpen") {
+            setError(Self.describe(error), error: error)
+            connectionStage = "ws:task_complete"
+            openContinuation?.resume(throwing: error)
+            openContinuation = nil
+        }
+    }
+
     private func receiveLoop() async {
         while !Task.isCancelled {
             do {
@@ -121,7 +224,8 @@ final class DeepResponseRealtimeClient: ObservableObject {
                 }
             } catch {
                 if !Task.isCancelled {
-                    lastError = error.localizedDescription
+                    setError(Self.describe(error), error: error)
+                    connectionStage = "ws:receive_fail"
                     isConnected = false
                 }
                 return
@@ -164,5 +268,72 @@ final class DeepResponseRealtimeClient: ObservableObject {
             throw DeepResponseClientError.missingEndpoint
         }
         return url
+    }
+
+    private static func makeRealtimeSession(delegate: URLSessionWebSocketDelegate) -> URLSession {
+        let configuration = URLSessionConfiguration.default
+        configuration.waitsForConnectivity = true
+        configuration.allowsCellularAccess = true
+        configuration.allowsConstrainedNetworkAccess = true
+        configuration.allowsExpensiveNetworkAccess = true
+        configuration.timeoutIntervalForRequest = 20
+        configuration.timeoutIntervalForResource = 30
+        return URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
+    }
+
+    private static func describe(_ error: Error) -> String {
+        let nsError = error as NSError
+        var details = "\(nsError.domain) \(nsError.code): \(nsError.localizedDescription)"
+        if let underlying = nsError.userInfo[NSUnderlyingErrorKey] as? NSError {
+            details += " | \(underlying.domain) \(underlying.code): \(underlying.localizedDescription)"
+        }
+        return details
+    }
+
+    private static func compactCode(_ error: Error) -> String {
+        let nsError = error as NSError
+        if let underlying = nsError.userInfo[NSUnderlyingErrorKey] as? NSError {
+            return "\(nsError.domain) \(nsError.code) | \(underlying.domain) \(underlying.code)"
+        }
+        return "\(nsError.domain) \(nsError.code)"
+    }
+}
+
+private final class DeepResponseWebSocketDelegate: NSObject, URLSessionWebSocketDelegate {
+    private weak var client: DeepResponseRealtimeClient?
+
+    init(client: DeepResponseRealtimeClient) {
+        self.client = client
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        webSocketTask: URLSessionWebSocketTask,
+        didOpenWithProtocol protocolName: String?
+    ) {
+        Task { @MainActor [weak client] in
+            client?.handleWebSocketOpen(protocolName: protocolName)
+        }
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        webSocketTask: URLSessionWebSocketTask,
+        didCloseWith closeCode: URLSessionWebSocketTask.CloseCode,
+        reason: Data?
+    ) {
+        Task { @MainActor [weak client] in
+            client?.handleWebSocketClose(code: closeCode, reason: reason)
+        }
+    }
+
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        didCompleteWithError error: Error?
+    ) {
+        Task { @MainActor [weak client] in
+            client?.handleTaskComplete(error: error)
+        }
     }
 }

@@ -25,9 +25,27 @@ export async function startDeepResponseServer({
   createPipeline = null,
   audioReplayIntervalMs = Number(process.env.DEEP_RESPONSE_AUDIO_REPLAY_INTERVAL_MS || 100)
 } = {}) {
+  const events = [];
+  const recordEvent = (type, details = {}) => {
+    const event = {
+      at: new Date().toISOString(),
+      type,
+      ...details
+    };
+    events.push(event);
+    if (events.length > 200) {
+      events.shift();
+    }
+    return event;
+  };
+
   const server = createServer((request, response) => {
     const url = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
     if (request.method === "GET" && url.pathname === "/health") {
+      recordEvent("health", {
+        remoteAddress: request.socket.remoteAddress || "unknown",
+        userAgent: request.headers["user-agent"] || ""
+      });
       if (log) {
         console.log(`DeepResponse health from ${request.socket.remoteAddress || "unknown"}`);
       }
@@ -39,23 +57,38 @@ export async function startDeepResponseServer({
       });
       return;
     }
+    if (request.method === "GET" && url.pathname === "/debug/events") {
+      sendJSON(response, 200, {
+        ok: true,
+        events: events.slice(-100)
+      });
+      return;
+    }
     sendJSON(response, 404, { error: "not_found" });
   });
 
   server.on("upgrade", (request, socket) => {
     const url = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
+    recordEvent("upgrade", {
+      path: url.pathname,
+      remoteAddress: request.socket.remoteAddress || "unknown",
+      userAgent: request.headers["user-agent"] || "",
+      deepResponseClient: request.headers["x-deep-response-client"] || ""
+    });
     if (log) {
       console.log(`DeepResponse upgrade from ${request.socket.remoteAddress || "unknown"} path=${url.pathname}`);
     }
     if (!isDeepResponseRealtimePath(url.pathname)) {
+      recordEvent("upgrade_rejected", { path: url.pathname, reason: "path" });
       socket.destroy();
       return;
     }
     const ws = acceptWebSocketUpgrade(request, socket);
     if (!ws) {
+      recordEvent("upgrade_rejected", { path: url.pathname, reason: "handshake" });
       return;
     }
-    handleRealtimeConnection(ws, { mode, env, createPipeline, audioReplayIntervalMs, log });
+    handleRealtimeConnection(ws, { mode, env, createPipeline, audioReplayIntervalMs, log, recordEvent });
   });
 
   await new Promise((resolve) => server.listen(port, host, resolve));
@@ -70,12 +103,13 @@ export async function startDeepResponseServer({
   };
 }
 
-function handleRealtimeConnection(ws, { mode, env, createPipeline, audioReplayIntervalMs, log }) {
+function handleRealtimeConnection(ws, { mode, env, createPipeline, audioReplayIntervalMs, log, recordEvent = () => {} }) {
+  recordEvent("realtime_connection", { mode });
   if (log) {
     console.log(`DeepResponse realtime connection mode=${mode}`);
   }
   if (mode === "echo") {
-    handleEchoConnection(ws, { log });
+    handleEchoConnection(ws, { log, recordEvent });
     return;
   }
   if (mode === "provider") {
@@ -90,7 +124,7 @@ function handleRealtimeConnection(ws, { mode, env, createPipeline, audioReplayIn
     ws.close();
 }
 
-function handleEchoConnection(ws, { log }) {
+function handleEchoConnection(ws, { log, recordEvent = () => {} }) {
   const startedAt = performance.now();
   let turnID = 0;
   let chunksIn = 0;
@@ -110,6 +144,9 @@ function handleEchoConnection(ws, { log }) {
     }
 
     if (message.type === DEEP_RESPONSE_EVENTS.SessionStart) {
+      recordEvent("session_start", {
+        sampleRate: message.sampleRate || 16000
+      });
       if (log) {
         console.log(`DeepResponse session_start sampleRate=${message.sampleRate || 16000}`);
       }
@@ -121,11 +158,13 @@ function handleEchoConnection(ws, { log }) {
     } else if (message.type === DEEP_RESPONSE_EVENTS.BargeIn) {
       turnID += 1;
       bargeIns += 1;
+      recordEvent("barge_in", { turnID, bargeIns });
       ws.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.AudioDone, {
         reason: "barge_in",
         turnID
       }));
     } else if (message.type === DEEP_RESPONSE_EVENTS.InputStop) {
+      recordEvent("input_stop", { chunksIn, chunksOut, bargeIns });
       if (log) {
         console.log(`DeepResponse input_stop chunks_in=${chunksIn} chunks_out=${chunksOut} barge_ins=${bargeIns}`);
       }

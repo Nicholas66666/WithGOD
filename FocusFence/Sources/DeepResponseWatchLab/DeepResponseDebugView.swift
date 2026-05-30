@@ -26,6 +26,17 @@ struct DeepResponseDebugView: View {
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
+                Text(client.connectionStage)
+                    .font(.caption2.monospaced())
+                    .foregroundStyle(.secondary)
+                if let errorCode = client.lastErrorCode {
+                    Text(errorCode)
+                        .font(.caption2.monospaced())
+                        .foregroundStyle(.orange)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.55)
+                        .multilineTextAlignment(.center)
+                }
                 Text("sent \(sentChunks) · recv \(client.receivedAudioChunks)")
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.secondary)
@@ -80,9 +91,9 @@ struct DeepResponseDebugView: View {
 
     private var statusBadge: some View {
         Text(client.lastError ?? status)
-            .font(.caption.weight(.semibold))
+            .font(.caption2.weight(.semibold))
             .foregroundStyle(client.lastError == nil ? .green : .orange)
-            .lineLimit(2)
+            .lineLimit(4)
             .minimumScaleFactor(0.7)
             .multilineTextAlignment(.center)
     }
