@@ -117,6 +117,39 @@ test("DeepResponse server accepts HTTP probe payloads for Watch lab fallback dia
   }
 });
 
+test("DeepResponse server echoes HTTP audio payloads for Watch lab channel validation", async () => {
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "echo",
+    log: false
+  });
+
+  try {
+    const payload = Buffer.from("watch-audio");
+    const response = await fetch(`http://127.0.0.1:${server.port}/debug/http-echo`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "X-Deep-Response-Client": "http-echo-test"
+      },
+      body: payload
+    });
+    assert.equal(response.ok, true);
+    assert.equal(response.headers.get("content-type"), "application/octet-stream");
+    assert.deepEqual(Buffer.from(await response.arrayBuffer()), payload);
+
+    await waitFor(async () => {
+      const debug = await fetchJSON(`http://127.0.0.1:${server.port}/debug/events`);
+      return debug.events.some((event) => event.type === "http_echo"
+        && event.bytes === payload.length
+        && event.deepResponseClient === "http-echo-test");
+    });
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse server provider mode runs pipeline and emits transcript text audio and timing", async () => {
   const server = await startDeepResponseServer({
     port: 0,

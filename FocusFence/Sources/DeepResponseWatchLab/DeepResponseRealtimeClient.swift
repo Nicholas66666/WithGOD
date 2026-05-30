@@ -70,6 +70,37 @@ final class DeepResponseRealtimeClient: ObservableObject {
         }
     }
 
+    func runHTTPEcho(_ audio: Data) async {
+        do {
+            connectionStage = "http_echo:start"
+            var request = URLRequest(url: try Self.httpEchoURL())
+            request.httpMethod = "POST"
+            request.timeoutInterval = 20
+            request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+            request.setValue("DeepLab-watchOS", forHTTPHeaderField: "X-Deep-Response-Client")
+
+            let (data, response) = try await URLSession.shared.upload(for: request, from: audio)
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+            lastHealthStatus = "Echo \(statusCode)"
+            guard statusCode == 200 else {
+                lastError = "Echo \(statusCode)"
+                lastErrorCode = nil
+                connectionStage = "http_echo:\(statusCode)"
+                return
+            }
+            lastError = nil
+            lastErrorCode = nil
+            receivedAudioBytes += data.count
+            receivedAudioChunks += 1
+            player.enqueuePCM16(data, sampleRate: 16_000)
+            connectionStage = "http_echo:200"
+        } catch {
+            lastHealthStatus = "Echo fail"
+            setError("Echo: \(Self.describe(error))", error: error)
+            connectionStage = "http_echo:fail"
+        }
+    }
+
     func connect() async throws {
         guard task == nil else { return }
 
@@ -298,6 +329,18 @@ final class DeepResponseRealtimeClient: ObservableObject {
         var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
         components?.scheme = endpoint.scheme == "wss" ? "https" : "http"
         components?.path = "/debug/http-probe"
+        components?.query = nil
+        guard let url = components?.url else {
+            throw DeepResponseClientError.missingEndpoint
+        }
+        return url
+    }
+
+    private static func httpEchoURL() throws -> URL {
+        let endpoint = try endpointURL()
+        var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
+        components?.scheme = endpoint.scheme == "wss" ? "https" : "http"
+        components?.path = "/debug/http-echo"
         components?.query = nil
         guard let url = components?.url else {
             throw DeepResponseClientError.missingEndpoint

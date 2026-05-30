@@ -66,6 +66,13 @@ struct DeepResponseDebugView: View {
                 .buttonStyle(.bordered)
 
                 Button {
+                    Task { await runHTTPEcho() }
+                } label: {
+                    Image(systemName: "speaker.wave.2.fill")
+                }
+                .buttonStyle(.bordered)
+
+                Button {
                     Task { await toggleConnect() }
                 } label: {
                     Image(systemName: client.isConnected ? "xmark" : "bolt.horizontal")
@@ -103,6 +110,12 @@ struct DeepResponseDebugView: View {
             .lineLimit(4)
             .minimumScaleFactor(0.7)
             .multilineTextAlignment(.center)
+    }
+
+    private func runHTTPEcho() async {
+        status = "HTTP echo"
+        await client.runHTTPEcho(Self.tonePayload(duration: 0.5))
+        status = client.lastError == nil ? "HTTP echoed" : "HTTP echo failed"
     }
 
     private func toggleConnect() async {
@@ -155,6 +168,19 @@ struct DeepResponseDebugView: View {
                 isStreaming = false
             }
         }
+    }
+
+    private static func tonePayload(duration: TimeInterval) -> Data {
+        let sampleRate = 16_000
+        let totalSamples = max(1, Int(duration * Double(sampleRate)))
+        var data = Data(capacity: totalSamples * MemoryLayout<Int16>.size)
+        for sampleIndex in 0..<totalSamples {
+            let envelope = min(1.0, Double(sampleIndex) / 320.0, Double(totalSamples - sampleIndex) / 320.0)
+            let sample = sin(2.0 * .pi * 440.0 * Double(sampleIndex) / Double(sampleRate))
+            var value = Int16(max(-1, min(1, sample * 0.22 * envelope)) * Double(Int16.max)).littleEndian
+            data.append(Data(bytes: &value, count: MemoryLayout<Int16>.size))
+        }
+        return data
     }
 
     private static func toneChunks(duration: TimeInterval, chunkDuration: TimeInterval) -> AsyncStream<Data> {

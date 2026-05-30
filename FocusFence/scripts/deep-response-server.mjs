@@ -83,6 +83,26 @@ export async function startDeepResponseServer({
       });
       return;
     }
+    if (request.method === "POST" && url.pathname === "/debug/http-echo") {
+      readRequestBody(request).then((body) => {
+        recordEvent("http_echo", {
+          bytes: body.length,
+          remoteAddress: request.socket.remoteAddress || "unknown",
+          userAgent: request.headers["user-agent"] || "",
+          deepResponseClient: request.headers["x-deep-response-client"] || ""
+        });
+        response.writeHead(200, {
+          "content-type": "application/octet-stream",
+          "content-length": body.length
+        });
+        response.end(body);
+      }).catch((error) => {
+        sendJSON(response, 500, {
+          error: error instanceof Error ? error.message : String(error)
+        });
+      });
+      return;
+    }
     sendJSON(response, 404, { error: "not_found" });
   });
 
