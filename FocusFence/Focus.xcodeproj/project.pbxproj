@@ -1,0 +1,1140 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		01C93845666F9FD2AEC4C944 /* presence-icon.svg in Resources */ = {isa = PBXBuildFile; fileRef = DD0C819671B979F2E58890B8 /* presence-icon.svg */; };
+		04E55BA292DDACA5D7663CDD /* WatchAudioRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = FAE9682D353157796E16EDEC /* WatchAudioRecorder.swift */; };
+		06A267555384A5D1CA3033DE /* TurningReflectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3FB2D53862697A891F1E0311 /* TurningReflectionService.swift */; };
+		08F9B1BED60C5BDEA77A8355 /* FocusFenceConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A6C8CA77569ABA26AA2E820 /* FocusFenceConstants.swift */; };
+		14BAEB38A359E4F8B744781E /* RuleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A042FA540F4C87F2086CEE32 /* RuleStore.swift */; };
+		17489C9662937CB0960A630C /* FocusFenceConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A6C8CA77569ABA26AA2E820 /* FocusFenceConstants.swift */; };
+		1CB7564717281079615D7B24 /* FocusFenceConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A6C8CA77569ABA26AA2E820 /* FocusFenceConstants.swift */; };
+		1F185DC326D6B30991838FAD /* WatchRealtimeSmokeTester.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15599C64030B01696003F073 /* WatchRealtimeSmokeTester.swift */; };
+		30C2A8B4F2948977D295B719 /* RuleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A042FA540F4C87F2086CEE32 /* RuleStore.swift */; };
+		3BD31AD68FFF94EAECD8E0EE /* TurningRecorderViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B392430B5EA410083222FE4 /* TurningRecorderViewModel.swift */; };
+		3CEB3D0BE59679E185B8C6DB /* PresenceSpeechTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95F45E72B4FBCAD2552AEA88 /* PresenceSpeechTranscriber.swift */; };
+		497F9D2B77D4C6DF1CFCC550 /* PresenceAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 611F4D5818FE43614E0C03F3 /* PresenceAppIntents.swift */; };
+		4C3FB84CDCCEC68BDFC74CD6 /* FocusFenceShieldConfig.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 2D79CD0CDFFB7A8DAD7321BB /* FocusFenceShieldConfig.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		51CEB40BFBBC5066C524D0EB /* FocusFenceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 698A8C622BA392F82EF2CFE0 /* FocusFenceMonitor.swift */; };
+		5435C73501E31A1D11309723 /* PresenceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78B14A8BBEB896251956DE65 /* PresenceApp.swift */; };
+		568F961F5204764A3F067504 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 21FDEF89FEFF8F8C2ED25382 /* Assets.xcassets */; };
+		6440CDD58B93EEF31AB93720 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 21FDEF89FEFF8F8C2ED25382 /* Assets.xcassets */; };
+		6FCA0283815DE0949222175B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 21FDEF89FEFF8F8C2ED25382 /* Assets.xcassets */; };
+		7CCFE07B3DB30E40710AA1A8 /* FocusFenceConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A6C8CA77569ABA26AA2E820 /* FocusFenceConstants.swift */; };
+		8C2C915FC3A2519AF4DEA16B /* RuleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A042FA540F4C87F2086CEE32 /* RuleStore.swift */; };
+		97B7C387E4828225076A5394 /* PresenceAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F35208749A215B6D29DED858 /* PresenceAnalyzer.swift */; };
+		9936550B7054DA6419119212 /* DeepResponseProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1E9246FA7D0DBD19E1EAF753 /* DeepResponseProtocol.swift */; };
+		995F139DD59170B1FF5378BD /* WatchSilentHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A4D6E9F435C6047364B057F /* WatchSilentHaptics.swift */; };
+		A05C00779F83231A7F74E38C /* focus-icon.svg in Resources */ = {isa = PBXBuildFile; fileRef = 0F0DF53670656908858FB243 /* focus-icon.svg */; };
+		A0E68748F456B134FDCAFBF7 /* FocusFenceShieldAction.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = DE32BE084467850CA3BD3EA8 /* FocusFenceShieldAction.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A77B22AF9B3F8DAD7F8F1B28 /* WatchAudioTransfer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17ED2026D51A305D50DFC04E /* WatchAudioTransfer.swift */; };
+		A95F1CA4F63CE32C04F8EAB2 /* DeepResponseDebugView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 947645C34194A9FDD586FE99 /* DeepResponseDebugView.swift */; };
+		A9E580ADEE8810CC2478B3BF /* PresenceRecord.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CDA256A1DF50B8B1A93BC3C /* PresenceRecord.swift */; };
+		AC868C633D50F1EBF48AA84F /* TurningAppIntents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85A822DF16BC1422456A1788 /* TurningAppIntents.swift */; };
+		ACBCEF61AFDC39ED469066DE /* RuleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A042FA540F4C87F2086CEE32 /* RuleStore.swift */; };
+		B71B1295731B64A416C0EE93 /* DeepResponseAudioPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F484237AEE09A9B1D98880E4 /* DeepResponseAudioPlayer.swift */; };
+		C01F648875E490E98BD7C6BF /* focus-icon.svg in Resources */ = {isa = PBXBuildFile; fileRef = 0F0DF53670656908858FB243 /* focus-icon.svg */; };
+		C0282C8927148E438DA7CFEC /* FocusFenceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A20B7E73C2EBB617657A52F7 /* FocusFenceApp.swift */; };
+		C69D680074F3FEE2FE247B8E /* WatchRealtimeAudioStreamer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A627520C56177558041629D /* WatchRealtimeAudioStreamer.swift */; };
+		CA85AFC624647B6B373E1CC8 /* presence-icon.svg in Resources */ = {isa = PBXBuildFile; fileRef = DD0C819671B979F2E58890B8 /* presence-icon.svg */; };
+		CDE198702D05991D9E7D51BB /* PresenceWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D13937118EF5C0CF50ACBE9D /* PresenceWatchApp.swift */; };
+		D375641CDCAFFBEB15C1E75B /* PresenceHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F99EEED3CF57F0ED34B2AB33 /* PresenceHomeView.swift */; };
+		D7A2AB757D7662CA06C2F17A /* PresenceWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 253FCCB096C0E132A4DDBBE2 /* PresenceWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		E08F6AB845824CC5E69C166F /* FocusFenceMonitor.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 67E4897D3A086954E2693D15 /* FocusFenceMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		E3A8A2C6539508D3C27A45FE /* PresenceServiceClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51A59EDB21D99DC3573DAED6 /* PresenceServiceClient.swift */; };
+		E55CA6280875A6CA20EE7EAC /* PresenceRecordStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06DEF1371E616F8470B867FC /* PresenceRecordStore.swift */; };
+		E711B4E8889B89E77112C52D /* DeepResponseWatchLabApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53F123EB364B10B926792F59 /* DeepResponseWatchLabApp.swift */; };
+		EA2C1AFD5B31AD55CDAB278C /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0FE8138FAD3608ED6439544 /* ContentView.swift */; };
+		ED5BB89ECDA7D9E70930DCC5 /* FocusFenceShieldConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 905DE6DA016970D15CD97928 /* FocusFenceShieldConfiguration.swift */; };
+		EE07F51705867F91D546BF07 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 21FDEF89FEFF8F8C2ED25382 /* Assets.xcassets */; };
+		EE4D6651629EAFB9E432F453 /* DeepResponseRealtimeClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = F316E2351F0B13E20DDBCBC3 /* DeepResponseRealtimeClient.swift */; };
+		FCD5A8FA0C590465DD2FEB96 /* FocusFenceShieldAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48EB9F4985E8467EFA3745A2 /* FocusFenceShieldAction.swift */; };
+		FD177784D820CC964E37C769 /* WatchTurningView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6213B4D311C4E60CDD2C01EC /* WatchTurningView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		17844572D3404F444F527BAC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B9510AFBA5575B4A10DD7DE3 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E14D6B37704AA4EA72646CF3;
+			remoteInfo = FocusFenceMonitor;
+		};
+		74509541980216ECB3B9F2BE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B9510AFBA5575B4A10DD7DE3 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 90F9280557D51C96375DF1E9;
+			remoteInfo = PresenceWatch;
+		};
+		B8138D3B96CA584319BD10EA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B9510AFBA5575B4A10DD7DE3 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = B07900B96E6CEDB233DFD01E;
+			remoteInfo = FocusFenceShieldAction;
+		};
+		C0C05B10C2D91389DF87E5BD /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = B9510AFBA5575B4A10DD7DE3 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CB22B2F655C8DE96169CFC06;
+			remoteInfo = FocusFenceShieldConfig;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		B54A23B9CD4F83FA3E171CD3 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				D7A2AB757D7662CA06C2F17A /* PresenceWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E61B723C9AFCB7D1D6FABA8E /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				E08F6AB845824CC5E69C166F /* FocusFenceMonitor.appex in Embed Foundation Extensions */,
+				4C3FB84CDCCEC68BDFC74CD6 /* FocusFenceShieldConfig.appex in Embed Foundation Extensions */,
+				A0E68748F456B134FDCAFBF7 /* FocusFenceShieldAction.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		06DEF1371E616F8470B867FC /* PresenceRecordStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceRecordStore.swift; sourceTree = "<group>"; };
+		0F0DF53670656908858FB243 /* focus-icon.svg */ = {isa = PBXFileReference; path = "focus-icon.svg"; sourceTree = "<group>"; };
+		15599C64030B01696003F073 /* WatchRealtimeSmokeTester.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRealtimeSmokeTester.swift; sourceTree = "<group>"; };
+		17ED2026D51A305D50DFC04E /* WatchAudioTransfer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchAudioTransfer.swift; sourceTree = "<group>"; };
+		187B5A8E50D947DF048CAD5D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		1DBCBE6BC94C07A112D459CB /* FocusFenceShieldConfig.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FocusFenceShieldConfig.entitlements; sourceTree = "<group>"; };
+		1E9246FA7D0DBD19E1EAF753 /* DeepResponseProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepResponseProtocol.swift; sourceTree = "<group>"; };
+		21FDEF89FEFF8F8C2ED25382 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		253FCCB096C0E132A4DDBBE2 /* PresenceWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PresenceWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		28F038BABFE168EE6DF398B0 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		2A4D6E9F435C6047364B057F /* WatchSilentHaptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSilentHaptics.swift; sourceTree = "<group>"; };
+		2D79CD0CDFFB7A8DAD7321BB /* FocusFenceShieldConfig.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = FocusFenceShieldConfig.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		3706609F277E3C2D880B1D31 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		3FB2D53862697A891F1E0311 /* TurningReflectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurningReflectionService.swift; sourceTree = "<group>"; };
+		48EB9F4985E8467EFA3745A2 /* FocusFenceShieldAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusFenceShieldAction.swift; sourceTree = "<group>"; };
+		518695297D7BAE60F854EF81 /* Focus.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Focus.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		51A59EDB21D99DC3573DAED6 /* PresenceServiceClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceServiceClient.swift; sourceTree = "<group>"; };
+		53F123EB364B10B926792F59 /* DeepResponseWatchLabApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepResponseWatchLabApp.swift; sourceTree = "<group>"; };
+		5A6C8CA77569ABA26AA2E820 /* FocusFenceConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusFenceConstants.swift; sourceTree = "<group>"; };
+		611F4D5818FE43614E0C03F3 /* PresenceAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceAppIntents.swift; sourceTree = "<group>"; };
+		6213B4D311C4E60CDD2C01EC /* WatchTurningView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchTurningView.swift; sourceTree = "<group>"; };
+		67E4897D3A086954E2693D15 /* FocusFenceMonitor.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = FocusFenceMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		691C004E0C4D3A761C7DFB91 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		698A8C622BA392F82EF2CFE0 /* FocusFenceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusFenceMonitor.swift; sourceTree = "<group>"; };
+		6A627520C56177558041629D /* WatchRealtimeAudioStreamer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchRealtimeAudioStreamer.swift; sourceTree = "<group>"; };
+		6B392430B5EA410083222FE4 /* TurningRecorderViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurningRecorderViewModel.swift; sourceTree = "<group>"; };
+		726FDA41CA90747C1543FB45 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		78B14A8BBEB896251956DE65 /* PresenceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceApp.swift; sourceTree = "<group>"; };
+		812CBA97E31662E6EA721701 /* FocusFence.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FocusFence.entitlements; sourceTree = "<group>"; };
+		85A822DF16BC1422456A1788 /* TurningAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurningAppIntents.swift; sourceTree = "<group>"; };
+		905DE6DA016970D15CD97928 /* FocusFenceShieldConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusFenceShieldConfiguration.swift; sourceTree = "<group>"; };
+		947645C34194A9FDD586FE99 /* DeepResponseDebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepResponseDebugView.swift; sourceTree = "<group>"; };
+		95F45E72B4FBCAD2552AEA88 /* PresenceSpeechTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceSpeechTranscriber.swift; sourceTree = "<group>"; };
+		9CDA256A1DF50B8B1A93BC3C /* PresenceRecord.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceRecord.swift; sourceTree = "<group>"; };
+		A042FA540F4C87F2086CEE32 /* RuleStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleStore.swift; sourceTree = "<group>"; };
+		A20B7E73C2EBB617657A52F7 /* FocusFenceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusFenceApp.swift; sourceTree = "<group>"; };
+		AB70E51595615783C2F52BA2 /* FocusFenceShieldAction.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FocusFenceShieldAction.entitlements; sourceTree = "<group>"; };
+		B281E4BCF2B5A451ECF0129C /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		B792DA95D9D9EBA8421A9381 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		C797F269170BD48CED503D9F /* FocusFenceMonitor.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FocusFenceMonitor.entitlements; sourceTree = "<group>"; };
+		C94A4EEBFD749348E807A4B3 /* DeepResponseWatchLab.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DeepResponseWatchLab.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		D13937118EF5C0CF50ACBE9D /* PresenceWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceWatchApp.swift; sourceTree = "<group>"; };
+		DD0C819671B979F2E58890B8 /* presence-icon.svg */ = {isa = PBXFileReference; path = "presence-icon.svg"; sourceTree = "<group>"; };
+		DE32BE084467850CA3BD3EA8 /* FocusFenceShieldAction.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = FocusFenceShieldAction.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		E0FE8138FAD3608ED6439544 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		EAE89CA6562E524FA831D934 /* Presence.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Presence.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F316E2351F0B13E20DDBCBC3 /* DeepResponseRealtimeClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepResponseRealtimeClient.swift; sourceTree = "<group>"; };
+		F35208749A215B6D29DED858 /* PresenceAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceAnalyzer.swift; sourceTree = "<group>"; };
+		F484237AEE09A9B1D98880E4 /* DeepResponseAudioPlayer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepResponseAudioPlayer.swift; sourceTree = "<group>"; };
+		F99EEED3CF57F0ED34B2AB33 /* PresenceHomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceHomeView.swift; sourceTree = "<group>"; };
+		FAE9682D353157796E16EDEC /* WatchAudioRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchAudioRecorder.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		19604E731A2767F1D1C277D7 /* ShieldActionExtension */ = {
+			isa = PBXGroup;
+			children = (
+				AB70E51595615783C2F52BA2 /* FocusFenceShieldAction.entitlements */,
+				48EB9F4985E8467EFA3745A2 /* FocusFenceShieldAction.swift */,
+				B281E4BCF2B5A451ECF0129C /* Info.plist */,
+			);
+			name = ShieldActionExtension;
+			path = Sources/ShieldActionExtension;
+			sourceTree = "<group>";
+		};
+		27056FCA73BF2545B45DC0D0 /* PresenceApp */ = {
+			isa = PBXGroup;
+			children = (
+				726FDA41CA90747C1543FB45 /* Info.plist */,
+				F35208749A215B6D29DED858 /* PresenceAnalyzer.swift */,
+				78B14A8BBEB896251956DE65 /* PresenceApp.swift */,
+				611F4D5818FE43614E0C03F3 /* PresenceAppIntents.swift */,
+				F99EEED3CF57F0ED34B2AB33 /* PresenceHomeView.swift */,
+				9CDA256A1DF50B8B1A93BC3C /* PresenceRecord.swift */,
+				06DEF1371E616F8470B867FC /* PresenceRecordStore.swift */,
+				51A59EDB21D99DC3573DAED6 /* PresenceServiceClient.swift */,
+				95F45E72B4FBCAD2552AEA88 /* PresenceSpeechTranscriber.swift */,
+			);
+			name = PresenceApp;
+			path = Sources/PresenceApp;
+			sourceTree = "<group>";
+		};
+		35200746B4813331D29D412E /* Brand */ = {
+			isa = PBXGroup;
+			children = (
+				0F0DF53670656908858FB243 /* focus-icon.svg */,
+				DD0C819671B979F2E58890B8 /* presence-icon.svg */,
+			);
+			path = Brand;
+			sourceTree = "<group>";
+		};
+		49157F1C73D1D909C88A24B6 = {
+			isa = PBXGroup;
+			children = (
+				95B1F2664AA6AF1ABC33049A /* DeepResponseWatchLab */,
+				FAE956B3C40E8AA42424200C /* DeviceActivityMonitorExtension */,
+				977602AD21F9A1CF638909CC /* FocusFenceApp */,
+				27056FCA73BF2545B45DC0D0 /* PresenceApp */,
+				F514E3B6136645D41A79C3F8 /* PresenceWatchApp */,
+				93475650F775964D6A8946A2 /* Resources */,
+				6F7A057990F9B8932FF7196B /* Shared */,
+				19604E731A2767F1D1C277D7 /* ShieldActionExtension */,
+				F82F44BCD11050C8CA240D44 /* ShieldConfigurationExtension */,
+				9EBF9967978A0245C0BE6BE1 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		6F7A057990F9B8932FF7196B /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				5A6C8CA77569ABA26AA2E820 /* FocusFenceConstants.swift */,
+				A042FA540F4C87F2086CEE32 /* RuleStore.swift */,
+			);
+			name = Shared;
+			path = Sources/Shared;
+			sourceTree = "<group>";
+		};
+		93475650F775964D6A8946A2 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				21FDEF89FEFF8F8C2ED25382 /* Assets.xcassets */,
+				35200746B4813331D29D412E /* Brand */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		95B1F2664AA6AF1ABC33049A /* DeepResponseWatchLab */ = {
+			isa = PBXGroup;
+			children = (
+				F484237AEE09A9B1D98880E4 /* DeepResponseAudioPlayer.swift */,
+				947645C34194A9FDD586FE99 /* DeepResponseDebugView.swift */,
+				1E9246FA7D0DBD19E1EAF753 /* DeepResponseProtocol.swift */,
+				F316E2351F0B13E20DDBCBC3 /* DeepResponseRealtimeClient.swift */,
+				53F123EB364B10B926792F59 /* DeepResponseWatchLabApp.swift */,
+				B792DA95D9D9EBA8421A9381 /* Info.plist */,
+			);
+			name = DeepResponseWatchLab;
+			path = Sources/DeepResponseWatchLab;
+			sourceTree = "<group>";
+		};
+		977602AD21F9A1CF638909CC /* FocusFenceApp */ = {
+			isa = PBXGroup;
+			children = (
+				E0FE8138FAD3608ED6439544 /* ContentView.swift */,
+				812CBA97E31662E6EA721701 /* FocusFence.entitlements */,
+				A20B7E73C2EBB617657A52F7 /* FocusFenceApp.swift */,
+				3706609F277E3C2D880B1D31 /* Info.plist */,
+			);
+			name = FocusFenceApp;
+			path = Sources/FocusFenceApp;
+			sourceTree = "<group>";
+		};
+		9EBF9967978A0245C0BE6BE1 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C94A4EEBFD749348E807A4B3 /* DeepResponseWatchLab.app */,
+				518695297D7BAE60F854EF81 /* Focus.app */,
+				67E4897D3A086954E2693D15 /* FocusFenceMonitor.appex */,
+				DE32BE084467850CA3BD3EA8 /* FocusFenceShieldAction.appex */,
+				2D79CD0CDFFB7A8DAD7321BB /* FocusFenceShieldConfig.appex */,
+				EAE89CA6562E524FA831D934 /* Presence.app */,
+				253FCCB096C0E132A4DDBBE2 /* PresenceWatch.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F514E3B6136645D41A79C3F8 /* PresenceWatchApp */ = {
+			isa = PBXGroup;
+			children = (
+				691C004E0C4D3A761C7DFB91 /* Info.plist */,
+				D13937118EF5C0CF50ACBE9D /* PresenceWatchApp.swift */,
+				85A822DF16BC1422456A1788 /* TurningAppIntents.swift */,
+				6B392430B5EA410083222FE4 /* TurningRecorderViewModel.swift */,
+				3FB2D53862697A891F1E0311 /* TurningReflectionService.swift */,
+				FAE9682D353157796E16EDEC /* WatchAudioRecorder.swift */,
+				17ED2026D51A305D50DFC04E /* WatchAudioTransfer.swift */,
+				6A627520C56177558041629D /* WatchRealtimeAudioStreamer.swift */,
+				15599C64030B01696003F073 /* WatchRealtimeSmokeTester.swift */,
+				2A4D6E9F435C6047364B057F /* WatchSilentHaptics.swift */,
+				6213B4D311C4E60CDD2C01EC /* WatchTurningView.swift */,
+			);
+			name = PresenceWatchApp;
+			path = Sources/PresenceWatchApp;
+			sourceTree = "<group>";
+		};
+		F82F44BCD11050C8CA240D44 /* ShieldConfigurationExtension */ = {
+			isa = PBXGroup;
+			children = (
+				1DBCBE6BC94C07A112D459CB /* FocusFenceShieldConfig.entitlements */,
+				905DE6DA016970D15CD97928 /* FocusFenceShieldConfiguration.swift */,
+				187B5A8E50D947DF048CAD5D /* Info.plist */,
+			);
+			name = ShieldConfigurationExtension;
+			path = Sources/ShieldConfigurationExtension;
+			sourceTree = "<group>";
+		};
+		FAE956B3C40E8AA42424200C /* DeviceActivityMonitorExtension */ = {
+			isa = PBXGroup;
+			children = (
+				C797F269170BD48CED503D9F /* FocusFenceMonitor.entitlements */,
+				698A8C622BA392F82EF2CFE0 /* FocusFenceMonitor.swift */,
+				28F038BABFE168EE6DF398B0 /* Info.plist */,
+			);
+			name = DeviceActivityMonitorExtension;
+			path = Sources/DeviceActivityMonitorExtension;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		35E5616ADFD8C6FFC06698FB /* Focus */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 2CB8D65296355655A75EBD54 /* Build configuration list for PBXNativeTarget "Focus" */;
+			buildPhases = (
+				237CFCF817368DAAF3E7D580 /* Sources */,
+				DAB69EA8AAB55D853F05C6EA /* Resources */,
+				E61B723C9AFCB7D1D6FABA8E /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CE08271DFE465CE34F4D7F93 /* PBXTargetDependency */,
+				052E8590CF1758A74F9A01BA /* PBXTargetDependency */,
+				4C3147EB1383FB907A385218 /* PBXTargetDependency */,
+			);
+			name = Focus;
+			packageProductDependencies = (
+			);
+			productName = Focus;
+			productReference = 518695297D7BAE60F854EF81 /* Focus.app */;
+			productType = "com.apple.product-type.application";
+		};
+		90F9280557D51C96375DF1E9 /* PresenceWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4BA168791D5AFD9E9EA80C7B /* Build configuration list for PBXNativeTarget "PresenceWatch" */;
+			buildPhases = (
+				8DB27C1125C72B07B48E097E /* Sources */,
+				6D963380F387F53AAA5645DD /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PresenceWatch;
+			packageProductDependencies = (
+			);
+			productName = PresenceWatch;
+			productReference = 253FCCB096C0E132A4DDBBE2 /* PresenceWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
+		B07900B96E6CEDB233DFD01E /* FocusFenceShieldAction */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 03F62331D68A539FEC57002F /* Build configuration list for PBXNativeTarget "FocusFenceShieldAction" */;
+			buildPhases = (
+				6BBA140263D7395855E9B137 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FocusFenceShieldAction;
+			packageProductDependencies = (
+			);
+			productName = FocusFenceShieldAction;
+			productReference = DE32BE084467850CA3BD3EA8 /* FocusFenceShieldAction.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		C3E4A7A65004F213005D88E4 /* Presence */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 4EDA54561D43DBC6AC27E89A /* Build configuration list for PBXNativeTarget "Presence" */;
+			buildPhases = (
+				E08298C303169069F55C875A /* Sources */,
+				F02912C474E36BCADDF74D23 /* Resources */,
+				B54A23B9CD4F83FA3E171CD3 /* Embed Watch Content */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				5148F8BDE48ACCD32685CDFC /* PBXTargetDependency */,
+			);
+			name = Presence;
+			packageProductDependencies = (
+			);
+			productName = Presence;
+			productReference = EAE89CA6562E524FA831D934 /* Presence.app */;
+			productType = "com.apple.product-type.application";
+		};
+		CB22B2F655C8DE96169CFC06 /* FocusFenceShieldConfig */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 696C81A82D8F63E549D88CA2 /* Build configuration list for PBXNativeTarget "FocusFenceShieldConfig" */;
+			buildPhases = (
+				CA98D5C146EB7AD85164F080 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FocusFenceShieldConfig;
+			packageProductDependencies = (
+			);
+			productName = FocusFenceShieldConfig;
+			productReference = 2D79CD0CDFFB7A8DAD7321BB /* FocusFenceShieldConfig.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		DFEBBCCACD54610B1E99A82F /* DeepResponseWatchLab */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D8A7C873CAE142CC7CC63B2E /* Build configuration list for PBXNativeTarget "DeepResponseWatchLab" */;
+			buildPhases = (
+				BD0C5A0E2055C1060163C99D /* Sources */,
+				425A24DAC6CC8748CBF4C3FB /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = DeepResponseWatchLab;
+			packageProductDependencies = (
+			);
+			productName = DeepResponseWatchLab;
+			productReference = C94A4EEBFD749348E807A4B3 /* DeepResponseWatchLab.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E14D6B37704AA4EA72646CF3 /* FocusFenceMonitor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CADDC6BBDD71C13427E6DEAB /* Build configuration list for PBXNativeTarget "FocusFenceMonitor" */;
+			buildPhases = (
+				CE1BE863E6F820983C775FB8 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FocusFenceMonitor;
+			packageProductDependencies = (
+			);
+			productName = FocusFenceMonitor;
+			productReference = 67E4897D3A086954E2693D15 /* FocusFenceMonitor.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		B9510AFBA5575B4A10DD7DE3 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					35E5616ADFD8C6FFC06698FB = {
+						DevelopmentTeam = L35YTM9PGC;
+						ProvisioningStyle = Automatic;
+					};
+					90F9280557D51C96375DF1E9 = {
+						DevelopmentTeam = L35YTM9PGC;
+						ProvisioningStyle = Automatic;
+					};
+					B07900B96E6CEDB233DFD01E = {
+						DevelopmentTeam = L35YTM9PGC;
+						ProvisioningStyle = Automatic;
+					};
+					C3E4A7A65004F213005D88E4 = {
+						DevelopmentTeam = L35YTM9PGC;
+						ProvisioningStyle = Automatic;
+					};
+					CB22B2F655C8DE96169CFC06 = {
+						DevelopmentTeam = L35YTM9PGC;
+						ProvisioningStyle = Automatic;
+					};
+					DFEBBCCACD54610B1E99A82F = {
+						DevelopmentTeam = L35YTM9PGC;
+						ProvisioningStyle = Automatic;
+					};
+					E14D6B37704AA4EA72646CF3 = {
+						DevelopmentTeam = L35YTM9PGC;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 226E5551565773B903BCC2B3 /* Build configuration list for PBXProject "Focus" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 49157F1C73D1D909C88A24B6;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 9EBF9967978A0245C0BE6BE1 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				DFEBBCCACD54610B1E99A82F /* DeepResponseWatchLab */,
+				35E5616ADFD8C6FFC06698FB /* Focus */,
+				E14D6B37704AA4EA72646CF3 /* FocusFenceMonitor */,
+				B07900B96E6CEDB233DFD01E /* FocusFenceShieldAction */,
+				CB22B2F655C8DE96169CFC06 /* FocusFenceShieldConfig */,
+				C3E4A7A65004F213005D88E4 /* Presence */,
+				90F9280557D51C96375DF1E9 /* PresenceWatch */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		425A24DAC6CC8748CBF4C3FB /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EE07F51705867F91D546BF07 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6D963380F387F53AAA5645DD /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				568F961F5204764A3F067504 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DAB69EA8AAB55D853F05C6EA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6440CDD58B93EEF31AB93720 /* Assets.xcassets in Resources */,
+				C01F648875E490E98BD7C6BF /* focus-icon.svg in Resources */,
+				01C93845666F9FD2AEC4C944 /* presence-icon.svg in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F02912C474E36BCADDF74D23 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6FCA0283815DE0949222175B /* Assets.xcassets in Resources */,
+				A05C00779F83231A7F74E38C /* focus-icon.svg in Resources */,
+				CA85AFC624647B6B373E1CC8 /* presence-icon.svg in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		237CFCF817368DAAF3E7D580 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				EA2C1AFD5B31AD55CDAB278C /* ContentView.swift in Sources */,
+				C0282C8927148E438DA7CFEC /* FocusFenceApp.swift in Sources */,
+				1CB7564717281079615D7B24 /* FocusFenceConstants.swift in Sources */,
+				30C2A8B4F2948977D295B719 /* RuleStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		6BBA140263D7395855E9B137 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				7CCFE07B3DB30E40710AA1A8 /* FocusFenceConstants.swift in Sources */,
+				FCD5A8FA0C590465DD2FEB96 /* FocusFenceShieldAction.swift in Sources */,
+				ACBCEF61AFDC39ED469066DE /* RuleStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		8DB27C1125C72B07B48E097E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CDE198702D05991D9E7D51BB /* PresenceWatchApp.swift in Sources */,
+				AC868C633D50F1EBF48AA84F /* TurningAppIntents.swift in Sources */,
+				3BD31AD68FFF94EAECD8E0EE /* TurningRecorderViewModel.swift in Sources */,
+				06A267555384A5D1CA3033DE /* TurningReflectionService.swift in Sources */,
+				04E55BA292DDACA5D7663CDD /* WatchAudioRecorder.swift in Sources */,
+				A77B22AF9B3F8DAD7F8F1B28 /* WatchAudioTransfer.swift in Sources */,
+				C69D680074F3FEE2FE247B8E /* WatchRealtimeAudioStreamer.swift in Sources */,
+				1F185DC326D6B30991838FAD /* WatchRealtimeSmokeTester.swift in Sources */,
+				995F139DD59170B1FF5378BD /* WatchSilentHaptics.swift in Sources */,
+				FD177784D820CC964E37C769 /* WatchTurningView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		BD0C5A0E2055C1060163C99D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B71B1295731B64A416C0EE93 /* DeepResponseAudioPlayer.swift in Sources */,
+				A95F1CA4F63CE32C04F8EAB2 /* DeepResponseDebugView.swift in Sources */,
+				9936550B7054DA6419119212 /* DeepResponseProtocol.swift in Sources */,
+				EE4D6651629EAFB9E432F453 /* DeepResponseRealtimeClient.swift in Sources */,
+				E711B4E8889B89E77112C52D /* DeepResponseWatchLabApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CA98D5C146EB7AD85164F080 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				17489C9662937CB0960A630C /* FocusFenceConstants.swift in Sources */,
+				ED5BB89ECDA7D9E70930DCC5 /* FocusFenceShieldConfiguration.swift in Sources */,
+				14BAEB38A359E4F8B744781E /* RuleStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CE1BE863E6F820983C775FB8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				08F9B1BED60C5BDEA77A8355 /* FocusFenceConstants.swift in Sources */,
+				51CEB40BFBBC5066C524D0EB /* FocusFenceMonitor.swift in Sources */,
+				8C2C915FC3A2519AF4DEA16B /* RuleStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E08298C303169069F55C875A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				97B7C387E4828225076A5394 /* PresenceAnalyzer.swift in Sources */,
+				5435C73501E31A1D11309723 /* PresenceApp.swift in Sources */,
+				497F9D2B77D4C6DF1CFCC550 /* PresenceAppIntents.swift in Sources */,
+				D375641CDCAFFBEB15C1E75B /* PresenceHomeView.swift in Sources */,
+				A9E580ADEE8810CC2478B3BF /* PresenceRecord.swift in Sources */,
+				E55CA6280875A6CA20EE7EAC /* PresenceRecordStore.swift in Sources */,
+				E3A8A2C6539508D3C27A45FE /* PresenceServiceClient.swift in Sources */,
+				3CEB3D0BE59679E185B8C6DB /* PresenceSpeechTranscriber.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		052E8590CF1758A74F9A01BA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CB22B2F655C8DE96169CFC06 /* FocusFenceShieldConfig */;
+			targetProxy = C0C05B10C2D91389DF87E5BD /* PBXContainerItemProxy */;
+		};
+		4C3147EB1383FB907A385218 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = B07900B96E6CEDB233DFD01E /* FocusFenceShieldAction */;
+			targetProxy = B8138D3B96CA584319BD10EA /* PBXContainerItemProxy */;
+		};
+		5148F8BDE48ACCD32685CDFC /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 90F9280557D51C96375DF1E9 /* PresenceWatch */;
+			targetProxy = 74509541980216ECB3B9F2BE /* PBXContainerItemProxy */;
+		};
+		CE08271DFE465CE34F4D7F93 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E14D6B37704AA4EA72646CF3 /* FocusFenceMonitor */;
+			targetProxy = 17844572D3404F444F527BAC /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		08EABD97AA6BAB7E32B2FD08 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Sources/ShieldConfigurationExtension/FocusFenceShieldConfig.entitlements;
+				INFOPLIST_FILE = Sources/ShieldConfigurationExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleShortVersionString = "$(MARKETING_VERSION)";
+				INFOPLIST_KEY_CFBundleVersion = "$(CURRENT_PROJECT_VERSION)";
+				INFOPLIST_KEY_FocusFenceAppGroupIdentifier = "$(APP_GROUP_IDENTIFIER)";
+				INFOPLIST_KEY_NSExtension = "[:]";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).FocusFenceB9.shield-config";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		0BD6AEB56740E52885E12C74 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = PresenceAppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				INFOPLIST_FILE = Sources/DeepResponseWatchLab/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).DeepResponseWatchLab";
+				PRODUCT_NAME = DeepLab;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		12C605A7CABD7CB32837C1C8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Sources/ShieldConfigurationExtension/FocusFenceShieldConfig.entitlements;
+				INFOPLIST_FILE = Sources/ShieldConfigurationExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleShortVersionString = "$(MARKETING_VERSION)";
+				INFOPLIST_KEY_CFBundleVersion = "$(CURRENT_PROJECT_VERSION)";
+				INFOPLIST_KEY_FocusFenceAppGroupIdentifier = "$(APP_GROUP_IDENTIFIER)";
+				INFOPLIST_KEY_NSExtension = "[:]";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).FocusFenceB9.shield-config";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		1380A3402DEE8408A2BE1698 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = PresenceAppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				INFOPLIST_FILE = Sources/PresenceWatchApp/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).WithGod.watchkitapp";
+				PRODUCT_NAME = Presence;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		20CE350C819EB75030C2FD11 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Sources/DeviceActivityMonitorExtension/FocusFenceMonitor.entitlements;
+				INFOPLIST_FILE = Sources/DeviceActivityMonitorExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleShortVersionString = "$(MARKETING_VERSION)";
+				INFOPLIST_KEY_CFBundleVersion = "$(CURRENT_PROJECT_VERSION)";
+				INFOPLIST_KEY_FocusFenceAppGroupIdentifier = "$(APP_GROUP_IDENTIFIER)";
+				INFOPLIST_KEY_NSExtension = "[:]";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).FocusFenceB9.monitor";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		346A62C7A8F1724684A505FA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = PresenceAppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				INFOPLIST_FILE = Sources/DeepResponseWatchLab/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).DeepResponseWatchLab";
+				PRODUCT_NAME = DeepLab;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		3536CE4417B94BDBCEE19C05 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Sources/ShieldActionExtension/FocusFenceShieldAction.entitlements;
+				INFOPLIST_FILE = Sources/ShieldActionExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleShortVersionString = "$(MARKETING_VERSION)";
+				INFOPLIST_KEY_CFBundleVersion = "$(CURRENT_PROJECT_VERSION)";
+				INFOPLIST_KEY_FocusFenceAppGroupIdentifier = "$(APP_GROUP_IDENTIFIER)";
+				INFOPLIST_KEY_NSExtension = "[:]";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).FocusFenceB9.shield-action";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		5F734F5E79A893180E2CF1DC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = PresenceAppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				INFOPLIST_FILE = Sources/PresenceWatchApp/Info.plist;
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).WithGod.watchkitapp";
+				PRODUCT_NAME = Presence;
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		8587521BD5105618BCD77254 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/FocusFenceApp/FocusFence.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Sources/FocusFenceApp/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Focus;
+				INFOPLIST_KEY_CFBundleShortVersionString = "$(MARKETING_VERSION)";
+				INFOPLIST_KEY_CFBundleVersion = "$(CURRENT_PROJECT_VERSION)";
+				INFOPLIST_KEY_FocusFenceAppGroupIdentifier = "$(APP_GROUP_IDENTIFIER)";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).FocusFenceB9";
+				PRODUCT_NAME = Focus;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		9731F43DCE78734089DEA006 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/FocusFenceApp/FocusFence.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Sources/FocusFenceApp/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Focus;
+				INFOPLIST_KEY_CFBundleShortVersionString = "$(MARKETING_VERSION)";
+				INFOPLIST_KEY_CFBundleVersion = "$(CURRENT_PROJECT_VERSION)";
+				INFOPLIST_KEY_FocusFenceAppGroupIdentifier = "$(APP_GROUP_IDENTIFIER)";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).FocusFenceB9";
+				PRODUCT_NAME = Focus;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		BC780C33D4516B269F3CBA84 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Sources/DeviceActivityMonitorExtension/FocusFenceMonitor.entitlements;
+				INFOPLIST_FILE = Sources/DeviceActivityMonitorExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleShortVersionString = "$(MARKETING_VERSION)";
+				INFOPLIST_KEY_CFBundleVersion = "$(CURRENT_PROJECT_VERSION)";
+				INFOPLIST_KEY_FocusFenceAppGroupIdentifier = "$(APP_GROUP_IDENTIFIER)";
+				INFOPLIST_KEY_NSExtension = "[:]";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).FocusFenceB9.monitor";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D466E6AA1774137C0FA58D65 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Sources/ShieldActionExtension/FocusFenceShieldAction.entitlements;
+				INFOPLIST_FILE = Sources/ShieldActionExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleShortVersionString = "$(MARKETING_VERSION)";
+				INFOPLIST_KEY_CFBundleVersion = "$(CURRENT_PROJECT_VERSION)";
+				INFOPLIST_KEY_FocusFenceAppGroupIdentifier = "$(APP_GROUP_IDENTIFIER)";
+				INFOPLIST_KEY_NSExtension = "[:]";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).FocusFenceB9.shield-action";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D5B81EF6BB7A7212E30F1A7B /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = PresenceAppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Sources/PresenceApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).WithGod";
+				PRODUCT_NAME = Presence;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D88B7B0D4E23758FF2811328 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				APP_BUNDLE_PREFIX = com.nicho;
+				APP_GROUP_IDENTIFIER = group.com.nicho.FocusFence;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 21;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = L35YTM9PGC;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		E9A51780AE1BC253450E8497 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = PresenceAppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Sources/PresenceApp/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).WithGod";
+				PRODUCT_NAME = Presence;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		FD6999CF2031467FE830AC52 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				APP_BUNDLE_PREFIX = com.nicho;
+				APP_GROUP_IDENTIFIER = group.com.nicho.FocusFence;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 21;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = L35YTM9PGC;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		03F62331D68A539FEC57002F /* Build configuration list for PBXNativeTarget "FocusFenceShieldAction" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D466E6AA1774137C0FA58D65 /* Debug */,
+				3536CE4417B94BDBCEE19C05 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		226E5551565773B903BCC2B3 /* Build configuration list for PBXProject "Focus" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FD6999CF2031467FE830AC52 /* Debug */,
+				D88B7B0D4E23758FF2811328 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		2CB8D65296355655A75EBD54 /* Build configuration list for PBXNativeTarget "Focus" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9731F43DCE78734089DEA006 /* Debug */,
+				8587521BD5105618BCD77254 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		4BA168791D5AFD9E9EA80C7B /* Build configuration list for PBXNativeTarget "PresenceWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5F734F5E79A893180E2CF1DC /* Debug */,
+				1380A3402DEE8408A2BE1698 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		4EDA54561D43DBC6AC27E89A /* Build configuration list for PBXNativeTarget "Presence" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E9A51780AE1BC253450E8497 /* Debug */,
+				D5B81EF6BB7A7212E30F1A7B /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		696C81A82D8F63E549D88CA2 /* Build configuration list for PBXNativeTarget "FocusFenceShieldConfig" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				12C605A7CABD7CB32837C1C8 /* Debug */,
+				08EABD97AA6BAB7E32B2FD08 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		CADDC6BBDD71C13427E6DEAB /* Build configuration list for PBXNativeTarget "FocusFenceMonitor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				20CE350C819EB75030C2FD11 /* Debug */,
+				BC780C33D4516B269F3CBA84 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D8A7C873CAE142CC7CC63B2E /* Build configuration list for PBXNativeTarget "DeepResponseWatchLab" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				346A62C7A8F1724684A505FA /* Debug */,
+				0BD6AEB56740E52885E12C74 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = B9510AFBA5575B4A10DD7DE3 /* Project object */;
+}

@@ -1,0 +1,4 @@
+project_id = "with-god-presence"
+
+[functions.presence-process]
+verify_jwt = false

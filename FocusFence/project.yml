@@ -1,0 +1,263 @@
+name: Focus
+options:
+  bundleIdPrefix: com.nicho
+  deploymentTarget:
+    iOS: "17.0"
+settings:
+  base:
+    SWIFT_VERSION: 5.9
+    DEVELOPMENT_TEAM: L35YTM9PGC
+    CODE_SIGN_STYLE: Automatic
+    APP_BUNDLE_PREFIX: com.nicho
+    APP_GROUP_IDENTIFIER: group.com.nicho.FocusFence
+    MARKETING_VERSION: 0.1.0
+    CURRENT_PROJECT_VERSION: 21
+packages: {}
+schemes:
+  Focus:
+    build:
+      targets:
+        Focus: all
+    run:
+      config: Debug
+      executable: Focus
+    profile:
+      config: Release
+      executable: Focus
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+  Presence:
+    build:
+      targets:
+        Presence: all
+        PresenceWatch: all
+    run:
+      config: Debug
+      executable: Presence
+    profile:
+      config: Release
+      executable: Presence
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+  DeepResponseWatchLab:
+    build:
+      targets:
+        DeepResponseWatchLab: all
+    run:
+      config: Debug
+      executable: DeepResponseWatchLab
+    profile:
+      config: Release
+      executable: DeepResponseWatchLab
+    analyze:
+      config: Debug
+    archive:
+      config: Release
+targets:
+  Focus:
+    type: application
+    platform: iOS
+    sources:
+      - Sources/FocusFenceApp
+      - Sources/Shared
+      - Resources
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_PREFIX).FocusFenceB9
+        PRODUCT_NAME: Focus
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        INFOPLIST_KEY_CFBundleDisplayName: Focus
+        INFOPLIST_KEY_CFBundleShortVersionString: $(MARKETING_VERSION)
+        INFOPLIST_KEY_CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        INFOPLIST_KEY_FocusFenceAppGroupIdentifier: $(APP_GROUP_IDENTIFIER)
+        INFOPLIST_KEY_NSHumanReadableCopyright: ""
+    entitlements:
+      path: Sources/FocusFenceApp/FocusFence.entitlements
+      properties:
+        com.apple.developer.family-controls: true
+        com.apple.security.application-groups:
+          - $(APP_GROUP_IDENTIFIER)
+    dependencies:
+      - target: FocusFenceMonitor
+        embed: true
+      - target: FocusFenceShieldConfig
+        embed: true
+      - target: FocusFenceShieldAction
+        embed: true
+
+  Presence:
+    type: application
+    platform: iOS
+    sources:
+      - Sources/PresenceApp
+      - Resources
+    info:
+      path: Sources/PresenceApp/Info.plist
+      properties:
+        CFBundleDisplayName: 与神同在
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        NSSpeechRecognitionUsageDescription: "与神同在需要使用语音识别，把你在手表上的回转记录整理成文字。"
+        PresenceClientToken: "$(PRESENCE_CLIENT_TOKEN)"
+        PresenceProcessEndpoint: "$(PRESENCE_PROCESS_ENDPOINT)"
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UILaunchScreen: {}
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_PREFIX).WithGod
+        PRODUCT_NAME: Presence
+        ASSETCATALOG_COMPILER_APPICON_NAME: PresenceAppIcon
+    dependencies:
+      - target: PresenceWatch
+        embed: true
+
+  PresenceWatch:
+    type: application
+    platform: watchOS
+    deploymentTarget: "10.0"
+    sources:
+      - Sources/PresenceWatchApp
+      - Resources/Assets.xcassets
+    info:
+      path: Sources/PresenceWatchApp/Info.plist
+      properties:
+        CFBundleDisplayName: 与神同在
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        NSMicrophoneUsageDescription: "与神同在需要使用麦克风，帮助你在 Apple Watch 上快速记录回转祷告。"
+        NSSpeechRecognitionUsageDescription: "与神同在可能使用语音识别，把简短祷告整理成文字。"
+        PresenceWatchClientToken: "$(PRESENCE_CLIENT_TOKEN)"
+        PresenceWatchProcessEndpoint: "$(PRESENCE_PROCESS_ENDPOINT)"
+        CFBundleURLTypes:
+          - CFBundleURLName: com.nicho.WithGod.watchkitapp.record
+            CFBundleURLSchemes:
+              - withgod
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: $(APP_BUNDLE_PREFIX).WithGod
+        WKRunsIndependentlyOfCompanionApp: true
+    settings:
+      base:
+        CODE_SIGN_IDENTITY: Apple Development
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_PREFIX).WithGod.watchkitapp
+        PRODUCT_NAME: Presence
+        ASSETCATALOG_COMPILER_APPICON_NAME: PresenceAppIcon
+
+  DeepResponseWatchLab:
+    type: application
+    platform: watchOS
+    deploymentTarget: "10.0"
+    sources:
+      - Sources/DeepResponseWatchLab
+      - Resources/Assets.xcassets
+    info:
+      path: Sources/DeepResponseWatchLab/Info.plist
+      properties:
+        CFBundleDisplayName: DeepLab
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        NSMicrophoneUsageDescription: "DeepLab needs microphone access for Watch voice proof-of-concept testing."
+        DeepResponseRealtimeEndpoint: "$(DEEP_RESPONSE_REALTIME_ENDPOINT)"
+        WKApplication: true
+        WKWatchOnly: true
+    settings:
+      base:
+        CODE_SIGN_IDENTITY: Apple Development
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_PREFIX).DeepResponseWatchLab
+        PRODUCT_NAME: DeepLab
+        ASSETCATALOG_COMPILER_APPICON_NAME: PresenceAppIcon
+
+  FocusFenceMonitor:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Sources/DeviceActivityMonitorExtension
+      - Sources/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_PREFIX).FocusFenceB9.monitor
+        INFOPLIST_KEY_CFBundleShortVersionString: $(MARKETING_VERSION)
+        INFOPLIST_KEY_CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        INFOPLIST_KEY_FocusFenceAppGroupIdentifier: $(APP_GROUP_IDENTIFIER)
+        INFOPLIST_KEY_NSExtension: {}
+    info:
+      path: Sources/DeviceActivityMonitorExtension/Info.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.deviceactivity.monitor-extension
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).FocusFenceMonitor
+    entitlements:
+      path: Sources/DeviceActivityMonitorExtension/FocusFenceMonitor.entitlements
+      properties:
+        com.apple.developer.family-controls: true
+        com.apple.security.application-groups:
+          - $(APP_GROUP_IDENTIFIER)
+
+  FocusFenceShieldConfig:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Sources/ShieldConfigurationExtension
+      - Sources/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_PREFIX).FocusFenceB9.shield-config
+        INFOPLIST_KEY_CFBundleShortVersionString: $(MARKETING_VERSION)
+        INFOPLIST_KEY_CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        INFOPLIST_KEY_FocusFenceAppGroupIdentifier: $(APP_GROUP_IDENTIFIER)
+        INFOPLIST_KEY_NSExtension: {}
+    info:
+      path: Sources/ShieldConfigurationExtension/Info.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.ManagedSettingsUI.shield-configuration-service
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).FocusFenceShieldConfiguration
+    entitlements:
+      path: Sources/ShieldConfigurationExtension/FocusFenceShieldConfig.entitlements
+      properties:
+        com.apple.developer.family-controls: true
+        com.apple.security.application-groups:
+          - $(APP_GROUP_IDENTIFIER)
+
+  FocusFenceShieldAction:
+    type: app-extension
+    platform: iOS
+    sources:
+      - Sources/ShieldActionExtension
+      - Sources/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_PREFIX).FocusFenceB9.shield-action
+        INFOPLIST_KEY_CFBundleShortVersionString: $(MARKETING_VERSION)
+        INFOPLIST_KEY_CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        INFOPLIST_KEY_FocusFenceAppGroupIdentifier: $(APP_GROUP_IDENTIFIER)
+        INFOPLIST_KEY_NSExtension: {}
+    info:
+      path: Sources/ShieldActionExtension/Info.plist
+      properties:
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.ManagedSettings.shield-action-service
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).FocusFenceShieldAction
+    entitlements:
+      path: Sources/ShieldActionExtension/FocusFenceShieldAction.entitlements
+      properties:
+        com.apple.developer.family-controls: true
+        com.apple.security.application-groups:
+          - $(APP_GROUP_IDENTIFIER)

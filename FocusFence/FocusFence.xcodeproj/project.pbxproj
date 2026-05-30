@@ -1,0 +1,702 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		082C655CC2099FAD889E8EB0 /* RuleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE440343BCAD620A7860B00 /* RuleStore.swift */; };
+		1600F4B3889CC80949A24BB9 /* FocusFenceConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2838F2FAD90C4826E79D2DFD /* FocusFenceConstants.swift */; };
+		378C6F8943B9C362E1211BB7 /* RuleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE440343BCAD620A7860B00 /* RuleStore.swift */; };
+		3D56264449D4D15BCED38F3E /* FocusFenceShieldAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = CD0F4343DA0FFC9B18933FAD /* FocusFenceShieldAction.swift */; };
+		498730D1E8CDD8071A35814A /* FocusFenceShieldConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3E4D031FE37CDE3F7DB20A6D /* FocusFenceShieldConfiguration.swift */; };
+		4F5C4054949F7625F631ABB2 /* RuleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE440343BCAD620A7860B00 /* RuleStore.swift */; };
+		5A9C96DAEF61E64DF1F6A605 /* FocusFenceMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2277CCC6A2A741DA3F684F97 /* FocusFenceMonitor.swift */; };
+		6C82468DCFA6DFDEC442DD41 /* FocusFenceConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2838F2FAD90C4826E79D2DFD /* FocusFenceConstants.swift */; };
+		6E0123A9BF12E805B9A11CA0 /* FocusFenceShieldConfig.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BA6ED449AA32A0E521907A8D /* FocusFenceShieldConfig.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8735EBBAB5ACD02272E24715 /* FocusFenceShieldAction.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = BA92A1D08A10C0BA7FF9FE9E /* FocusFenceShieldAction.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		8D4FC26AFAB2E0E56D9EC761 /* FocusFenceConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2838F2FAD90C4826E79D2DFD /* FocusFenceConstants.swift */; };
+		91664EACB61CEF7E98C6632E /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62B03EEEC29F2281ED6DA7E8 /* ContentView.swift */; };
+		9687331B021CF9067EB6B383 /* FocusFenceApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2BCFBAC7E29310E0EE0D5E5 /* FocusFenceApp.swift */; };
+		C051065755D8E60CDAE498C4 /* FocusFenceMonitor.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 5DA861784262C54C30749837 /* FocusFenceMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		C4DF3EAAF564067CF9A9D630 /* FocusFenceConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2838F2FAD90C4826E79D2DFD /* FocusFenceConstants.swift */; };
+		E78EA28DD4686AAD8A365FC4 /* RuleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EE440343BCAD620A7860B00 /* RuleStore.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		B327DED1E54B15B54D25D7AE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CF8A5858F583EEBA5AFC1093 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 50A3C58317CB72859D780128;
+			remoteInfo = FocusFenceShieldConfig;
+		};
+		CE8DBF8AC9BA2C1A2D2A52EC /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CF8A5858F583EEBA5AFC1093 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 16BF7714DA8B0963808BF54E;
+			remoteInfo = FocusFenceMonitor;
+		};
+		EE1394079385BBFC79E220F2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CF8A5858F583EEBA5AFC1093 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 08FCF536EAD17BC8BBF07B08;
+			remoteInfo = FocusFenceShieldAction;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		48762FC09CBA0E5D3852812E /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				C051065755D8E60CDAE498C4 /* FocusFenceMonitor.appex in Embed Foundation Extensions */,
+				6E0123A9BF12E805B9A11CA0 /* FocusFenceShieldConfig.appex in Embed Foundation Extensions */,
+				8735EBBAB5ACD02272E24715 /* FocusFenceShieldAction.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		1EE440343BCAD620A7860B00 /* RuleStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RuleStore.swift; sourceTree = "<group>"; };
+		1F13FDFABBE34882D76C34E3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		2277CCC6A2A741DA3F684F97 /* FocusFenceMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusFenceMonitor.swift; sourceTree = "<group>"; };
+		2838F2FAD90C4826E79D2DFD /* FocusFenceConstants.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusFenceConstants.swift; sourceTree = "<group>"; };
+		3C15EE21CB440108A0ADBD3C /* FocusFenceShieldConfig.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FocusFenceShieldConfig.entitlements; sourceTree = "<group>"; };
+		3E4D031FE37CDE3F7DB20A6D /* FocusFenceShieldConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusFenceShieldConfiguration.swift; sourceTree = "<group>"; };
+		5DA861784262C54C30749837 /* FocusFenceMonitor.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = FocusFenceMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		62B03EEEC29F2281ED6DA7E8 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		6D49D8346B105FADA4984C88 /* FocusFence.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = FocusFence.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		85613BED8EEC82CC9303F983 /* FocusFenceShieldAction.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FocusFenceShieldAction.entitlements; sourceTree = "<group>"; };
+		9C42195263D9D24DD26A2739 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		A1661A537A33878345328066 /* FocusFence.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FocusFence.entitlements; sourceTree = "<group>"; };
+		B7998AC68BEC78A1C38D56E4 /* FocusFenceMonitor.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = FocusFenceMonitor.entitlements; sourceTree = "<group>"; };
+		BA6ED449AA32A0E521907A8D /* FocusFenceShieldConfig.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = FocusFenceShieldConfig.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		BA92A1D08A10C0BA7FF9FE9E /* FocusFenceShieldAction.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = FocusFenceShieldAction.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		CD0F4343DA0FFC9B18933FAD /* FocusFenceShieldAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusFenceShieldAction.swift; sourceTree = "<group>"; };
+		E2BCFBAC7E29310E0EE0D5E5 /* FocusFenceApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusFenceApp.swift; sourceTree = "<group>"; };
+		F364381D163E74F569ACB090 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		FDFE82E6258BD32513703F19 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0D231F6A0558FC746649276E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				6D49D8346B105FADA4984C88 /* FocusFence.app */,
+				5DA861784262C54C30749837 /* FocusFenceMonitor.appex */,
+				BA92A1D08A10C0BA7FF9FE9E /* FocusFenceShieldAction.appex */,
+				BA6ED449AA32A0E521907A8D /* FocusFenceShieldConfig.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		3B2366605F854A4596D66F65 /* DeviceActivityMonitorExtension */ = {
+			isa = PBXGroup;
+			children = (
+				B7998AC68BEC78A1C38D56E4 /* FocusFenceMonitor.entitlements */,
+				2277CCC6A2A741DA3F684F97 /* FocusFenceMonitor.swift */,
+				F364381D163E74F569ACB090 /* Info.plist */,
+			);
+			name = DeviceActivityMonitorExtension;
+			path = Sources/DeviceActivityMonitorExtension;
+			sourceTree = "<group>";
+		};
+		4ADB744E2B76640B52BCFF1D /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				2838F2FAD90C4826E79D2DFD /* FocusFenceConstants.swift */,
+				1EE440343BCAD620A7860B00 /* RuleStore.swift */,
+			);
+			name = Shared;
+			path = Sources/Shared;
+			sourceTree = "<group>";
+		};
+		5E839F1E0869B31E540E3EDD = {
+			isa = PBXGroup;
+			children = (
+				3B2366605F854A4596D66F65 /* DeviceActivityMonitorExtension */,
+				71A8A9D1832F57A7962A1A0D /* FocusFenceApp */,
+				4ADB744E2B76640B52BCFF1D /* Shared */,
+				F1BB617EFDEEDC524D5A88D9 /* ShieldActionExtension */,
+				CB46B657EE39310B67D117BF /* ShieldConfigurationExtension */,
+				0D231F6A0558FC746649276E /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		71A8A9D1832F57A7962A1A0D /* FocusFenceApp */ = {
+			isa = PBXGroup;
+			children = (
+				62B03EEEC29F2281ED6DA7E8 /* ContentView.swift */,
+				A1661A537A33878345328066 /* FocusFence.entitlements */,
+				E2BCFBAC7E29310E0EE0D5E5 /* FocusFenceApp.swift */,
+				FDFE82E6258BD32513703F19 /* Info.plist */,
+			);
+			name = FocusFenceApp;
+			path = Sources/FocusFenceApp;
+			sourceTree = "<group>";
+		};
+		CB46B657EE39310B67D117BF /* ShieldConfigurationExtension */ = {
+			isa = PBXGroup;
+			children = (
+				3C15EE21CB440108A0ADBD3C /* FocusFenceShieldConfig.entitlements */,
+				3E4D031FE37CDE3F7DB20A6D /* FocusFenceShieldConfiguration.swift */,
+				9C42195263D9D24DD26A2739 /* Info.plist */,
+			);
+			name = ShieldConfigurationExtension;
+			path = Sources/ShieldConfigurationExtension;
+			sourceTree = "<group>";
+		};
+		F1BB617EFDEEDC524D5A88D9 /* ShieldActionExtension */ = {
+			isa = PBXGroup;
+			children = (
+				85613BED8EEC82CC9303F983 /* FocusFenceShieldAction.entitlements */,
+				CD0F4343DA0FFC9B18933FAD /* FocusFenceShieldAction.swift */,
+				1F13FDFABBE34882D76C34E3 /* Info.plist */,
+			);
+			name = ShieldActionExtension;
+			path = Sources/ShieldActionExtension;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		08FCF536EAD17BC8BBF07B08 /* FocusFenceShieldAction */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 991CBCD03707B1DE02A1502E /* Build configuration list for PBXNativeTarget "FocusFenceShieldAction" */;
+			buildPhases = (
+				C7337871E212C16C013490FD /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FocusFenceShieldAction;
+			packageProductDependencies = (
+			);
+			productName = FocusFenceShieldAction;
+			productReference = BA92A1D08A10C0BA7FF9FE9E /* FocusFenceShieldAction.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		16BF7714DA8B0963808BF54E /* FocusFenceMonitor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C44B6F813AFB1BB077114C40 /* Build configuration list for PBXNativeTarget "FocusFenceMonitor" */;
+			buildPhases = (
+				B5ABA325B612833CDAC4D1B6 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FocusFenceMonitor;
+			packageProductDependencies = (
+			);
+			productName = FocusFenceMonitor;
+			productReference = 5DA861784262C54C30749837 /* FocusFenceMonitor.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		50A3C58317CB72859D780128 /* FocusFenceShieldConfig */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 055BFF9AC4B68AA5E4329450 /* Build configuration list for PBXNativeTarget "FocusFenceShieldConfig" */;
+			buildPhases = (
+				F4A39B7C1A7D8E9CCF024F52 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = FocusFenceShieldConfig;
+			packageProductDependencies = (
+			);
+			productName = FocusFenceShieldConfig;
+			productReference = BA6ED449AA32A0E521907A8D /* FocusFenceShieldConfig.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		85C6ACF1F2E5CEED4F4F1FAD /* FocusFence */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5A74712C2D7E9A0174CB5F4D /* Build configuration list for PBXNativeTarget "FocusFence" */;
+			buildPhases = (
+				E464868DB7DAE68CC860AA40 /* Sources */,
+				48762FC09CBA0E5D3852812E /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				26E948167D7B374AE0DD7785 /* PBXTargetDependency */,
+				A8D0DD7D164848DD4420CE18 /* PBXTargetDependency */,
+				A0337C6FA0E80EEA74999F7A /* PBXTargetDependency */,
+			);
+			name = FocusFence;
+			packageProductDependencies = (
+			);
+			productName = FocusFence;
+			productReference = 6D49D8346B105FADA4984C88 /* FocusFence.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		CF8A5858F583EEBA5AFC1093 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					08FCF536EAD17BC8BBF07B08 = {
+						DevelopmentTeam = L35YTM9PGC;
+						ProvisioningStyle = Automatic;
+					};
+					16BF7714DA8B0963808BF54E = {
+						DevelopmentTeam = L35YTM9PGC;
+						ProvisioningStyle = Automatic;
+					};
+					50A3C58317CB72859D780128 = {
+						DevelopmentTeam = L35YTM9PGC;
+						ProvisioningStyle = Automatic;
+					};
+					85C6ACF1F2E5CEED4F4F1FAD = {
+						DevelopmentTeam = L35YTM9PGC;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 7748BAC4278A30E1BA3173F8 /* Build configuration list for PBXProject "FocusFence" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 5E839F1E0869B31E540E3EDD;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 0D231F6A0558FC746649276E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				85C6ACF1F2E5CEED4F4F1FAD /* FocusFence */,
+				16BF7714DA8B0963808BF54E /* FocusFenceMonitor */,
+				08FCF536EAD17BC8BBF07B08 /* FocusFenceShieldAction */,
+				50A3C58317CB72859D780128 /* FocusFenceShieldConfig */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		B5ABA325B612833CDAC4D1B6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C4DF3EAAF564067CF9A9D630 /* FocusFenceConstants.swift in Sources */,
+				5A9C96DAEF61E64DF1F6A605 /* FocusFenceMonitor.swift in Sources */,
+				E78EA28DD4686AAD8A365FC4 /* RuleStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C7337871E212C16C013490FD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1600F4B3889CC80949A24BB9 /* FocusFenceConstants.swift in Sources */,
+				3D56264449D4D15BCED38F3E /* FocusFenceShieldAction.swift in Sources */,
+				082C655CC2099FAD889E8EB0 /* RuleStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E464868DB7DAE68CC860AA40 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				91664EACB61CEF7E98C6632E /* ContentView.swift in Sources */,
+				9687331B021CF9067EB6B383 /* FocusFenceApp.swift in Sources */,
+				8D4FC26AFAB2E0E56D9EC761 /* FocusFenceConstants.swift in Sources */,
+				4F5C4054949F7625F631ABB2 /* RuleStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F4A39B7C1A7D8E9CCF024F52 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6C82468DCFA6DFDEC442DD41 /* FocusFenceConstants.swift in Sources */,
+				498730D1E8CDD8071A35814A /* FocusFenceShieldConfiguration.swift in Sources */,
+				378C6F8943B9C362E1211BB7 /* RuleStore.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		26E948167D7B374AE0DD7785 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 16BF7714DA8B0963808BF54E /* FocusFenceMonitor */;
+			targetProxy = CE8DBF8AC9BA2C1A2D2A52EC /* PBXContainerItemProxy */;
+		};
+		A0337C6FA0E80EEA74999F7A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 08FCF536EAD17BC8BBF07B08 /* FocusFenceShieldAction */;
+			targetProxy = EE1394079385BBFC79E220F2 /* PBXContainerItemProxy */;
+		};
+		A8D0DD7D164848DD4420CE18 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 50A3C58317CB72859D780128 /* FocusFenceShieldConfig */;
+			targetProxy = B327DED1E54B15B54D25D7AE /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		304EDAD12BFE8E3783AB5468 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Sources/ShieldActionExtension/FocusFenceShieldAction.entitlements;
+				INFOPLIST_FILE = Sources/ShieldActionExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleShortVersionString = "$(MARKETING_VERSION)";
+				INFOPLIST_KEY_CFBundleVersion = "$(CURRENT_PROJECT_VERSION)";
+				INFOPLIST_KEY_FocusFenceAppGroupIdentifier = "$(APP_GROUP_IDENTIFIER)";
+				INFOPLIST_KEY_NSExtension = "[:]";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).FocusFenceB9.shield-action";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		30536AAC811A26BF4820EB8B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				APP_BUNDLE_PREFIX = com.nicho;
+				APP_GROUP_IDENTIFIER = group.com.nicho.FocusFence;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 11;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = L35YTM9PGC;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Debug;
+		};
+		3E4D1C7116B6D16E217DFB4C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Sources/ShieldActionExtension/FocusFenceShieldAction.entitlements;
+				INFOPLIST_FILE = Sources/ShieldActionExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleShortVersionString = "$(MARKETING_VERSION)";
+				INFOPLIST_KEY_CFBundleVersion = "$(CURRENT_PROJECT_VERSION)";
+				INFOPLIST_KEY_FocusFenceAppGroupIdentifier = "$(APP_GROUP_IDENTIFIER)";
+				INFOPLIST_KEY_NSExtension = "[:]";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).FocusFenceB9.shield-action";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		3EE8CEBA1C7A377DA1031402 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/FocusFenceApp/FocusFence.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Sources/FocusFenceApp/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "FocusFence B9";
+				INFOPLIST_KEY_CFBundleShortVersionString = "$(MARKETING_VERSION)";
+				INFOPLIST_KEY_CFBundleVersion = "$(CURRENT_PROJECT_VERSION)";
+				INFOPLIST_KEY_FocusFenceAppGroupIdentifier = "$(APP_GROUP_IDENTIFIER)";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).FocusFenceB9";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		499F89931323307B6C33D156 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Sources/DeviceActivityMonitorExtension/FocusFenceMonitor.entitlements;
+				INFOPLIST_FILE = Sources/DeviceActivityMonitorExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleShortVersionString = "$(MARKETING_VERSION)";
+				INFOPLIST_KEY_CFBundleVersion = "$(CURRENT_PROJECT_VERSION)";
+				INFOPLIST_KEY_FocusFenceAppGroupIdentifier = "$(APP_GROUP_IDENTIFIER)";
+				INFOPLIST_KEY_NSExtension = "[:]";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).FocusFenceB9.monitor";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		4C2E4A18C2AB576B75CB9818 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Sources/ShieldConfigurationExtension/FocusFenceShieldConfig.entitlements;
+				INFOPLIST_FILE = Sources/ShieldConfigurationExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleShortVersionString = "$(MARKETING_VERSION)";
+				INFOPLIST_KEY_CFBundleVersion = "$(CURRENT_PROJECT_VERSION)";
+				INFOPLIST_KEY_FocusFenceAppGroupIdentifier = "$(APP_GROUP_IDENTIFIER)";
+				INFOPLIST_KEY_NSExtension = "[:]";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).FocusFenceB9.shield-config";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		86225662854339F75674B6EF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				APP_BUNDLE_PREFIX = com.nicho;
+				APP_GROUP_IDENTIFIER = group.com.nicho.FocusFence;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_STYLE = Automatic;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 11;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = L35YTM9PGC;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+			};
+			name = Release;
+		};
+		969F51ED9C5828CB0E818618 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Sources/DeviceActivityMonitorExtension/FocusFenceMonitor.entitlements;
+				INFOPLIST_FILE = Sources/DeviceActivityMonitorExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleShortVersionString = "$(MARKETING_VERSION)";
+				INFOPLIST_KEY_CFBundleVersion = "$(CURRENT_PROJECT_VERSION)";
+				INFOPLIST_KEY_FocusFenceAppGroupIdentifier = "$(APP_GROUP_IDENTIFIER)";
+				INFOPLIST_KEY_NSExtension = "[:]";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).FocusFenceB9.monitor";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		99292670A474CD7F862D5DD2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/FocusFenceApp/FocusFence.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = Sources/FocusFenceApp/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "FocusFence B9";
+				INFOPLIST_KEY_CFBundleShortVersionString = "$(MARKETING_VERSION)";
+				INFOPLIST_KEY_CFBundleVersion = "$(CURRENT_PROJECT_VERSION)";
+				INFOPLIST_KEY_FocusFenceAppGroupIdentifier = "$(APP_GROUP_IDENTIFIER)";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).FocusFenceB9";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		B87674CE8D7D8AA9E8D4D017 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = Sources/ShieldConfigurationExtension/FocusFenceShieldConfig.entitlements;
+				INFOPLIST_FILE = Sources/ShieldConfigurationExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleShortVersionString = "$(MARKETING_VERSION)";
+				INFOPLIST_KEY_CFBundleVersion = "$(CURRENT_PROJECT_VERSION)";
+				INFOPLIST_KEY_FocusFenceAppGroupIdentifier = "$(APP_GROUP_IDENTIFIER)";
+				INFOPLIST_KEY_NSExtension = "[:]";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "$(APP_BUNDLE_PREFIX).FocusFenceB9.shield-config";
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		055BFF9AC4B68AA5E4329450 /* Build configuration list for PBXNativeTarget "FocusFenceShieldConfig" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B87674CE8D7D8AA9E8D4D017 /* Debug */,
+				4C2E4A18C2AB576B75CB9818 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		5A74712C2D7E9A0174CB5F4D /* Build configuration list for PBXNativeTarget "FocusFence" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				99292670A474CD7F862D5DD2 /* Debug */,
+				3EE8CEBA1C7A377DA1031402 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		7748BAC4278A30E1BA3173F8 /* Build configuration list for PBXProject "FocusFence" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				30536AAC811A26BF4820EB8B /* Debug */,
+				86225662854339F75674B6EF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		991CBCD03707B1DE02A1502E /* Build configuration list for PBXNativeTarget "FocusFenceShieldAction" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				304EDAD12BFE8E3783AB5468 /* Debug */,
+				3E4D1C7116B6D16E217DFB4C /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C44B6F813AFB1BB077114C40 /* Build configuration list for PBXNativeTarget "FocusFenceMonitor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				969F51ED9C5828CB0E818618 /* Debug */,
+				499F89931323307B6C33D156 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = CF8A5858F583EEBA5AFC1093 /* Project object */;
+}

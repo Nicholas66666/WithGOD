@@ -1,0 +1,16 @@
+{
+  "scripts": {
+    "presence:server": "node scripts/presence-server.mjs",
+    "presence:supabase:deploy": "bash scripts/deploy-presence-supabase.sh",
+    "presence:supabase:health": "bash scripts/check-presence-supabase.sh",
+    "deep:provider:check": "node scripts/test-volcengine-provider.mjs",
+    "deep:provider:benchmark": "node scripts/deep-response-benchmark.mjs",
+    "deep:fixture:tts-http": "node scripts/deep-response-generate-fixture.mjs",
+    "deep:server": "node scripts/deep-response-server.mjs",
+    "deep:server:provider": "DEEP_RESPONSE_MODE=provider node scripts/deep-response-server.mjs",
+    "deep:echo:test": "node scripts/test-deep-response-echo.mjs",
+    "deep:realtime:test": "node scripts/test-deep-response-realtime.mjs",
+    "test:node": "node --test scripts/*.test.mjs scripts/deep-response/**/*.test.mjs"
+  },
+  "dependencies": {}
+}

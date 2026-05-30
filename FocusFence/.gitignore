@@ -1,0 +1,12 @@
+DerivedData/
+build/
+*.xcuserstate
+*.xcuserdata/
+xcuserdata/
+*.xcuserdatad/
+.DS_Store
+.env.local
+supabase/.env.local
+supabase/.temp/
+xiaozhi-esp32-server/
+xiaozhi-esp32-server.zip
