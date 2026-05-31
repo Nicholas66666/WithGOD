@@ -163,6 +163,7 @@ export function summarizeHTTPSessionResult({
     elapsedMs: Math.round(endedAt - startedAt),
     uploadMs: uploadStartedAt != null && uploadEndedAt != null ? Math.round(uploadEndedAt - uploadStartedAt) : null,
     firstAudioMs: firstAudioAt != null ? Math.round(firstAudioAt - startedAt) : null,
+    stopToFirstAudioMs: firstAudioAt != null && uploadEndedAt != null ? Math.round(firstAudioAt - uploadEndedAt) : null,
     sessionID,
     uploadChunks,
     encodedUploadBytes,

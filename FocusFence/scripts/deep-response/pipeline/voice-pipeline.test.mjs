@@ -108,6 +108,54 @@ test("VoicePipeline creates first and followup spoken segments", async () => {
   assert.match(llmCalls[1].transcript, /不要重复已经说过的第一句/);
 });
 
+test("VoicePipeline can use a local first phrase template before followup LLM", async () => {
+  const llmCalls = [];
+  const asr = {
+    async transcribe() {
+      return {
+        transcript: "我今天有点累",
+        timing: { transcript_final_ms: 100 }
+      };
+    }
+  };
+  const llm = {
+    async generate({ transcript, streamFull }) {
+      llmCalls.push({ transcript, streamFull });
+      return {
+        text: "我们先停一下，慢慢呼吸。",
+        firstPhrase: "我们先停一下，慢慢呼吸。",
+        timing: { llm_first_phrase_ms: 200 }
+      };
+    }
+  };
+  const tts = {
+    async synthesize({ text }) {
+      return {
+        audioChunks: [Buffer.from(text)],
+        timing: { tts_first_audio_ms: 10 }
+      };
+    }
+  };
+
+  const pipeline = new VoicePipeline({
+    asr,
+    llm,
+    tts,
+    firstPhraseMode: "template",
+    clock: fakeClock([0, 10, 20])
+  });
+  const result = await pipeline.runSegmented({
+    audioChunks: [Buffer.from("voice")]
+  });
+
+  assert.equal(result.first.text, "我听见你真的很累。");
+  assert.equal(result.timing.llm_first_phrase_ms, 0);
+  assert.equal(result.timing.llm_first_phrase_mode, "template");
+  assert.equal(llmCalls.length, 1);
+  assert.equal(llmCalls[0].streamFull, true);
+  assert.match(llmCalls[0].transcript, /已经说过的第一句：我听见你真的很累。/);
+});
+
 test("VoicePipeline streamSegmented yields first audio before followup generation finishes", async () => {
   let releaseFollowup;
   const followupStarted = new Promise((resolve) => {

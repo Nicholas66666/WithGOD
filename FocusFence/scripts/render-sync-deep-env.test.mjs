@@ -21,6 +21,7 @@ test("collectDeepResponseRenderEnv copies only the DeepResponse Render whitelist
 
   assert.equal(env.DEEP_RESPONSE_MODE, "provider");
   assert.equal(env.DEEP_RESPONSE_AUDIO_REPLAY_INTERVAL_MS, "50");
+  assert.equal(env.DEEP_RESPONSE_FIRST_PHRASE_MODE, "template");
   assert.equal(env.ARK_API_KEY, "ark_secret");
   assert.equal(env.DOUBAO_SPEECH_APP_ID, "app");
   assert.equal(env.DOUBAO_SPEECH_ACCESS_TOKEN, "token");

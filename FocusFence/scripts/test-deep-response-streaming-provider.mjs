@@ -59,7 +59,8 @@ export async function runStreamingProviderProbe(args) {
   const pipeline = new VoicePipeline({
     asr: new DoubaoASRProvider({ env }),
     llm: new ArkLLMProvider({ env }),
-    tts: new DoubaoTTSProvider({ env })
+    tts: new DoubaoTTSProvider({ env }),
+    firstPhraseMode: env.DEEP_RESPONSE_FIRST_PHRASE_MODE || "llm"
   });
 
   const result = await pipeline.runSegmented({

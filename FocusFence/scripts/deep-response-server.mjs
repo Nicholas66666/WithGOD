@@ -1168,7 +1168,8 @@ function createDefaultPipeline(env) {
   return new VoicePipeline({
     asr: new DoubaoASRProvider({ env }),
     llm: new ArkLLMProvider({ env }),
-    tts: new DoubaoTTSProvider({ env })
+    tts: new DoubaoTTSProvider({ env }),
+    firstPhraseMode: env.DEEP_RESPONSE_FIRST_PHRASE_MODE || "llm"
   });
 }
 

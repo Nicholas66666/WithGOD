@@ -1,8 +1,9 @@
 export class VoicePipeline {
-  constructor({ asr, llm, tts, clock = performance.now.bind(performance) }) {
+  constructor({ asr, llm, tts, firstPhraseMode = "llm", clock = performance.now.bind(performance) }) {
     this.asr = asr;
     this.llm = llm;
     this.tts = tts;
+    this.firstPhraseMode = firstPhraseMode;
     this.clock = clock;
   }
 
@@ -47,22 +48,9 @@ export class VoicePipeline {
   async runSegmented({ audioChunks, context = [], signal } = {}) {
     const startedAt = this.clock();
     const asrResult = await this.asr.transcribe(toAsyncIterable(audioChunks), { signal });
-    const firstLLM = await this.llm.generate({
-      transcript: asrResult.transcript,
-      context,
-      messages: buildFirstPhraseMessages(asrResult.transcript, context),
-      signal,
-      streamFull: false,
-      maxTokens: 80,
-      minChars: 14
-    });
+    const firstLLM = await this.generateFirstPhrase({ transcript: asrResult.transcript, context, signal });
     const firstText = firstLLM.firstPhrase || firstLLM.text || "";
-    const firstTTS = await this.tts.synthesize({
-      text: firstText,
-      signal
-    });
-
-    const followupLLM = await this.llm.generate({
+    const followupPromise = this.llm.generate({
       transcript: buildFollowupPrompt(asrResult.transcript, firstText),
       context,
       messages: buildFollowupMessages(asrResult.transcript, firstText, context),
@@ -70,6 +58,12 @@ export class VoicePipeline {
       streamFull: true,
       maxTokens: 64
     });
+    const firstTTS = await this.tts.synthesize({
+      text: firstText,
+      signal
+    });
+
+    const followupLLM = await followupPromise;
     const followupText = removeRepeatedPrefix(followupLLM.text || followupLLM.firstPhrase || "", firstText);
     const followupTTS = followupText
       ? await this.tts.synthesize({ text: followupText, signal })
@@ -106,16 +100,16 @@ export class VoicePipeline {
       transcript: asrResult.transcript
     };
 
-    const firstLLM = await this.llm.generate({
-      transcript: asrResult.transcript,
-      context,
-      messages: buildFirstPhraseMessages(asrResult.transcript, context),
-      signal,
-      streamFull: false,
-      maxTokens: 80,
-      minChars: 14
-    });
+    const firstLLM = await this.generateFirstPhrase({ transcript: asrResult.transcript, context, signal });
     const firstText = firstLLM.firstPhrase || firstLLM.text || "";
+    const followupPromise = this.llm.generate({
+      transcript: buildFollowupPrompt(asrResult.transcript, firstText),
+      context,
+      messages: buildFollowupMessages(asrResult.transcript, firstText, context),
+      signal,
+      streamFull: true,
+      maxTokens: 64
+    });
     let firstTTS;
     if (typeof this.tts.synthesizeStream === "function") {
       yield { type: "segment_text", segment: "first", text: firstText };
@@ -133,14 +127,7 @@ export class VoicePipeline {
       };
     }
 
-    const followupLLM = await this.llm.generate({
-      transcript: buildFollowupPrompt(asrResult.transcript, firstText),
-      context,
-      messages: buildFollowupMessages(asrResult.transcript, firstText, context),
-      signal,
-      streamFull: true,
-      maxTokens: 64
-    });
+    const followupLLM = await followupPromise;
     const followupText = removeRepeatedPrefix(followupLLM.text || followupLLM.firstPhrase || "", firstText);
     let followupTTS = { audioChunks: [], timing: {} };
     if (followupText && typeof this.tts.synthesizeStream === "function") {
@@ -174,6 +161,32 @@ export class VoicePipeline {
         ttsMode: firstTTS.mode || followupTTS.mode || "websocket"
       }
     };
+  }
+
+  async generateFirstPhrase({ transcript, context = [], signal } = {}) {
+    if (this.firstPhraseMode === "template") {
+      const firstPhrase = buildTemplateFirstPhrase(transcript);
+      return {
+        text: firstPhrase,
+        firstPhrase,
+        timing: {
+          llm_first_token_ms: 0,
+          llm_first_phrase_ms: 0,
+          llm_first_phrase_mode: "template"
+        },
+        streamChunkCount: 0,
+        streamChunks: []
+      };
+    }
+    return await this.llm.generate({
+      transcript,
+      context,
+      messages: buildFirstPhraseMessages(transcript, context),
+      signal,
+      streamFull: false,
+      maxTokens: 80,
+      minChars: 14
+    });
   }
 }
 
@@ -251,6 +264,26 @@ function buildFollowupMessages(transcript, firstText, context = []) {
       content: buildFollowupPrompt(transcript, firstText)
     }
   ];
+}
+
+function buildTemplateFirstPhrase(transcript) {
+  const text = String(transcript || "");
+  if (/(害怕|恐惧|怕|慌|焦虑|崩溃)/u.test(text)) {
+    return "我听见你现在很害怕。";
+  }
+  if (/(累|疲惫|撑不住|没力气|倦)/u.test(text)) {
+    return "我听见你真的很累。";
+  }
+  if (/(孤单|孤独|没人|一个人)/u.test(text)) {
+    return "我听见你觉得很孤单。";
+  }
+  if (/(羞耻|内疚|自责|失败|没用)/u.test(text)) {
+    return "我听见你在责怪自己。";
+  }
+  if (/(开心|不错|很好|感恩|平安)/u.test(text)) {
+    return "我听见你此刻有些平安。";
+  }
+  return "我在这里陪着你。";
 }
 
 function buildFollowupPrompt(transcript, firstText) {

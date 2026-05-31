@@ -89,6 +89,7 @@ test("summarizeHTTPSessionResult reports first audio and timing", () => {
     elapsedMs: 1_500,
     uploadMs: 200,
     firstAudioMs: 1_000,
+    stopToFirstAudioMs: 700,
     sessionID: "drs_1",
     uploadChunks: 2,
     encodedUploadBytes: 80,
