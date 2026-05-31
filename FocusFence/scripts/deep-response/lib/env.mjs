@@ -14,7 +14,7 @@ export const DEFAULT_DEEP_RESPONSE_ENV = {
   DOUBAO_ASR_AUDIO_CODEC: "raw",
   DOUBAO_ASR_AUDIO_BITS: "16",
   DOUBAO_ASR_AUDIO_CHANNELS: "1",
-  DOUBAO_ASR_END_WINDOW_SIZE_MS: "800",
+  DOUBAO_ASR_END_WINDOW_SIZE_MS: "300",
   DOUBAO_TTS_WS_URL: "wss://openspeech.bytedance.com/api/v3/tts/bidirection",
   DOUBAO_TTS_HTTP_URL: "https://openspeech.bytedance.com/api/v1/tts",
   DOUBAO_TTS_RESOURCE_ID: "volc.service_type.10029",

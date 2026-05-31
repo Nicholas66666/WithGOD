@@ -33,6 +33,7 @@ test("buildDeepResponseEnv applies non-secret provider defaults", () => {
   assert.equal(env.ARK_BASE_URL, DEFAULT_DEEP_RESPONSE_ENV.ARK_BASE_URL);
   assert.equal(env.ARK_MODEL, "doubao-seed-character-251128");
   assert.equal(env.DOUBAO_ASR_RESOURCE_ID, "volc.bigasr.sauc.duration");
+  assert.equal(env.DOUBAO_ASR_END_WINDOW_SIZE_MS, "300");
   assert.equal(env.DOUBAO_TTS_RESOURCE_ID, "volc.service_type.10029");
 });
 

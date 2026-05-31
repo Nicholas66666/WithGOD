@@ -72,8 +72,10 @@ export async function startDeepResponseServer({
         ok: true,
         mode,
         audioReplayIntervalMs,
+        firstPhraseMode: env.DEEP_RESPONSE_FIRST_PHRASE_MODE || "",
         arkModel: env.ARK_MODEL || "",
         asrModelName: env.DOUBAO_ASR_MODEL_NAME || "",
+        asrEndWindowSizeMs: env.DOUBAO_ASR_END_WINDOW_SIZE_MS || "",
         ttsSpeakerID: env.DOUBAO_TTS_SPEAKER_ID || ""
       });
       return;

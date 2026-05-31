@@ -93,6 +93,8 @@ test("DeepResponse server exposes non-secret debug config", async () => {
     env: {
       ARK_MODEL: "ark-model",
       DOUBAO_ASR_MODEL_NAME: "asr-model",
+      DOUBAO_ASR_END_WINDOW_SIZE_MS: "300",
+      DEEP_RESPONSE_FIRST_PHRASE_MODE: "template",
       DEEP_RESPONSE_AUDIO_REPLAY_INTERVAL_MS: "25"
     }
   });
@@ -102,8 +104,10 @@ test("DeepResponse server exposes non-secret debug config", async () => {
     assert.equal(config.ok, true);
     assert.equal(config.mode, "provider");
     assert.equal(config.audioReplayIntervalMs, 25);
+    assert.equal(config.firstPhraseMode, "template");
     assert.equal(config.arkModel, "ark-model");
     assert.equal(config.asrModelName, "asr-model");
+    assert.equal(config.asrEndWindowSizeMs, "300");
   } finally {
     await server.close();
   }
