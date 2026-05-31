@@ -381,13 +381,19 @@ final class DeepResponseRealtimeClient: ObservableObject {
             if (audioResponse as? HTTPURLResponse)?.statusCode == 200 {
                 let batch = try JSONDecoder().decode(DeepResponseHTTPSessionAudioResponse.self, from: audioData)
                 httpOutputAudioCursor = batch.nextCursor
+                var playbackAudio = Data()
+                var playbackSampleRate: Double?
                 for chunk in batch.chunks {
                     guard let data = Data(base64Encoded: chunk.audioBase64), !data.isEmpty else {
                         continue
                     }
                     receivedAudioChunks += 1
                     receivedAudioBytes += data.count
-                    player.enqueuePCM16(data, sampleRate: chunk.sampleRate ?? 24_000)
+                    playbackSampleRate = chunk.sampleRate ?? playbackSampleRate ?? 24_000
+                    playbackAudio.append(data)
+                }
+                if !playbackAudio.isEmpty {
+                    player.enqueuePCM16(playbackAudio, sampleRate: playbackSampleRate ?? 24_000)
                 }
             }
 

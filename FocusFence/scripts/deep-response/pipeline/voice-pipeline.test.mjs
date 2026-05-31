@@ -108,6 +108,72 @@ test("VoicePipeline creates first and followup spoken segments", async () => {
   assert.match(llmCalls[1].transcript, /不要重复已经说过的第一句/);
 });
 
+test("VoicePipeline streamSegmented yields first audio before followup generation finishes", async () => {
+  let releaseFollowup;
+  const followupStarted = new Promise((resolve) => {
+    releaseFollowup = resolve;
+  });
+  const asr = {
+    async transcribe() {
+      return {
+        transcript: "我今天很累",
+        timing: { transcript_final_ms: 100 }
+      };
+    }
+  };
+  const llm = {
+    async generate({ streamFull }) {
+      if (!streamFull) {
+        return {
+          text: "我听见你真的很累。",
+          firstPhrase: "我听见你真的很累。",
+          timing: { llm_first_phrase_ms: 200 }
+        };
+      }
+      await followupStarted;
+      return {
+        text: "我们先停在这里。",
+        firstPhrase: "我们先停在这里。",
+        timing: { llm_followup_done_ms: 300 }
+      };
+    }
+  };
+  const tts = {
+    async synthesize({ text }) {
+      return {
+        audioChunks: [Buffer.from(text)],
+        timing: { tts_first_audio_ms: text.length }
+      };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20, 30]) });
+  const iterator = pipeline.streamSegmented({
+    audioChunks: [Buffer.from("voice")]
+  })[Symbol.asyncIterator]();
+
+  assert.deepEqual(await iterator.next(), {
+    value: {
+      type: "transcript_final",
+      transcript: "我今天很累"
+    },
+    done: false
+  });
+
+  const first = await iterator.next();
+  assert.equal(first.done, false);
+  assert.equal(first.value.type, "segment");
+  assert.equal(first.value.segment, "first");
+  assert.equal(first.value.text, "我听见你真的很累。");
+  assert.equal(Buffer.concat(first.value.audioChunks).toString("utf8"), "我听见你真的很累。");
+
+  releaseFollowup();
+  const followup = await iterator.next();
+  assert.equal(followup.done, false);
+  assert.equal(followup.value.type, "segment");
+  assert.equal(followup.value.segment, "followup");
+});
+
 function fakeClock(values) {
   let index = 0;
   return () => values[Math.min(index++, values.length - 1)];

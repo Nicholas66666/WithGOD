@@ -1,6 +1,6 @@
 # Deep Response Active State
 
-更新：2026-05-31 12:40 Asia/Shanghai
+更新：2026-05-31 13:05 Asia/Shanghai
 
 这个文件是 Deep Response 开发的持久上下文入口。每次上下文压缩、换会话、长时间中断后，先读本文件，再继续开发。
 
@@ -107,10 +107,13 @@ Implemented in current working tree:
 - Event/audio puller over HTTP session polling.
 - Compact UI for session state, chunks up/down/bytes, transcript/text/timing.
 - Server audio chunk response includes `sampleRate: 24000`.
+- Server-side `VoicePipeline.streamSegmented()` now exposes transcript and first segment before followup finishes.
+- HTTP session server now pushes first text/audio as soon as first TTS is done instead of waiting for full followup.
+- Watch session playback now coalesces audio chunks from a pull batch into one PCM buffer to reduce small-buffer stutter.
 
 Verified before manual Watch test:
 
-- `npm run test:node`: 73 passing.
+- `npm run test:node`: 75 passing.
 - `xcodebuild -scheme DeepResponseWatchLab -destination generic/platform=watchOS`: build succeeded.
 
 Still pending before asking user:
@@ -119,6 +122,13 @@ Still pending before asking user:
 - Deploy Render if server behavior changed.
 - Self-test Render HTTP session after deploy.
 - Install DeepLab on Watch when device is connected.
+
+Latest real Watch feedback before the streaming fix:
+
+- HTTP session transport passed: `http_session:done`, up/down chunks increased, transcript often correct.
+- Playback bug observed once: repeated first syllable and early cutoff (`听听听`).
+- Latency was still too high because server only exposed session audio after full `runSegmented()` completed.
+- One turn returned empty `you:`; keep watching this as ASR/upload completeness diagnostic.
 
 Acceptance:
 

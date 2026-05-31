@@ -445,6 +445,18 @@ async function runHTTPSessionPipeline({
     };
   } else {
     const pipeline = createPipeline ? createPipeline() : createDefaultPipeline(env);
+    if (typeof pipeline.streamSegmented === "function") {
+      await runHTTPSessionStreamedPipeline({
+        session,
+        turnID,
+        generationID,
+        stream: pipeline.streamSegmented({
+          audioChunks: replayChunks(inputChunks, audioReplayIntervalMs)
+        }),
+        recordEvent
+      });
+      return;
+    }
     if (typeof pipeline.runSegmented === "function") {
       result = await pipeline.runSegmented({
         audioChunks: replayChunks(inputChunks, audioReplayIntervalMs)
@@ -524,6 +536,87 @@ async function runHTTPSessionPipeline({
     followupText: result.followup?.text || "",
     audioChunks: session.audio.length,
     timing: result.timing || {}
+  });
+}
+
+async function runHTTPSessionStreamedPipeline({
+  session,
+  turnID,
+  generationID,
+  stream,
+  recordEvent = () => {}
+}) {
+  session.state = "assistant_speaking";
+  let transcript = "";
+  let firstText = "";
+  let followupText = "";
+  let timing = {};
+  let providerMeta = {};
+
+  for await (const event of stream) {
+    if (session.canceledGenerations.has(generationID)) {
+      recordEvent("http_session_stale_dropped", {
+        sessionID: session.sessionID,
+        turnID,
+        generationID
+      });
+      return;
+    }
+
+    if (event.type === "transcript_final") {
+      transcript = event.transcript || event.text || "";
+      pushSessionEvent(session, {
+        type: "transcript_final",
+        sessionID: session.sessionID,
+        turnID,
+        generationID,
+        text: transcript
+      });
+    } else if (event.type === "segment") {
+      if (event.segment === "followup") {
+        followupText = event.text || "";
+      } else {
+        firstText = event.text || "";
+      }
+      pushAssistantSegment(session, {
+        turnID,
+        generationID,
+        segment: event.segment || "first",
+        text: event.text || "",
+        audioChunks: event.audioChunks || []
+      });
+    } else if (event.type === "timing") {
+      timing = event.timing || {};
+      providerMeta = event.providerMeta || {};
+    }
+  }
+
+  pushSessionEvent(session, {
+    type: "audio_done",
+    sessionID: session.sessionID,
+    turnID,
+    generationID,
+    reason: "provider_complete"
+  });
+  pushSessionEvent(session, {
+    type: "timing",
+    sessionID: session.sessionID,
+    turnID,
+    generationID,
+    timing,
+    providerMeta
+  });
+  session.activeGenerations.delete(generationID);
+  session.state = "listening";
+  recordEvent("http_session_complete", {
+    sessionID: session.sessionID,
+    turnID,
+    generationID,
+    transcript,
+    firstText,
+    followupText,
+    audioChunks: session.audio.length,
+    timing
   });
 }
 

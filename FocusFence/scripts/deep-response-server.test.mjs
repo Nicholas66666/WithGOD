@@ -394,6 +394,72 @@ test("DeepResponse HTTP session accepts audio chunks and exposes event and audio
   }
 });
 
+test("DeepResponse HTTP session exposes first segment before followup finishes", async () => {
+  let releaseFollowup;
+  const followupGate = new Promise((resolve) => {
+    releaseFollowup = resolve;
+  });
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async *streamSegmented() {
+        yield { type: "transcript_final", transcript: "progressive transcript" };
+        yield {
+          type: "segment",
+          segment: "first",
+          text: "first now",
+          audioChunks: [Buffer.from("first-now-audio")]
+        };
+        await followupGate;
+        yield {
+          type: "segment",
+          segment: "followup",
+          text: "followup later",
+          audioChunks: [Buffer.from("followup-later-audio")]
+        };
+        yield {
+          type: "timing",
+          timing: { voice_pipeline_total_ms: 123 },
+          providerMeta: { transport: "stream-segmented" }
+        };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {});
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+    await postBytes(`${base}/audio?turn_id=turn-progressive&seq=0`, Buffer.from("voice"));
+    await postJSON(`${base}/input-stop`, { turnID: "turn-progressive" });
+
+    await waitFor(async () => {
+      const audio = await fetchJSON(`${base}/audio?cursor=0`);
+      return audio.chunks.some((chunk) => chunk.segment === "first");
+    });
+
+    const earlyEvents = await fetchJSON(`${base}/events?cursor=0`);
+    const earlyAudio = await fetchJSON(`${base}/audio?cursor=0`);
+    assert(earlyEvents.events.some((event) => event.type === "transcript_final" && event.text === "progressive transcript"));
+    assert(earlyEvents.events.some((event) => event.type === "assistant_text_delta" && event.segment === "first" && event.delta === "first now"));
+    assert(earlyEvents.events.every((event) => event.type !== "timing"));
+    assert.deepEqual(earlyAudio.chunks.map((chunk) => Buffer.from(chunk.audioBase64, "base64").toString("utf8")), [
+      "first-now-audio"
+    ]);
+
+    releaseFollowup();
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "timing");
+    });
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse HTTP session abort drops stale generation audio", async () => {
   let releasePipeline;
   const pipelineStarted = new Promise((resolve) => {
