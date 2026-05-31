@@ -309,6 +309,146 @@ test("DeepResponse server completes a segmented HTTP turn with first and followu
   }
 });
 
+test("DeepResponse HTTP session accepts audio chunks and exposes event and audio cursors", async () => {
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async runSegmented({ audioChunks }) {
+        const collected = [];
+        for await (const chunk of audioChunks) {
+          collected.push(Buffer.from(chunk).toString("utf8"));
+        }
+        return {
+          transcript: collected.join("+"),
+          first: {
+            text: "first streamed phrase",
+            audioChunks: [Buffer.from("first-session-audio")],
+            audioByteLength: Buffer.byteLength("first-session-audio")
+          },
+          followup: {
+            text: "followup streamed phrase",
+            audioChunks: [Buffer.from("followup-session-audio")],
+            audioByteLength: Buffer.byteLength("followup-session-audio")
+          },
+          timing: { voice_pipeline_total_ms: 64 },
+          providerMeta: { transport: "http-session" }
+        };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {
+      sampleRate: 16000
+    });
+    assert.equal(created.ok, true);
+    assert.equal(created.state, "listening");
+    assert.match(created.sessionID, /^drs_/);
+
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+    const uploadedA = await postBytes(`${base}/audio?turn_id=turn-1&seq=0`, Buffer.from("chunk-a"));
+    const uploadedB = await postBytes(`${base}/audio?turn_id=turn-1&seq=1`, Buffer.from("chunk-b"));
+    assert.deepEqual([uploadedA.bytes, uploadedB.bytes], [7, 7]);
+
+    const stopped = await postJSON(`${base}/input-stop`, { turnID: "turn-1" });
+    assert.equal(stopped.ok, true);
+    assert.equal(stopped.turnID, "turn-1");
+    assert.match(stopped.generationID, /^gen_/);
+
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "transcript_final")
+        && events.events.some((event) => event.type === "assistant_text_delta")
+        && events.events.some((event) => event.type === "audio_done")
+        && events.events.some((event) => event.type === "timing");
+    });
+
+    const events = await fetchJSON(`${base}/events?cursor=0`);
+    assert(events.nextCursor > 0);
+    assert(events.events.some((event) => event.type === "session_ready"));
+    assert(events.events.some((event) => event.type === "transcript_final" && event.text === "chunk-a+chunk-b"));
+    assert(events.events.some((event) => event.type === "assistant_text_delta" && event.delta === "first streamed phrase"));
+    assert(events.events.some((event) => event.type === "assistant_text_delta" && event.delta === "followup streamed phrase"));
+    assert(events.events.some((event) => event.type === "timing" && event.timing.voice_pipeline_total_ms === 64));
+
+    const audio = await fetchJSON(`${base}/audio?cursor=0`);
+    assert.equal(audio.ok, true);
+    assert.equal(audio.chunks.length, 2);
+    assert.deepEqual(audio.chunks.map((chunk) => Buffer.from(chunk.audioBase64, "base64").toString("utf8")), [
+      "first-session-audio",
+      "followup-session-audio"
+    ]);
+
+    await waitFor(async () => {
+      const debug = await fetchJSON(`http://127.0.0.1:${server.port}/debug/events`);
+      return debug.events.some((event) => event.type === "http_session_created" && event.sessionID === created.sessionID)
+        && debug.events.some((event) => event.type === "http_session_audio" && event.sessionID === created.sessionID && event.seq === 1)
+        && debug.events.some((event) => event.type === "http_session_complete" && event.sessionID === created.sessionID);
+    });
+  } finally {
+    await server.close();
+  }
+});
+
+test("DeepResponse HTTP session abort drops stale generation audio", async () => {
+  let releasePipeline;
+  const pipelineStarted = new Promise((resolve) => {
+    releasePipeline = resolve;
+  });
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async runSegmented() {
+        await pipelineStarted;
+        return {
+          transcript: "stale transcript",
+          first: {
+            text: "stale phrase",
+            audioChunks: [Buffer.from("stale-audio")],
+            audioByteLength: Buffer.byteLength("stale-audio")
+          },
+          followup: { text: "", audioChunks: [], audioByteLength: 0 },
+          timing: { voice_pipeline_total_ms: 99 },
+          providerMeta: {}
+        };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {});
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+    await postBytes(`${base}/audio?turn_id=turn-stale&seq=0`, Buffer.from("chunk"));
+    const stopped = await postJSON(`${base}/input-stop`, { turnID: "turn-stale" });
+    const aborted = await postJSON(`${base}/abort`, {
+      turnID: "turn-stale",
+      generationID: stopped.generationID,
+      reason: "barge_in"
+    });
+    assert.equal(aborted.ok, true);
+    assert.equal(aborted.staleAudioDropped, true);
+
+    releasePipeline();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const audio = await fetchJSON(`${base}/audio?cursor=0`);
+    assert.equal(audio.chunks.length, 0);
+    const events = await fetchJSON(`${base}/events?cursor=0`);
+    assert(events.events.some((event) => event.type === "abort" && event.generationID === stopped.generationID));
+    assert(events.events.every((event) => event.type !== "assistant_text_delta"));
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse server chunks HTTP realtime turn PCM before provider pipeline", async () => {
   const seenChunkSizes = [];
   const server = await startDeepResponseServer({
@@ -455,6 +595,26 @@ async function waitFor(predicate, { timeoutMs = 2_000 } = {}) {
 
 async function fetchJSON(url) {
   const response = await fetch(url);
+  assert.equal(response.ok, true);
+  return response.json();
+}
+
+async function postJSON(url, body) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  assert.equal(response.ok, true);
+  return response.json();
+}
+
+async function postBytes(url, body) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/octet-stream" },
+    body
+  });
   assert.equal(response.ok, true);
   return response.json();
 }

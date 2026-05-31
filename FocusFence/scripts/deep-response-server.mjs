@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { createServer } from "node:http";
+import crypto from "node:crypto";
 import { pathToFileURL } from "node:url";
 
 import {
@@ -26,6 +27,7 @@ export async function startDeepResponseServer({
   audioReplayIntervalMs = Number(process.env.DEEP_RESPONSE_AUDIO_REPLAY_INTERVAL_MS ?? env.DEEP_RESPONSE_AUDIO_REPLAY_INTERVAL_MS ?? 0)
 } = {}) {
   const events = [];
+  const httpSessions = new Map();
   const recordEvent = (type, details = {}) => {
     const event = {
       at: new Date().toISOString(),
@@ -134,6 +136,27 @@ export async function startDeepResponseServer({
       });
       return;
     }
+    if (request.method === "POST" && url.pathname === "/deep-response/sessions") {
+      handleHTTPSessionCreate(request, response, {
+        sessions: httpSessions,
+        recordEvent
+      });
+      return;
+    }
+    const sessionRoute = matchHTTPSessionRoute(url.pathname);
+    if (sessionRoute) {
+      handleHTTPSessionRoute(request, response, {
+        url,
+        route: sessionRoute,
+        sessions: httpSessions,
+        mode,
+        env,
+        createPipeline,
+        audioReplayIntervalMs,
+        recordEvent
+      });
+      return;
+    }
     sendJSON(response, 404, { error: "not_found" });
   });
 
@@ -170,6 +193,388 @@ export async function startDeepResponseServer({
   return {
     port: actualPort,
     close: () => new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()))
+  };
+}
+
+async function handleHTTPSessionCreate(request, response, { sessions, recordEvent = () => {} }) {
+  try {
+    const body = await readJSONBody(request);
+    const sessionID = body.sessionID || `drs_${crypto.randomUUID().replaceAll("-", "")}`;
+    const session = {
+      sessionID,
+      state: "listening",
+      sampleRate: Number(body.sampleRate || 16000),
+      audioByTurn: new Map(),
+      events: [],
+      audio: [],
+      nextEventSeq: 0,
+      nextAudioSeq: 0,
+      canceledGenerations: new Set(),
+      activeGenerations: new Set()
+    };
+    sessions.set(sessionID, session);
+    pushSessionEvent(session, {
+      type: "session_ready",
+      sessionID,
+      state: session.state,
+      sampleRate: session.sampleRate
+    });
+    recordEvent("http_session_created", {
+      sessionID,
+      sampleRate: session.sampleRate,
+      remoteAddress: request.socket.remoteAddress || "unknown",
+      userAgent: request.headers["user-agent"] || ""
+    });
+    sendJSON(response, 200, {
+      ok: true,
+      sessionID,
+      state: session.state,
+      sampleRate: session.sampleRate
+    });
+  } catch (error) {
+    sendJSON(response, 400, {
+      ok: false,
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+}
+
+function handleHTTPSessionRoute(request, response, options) {
+  const { route, sessions } = options;
+  const session = sessions.get(route.sessionID);
+  if (!session) {
+    sendJSON(response, 404, { ok: false, error: "session_not_found" });
+    return;
+  }
+
+  if (request.method === "POST" && route.action === "audio") {
+    handleHTTPSessionAudio(request, response, { ...options, session });
+    return;
+  }
+  if (request.method === "POST" && route.action === "input-stop") {
+    handleHTTPSessionInputStop(request, response, { ...options, session });
+    return;
+  }
+  if (request.method === "POST" && route.action === "abort") {
+    handleHTTPSessionAbort(request, response, { ...options, session });
+    return;
+  }
+  if (request.method === "POST" && route.action === "end") {
+    handleHTTPSessionEnd(request, response, { ...options, session });
+    return;
+  }
+  if (request.method === "GET" && route.action === "events") {
+    handleHTTPSessionEvents(response, { ...options, session });
+    return;
+  }
+  if (request.method === "GET" && route.action === "audio") {
+    handleHTTPSessionAudioPull(response, { ...options, session });
+    return;
+  }
+
+  sendJSON(response, 404, { ok: false, error: "session_route_not_found" });
+}
+
+async function handleHTTPSessionAudio(request, response, { url, session, recordEvent = () => {} }) {
+  const body = await readRequestBody(request);
+  const turnID = url.searchParams.get("turn_id") || "turn-1";
+  const seq = Number(url.searchParams.get("seq") || 0);
+  const chunks = session.audioByTurn.get(turnID) || [];
+  chunks.push(body);
+  session.audioByTurn.set(turnID, chunks);
+  session.state = "user_speaking";
+  recordEvent("http_session_audio", {
+    sessionID: session.sessionID,
+    turnID,
+    seq,
+    bytes: body.byteLength
+  });
+  sendJSON(response, 200, {
+    ok: true,
+    sessionID: session.sessionID,
+    turnID,
+    seq,
+    bytes: body.byteLength
+  });
+}
+
+async function handleHTTPSessionInputStop(request, response, options) {
+  const { session, recordEvent = () => {} } = options;
+  const body = await readJSONBody(request);
+  const turnID = body.turnID || "turn-1";
+  const generationID = body.generationID || `gen_${crypto.randomUUID().replaceAll("-", "")}`;
+  session.state = "assistant_thinking";
+  session.activeGenerations.add(generationID);
+  pushSessionEvent(session, {
+    type: "input_stop",
+    sessionID: session.sessionID,
+    turnID,
+    generationID
+  });
+  recordEvent("http_session_input_stop", {
+    sessionID: session.sessionID,
+    turnID,
+    generationID
+  });
+  runHTTPSessionPipeline({ ...options, turnID, generationID }).catch((error) => {
+    pushSessionEvent(session, {
+      type: "error",
+      sessionID: session.sessionID,
+      turnID,
+      generationID,
+      message: error instanceof Error ? error.message : String(error)
+    });
+    recordEvent("http_session_failed", {
+      sessionID: session.sessionID,
+      turnID,
+      generationID,
+      message: error instanceof Error ? error.message : String(error)
+    });
+  });
+  sendJSON(response, 200, {
+    ok: true,
+    sessionID: session.sessionID,
+    turnID,
+    generationID
+  });
+}
+
+async function handleHTTPSessionAbort(request, response, { session, recordEvent = () => {} }) {
+  const body = await readJSONBody(request);
+  const turnID = body.turnID || "";
+  const generationID = body.generationID || "";
+  if (generationID) {
+    session.canceledGenerations.add(generationID);
+    session.activeGenerations.delete(generationID);
+  }
+  session.state = "listening";
+  pushSessionEvent(session, {
+    type: "abort",
+    sessionID: session.sessionID,
+    turnID,
+    generationID,
+    reason: body.reason || "client_abort"
+  });
+  recordEvent("http_session_abort", {
+    sessionID: session.sessionID,
+    turnID,
+    generationID,
+    reason: body.reason || "client_abort"
+  });
+  sendJSON(response, 200, {
+    ok: true,
+    sessionID: session.sessionID,
+    turnID,
+    generationID,
+    staleAudioDropped: true
+  });
+}
+
+async function handleHTTPSessionEnd(request, response, { session, recordEvent = () => {} }) {
+  const body = await readJSONBody(request);
+  session.state = "ended";
+  pushSessionEvent(session, {
+    type: "session_end",
+    sessionID: session.sessionID,
+    reason: body.reason || "client_end"
+  });
+  recordEvent("http_session_end", {
+    sessionID: session.sessionID,
+    reason: body.reason || "client_end"
+  });
+  sendJSON(response, 200, {
+    ok: true,
+    sessionID: session.sessionID,
+    state: session.state
+  });
+}
+
+function handleHTTPSessionEvents(response, { url, session }) {
+  const cursor = Number(url.searchParams.get("cursor") || 0);
+  const selected = session.events.filter((event) => event.seq >= cursor);
+  const nextCursor = selected.length > 0 ? selected.at(-1).seq + 1 : cursor;
+  sendJSON(response, 200, {
+    ok: true,
+    sessionID: session.sessionID,
+    cursor,
+    nextCursor,
+    events: selected
+  });
+}
+
+function handleHTTPSessionAudioPull(response, { url, session }) {
+  const cursor = Number(url.searchParams.get("cursor") || 0);
+  const generationID = url.searchParams.get("generation_id") || "";
+  const selected = session.audio
+    .filter((chunk) => chunk.seq >= cursor)
+    .filter((chunk) => !generationID || chunk.generationID === generationID);
+  const nextCursor = selected.length > 0 ? selected.at(-1).seq + 1 : cursor;
+  sendJSON(response, 200, {
+    ok: true,
+    sessionID: session.sessionID,
+    cursor,
+    nextCursor,
+    chunks: selected
+  });
+}
+
+async function runHTTPSessionPipeline({
+  session,
+  turnID,
+  generationID,
+  mode,
+  env,
+  createPipeline,
+  audioReplayIntervalMs,
+  recordEvent = () => {}
+}) {
+  const inputChunks = session.audioByTurn.get(turnID) || [];
+  let result;
+  if (mode === "echo") {
+    const audio = Buffer.concat(inputChunks.map((chunk) => Buffer.from(chunk)));
+    result = {
+      transcript: "",
+      first: {
+        text: "echo",
+        audioChunks: [audio],
+        audioByteLength: audio.byteLength
+      },
+      followup: { text: "", audioChunks: [], audioByteLength: 0 },
+      timing: {},
+      providerMeta: { mode: "echo" }
+    };
+  } else {
+    const pipeline = createPipeline ? createPipeline() : createDefaultPipeline(env);
+    if (typeof pipeline.runSegmented === "function") {
+      result = await pipeline.runSegmented({
+        audioChunks: replayChunks(inputChunks, audioReplayIntervalMs)
+      });
+    } else {
+      const fallback = await pipeline.run({
+        audioChunks: replayChunks(inputChunks, audioReplayIntervalMs)
+      });
+      result = {
+        transcript: fallback.transcript || "",
+        first: {
+          text: fallback.firstPhrase || fallback.responseText || "",
+          audioChunks: fallback.audioChunks || [],
+          audioByteLength: fallback.audioByteLength || 0
+        },
+        followup: { text: "", audioChunks: [], audioByteLength: 0 },
+        timing: fallback.timing || {},
+        providerMeta: fallback.providerMeta || {}
+      };
+    }
+  }
+
+  if (session.canceledGenerations.has(generationID)) {
+    recordEvent("http_session_stale_dropped", {
+      sessionID: session.sessionID,
+      turnID,
+      generationID
+    });
+    return;
+  }
+
+  session.state = "assistant_speaking";
+  pushSessionEvent(session, {
+    type: "transcript_final",
+    sessionID: session.sessionID,
+    turnID,
+    generationID,
+    text: result.transcript || ""
+  });
+  pushAssistantSegment(session, {
+    turnID,
+    generationID,
+    segment: "first",
+    text: result.first?.text || "",
+    audioChunks: result.first?.audioChunks || []
+  });
+  pushAssistantSegment(session, {
+    turnID,
+    generationID,
+    segment: "followup",
+    text: result.followup?.text || "",
+    audioChunks: result.followup?.audioChunks || []
+  });
+  pushSessionEvent(session, {
+    type: "audio_done",
+    sessionID: session.sessionID,
+    turnID,
+    generationID,
+    reason: "provider_complete"
+  });
+  pushSessionEvent(session, {
+    type: "timing",
+    sessionID: session.sessionID,
+    turnID,
+    generationID,
+    timing: result.timing || {},
+    providerMeta: result.providerMeta || {}
+  });
+  session.activeGenerations.delete(generationID);
+  session.state = "listening";
+  recordEvent("http_session_complete", {
+    sessionID: session.sessionID,
+    turnID,
+    generationID,
+    transcript: result.transcript || "",
+    firstText: result.first?.text || "",
+    followupText: result.followup?.text || "",
+    audioChunks: session.audio.length,
+    timing: result.timing || {}
+  });
+}
+
+function pushAssistantSegment(session, { turnID, generationID, segment, text, audioChunks }) {
+  if (text) {
+    pushSessionEvent(session, {
+      type: "assistant_text_delta",
+      sessionID: session.sessionID,
+      turnID,
+      generationID,
+      segment,
+      delta: text
+    });
+  }
+  for (const chunk of audioChunks || []) {
+    pushSessionAudio(session, {
+      turnID,
+      generationID,
+      segment,
+      audio: Buffer.from(chunk)
+    });
+  }
+}
+
+function pushSessionEvent(session, event) {
+  const seq = session.nextEventSeq;
+  session.nextEventSeq += 1;
+  session.events.push({ seq, at: new Date().toISOString(), ...event });
+}
+
+function pushSessionAudio(session, { turnID, generationID, segment, audio }) {
+  const seq = session.nextAudioSeq;
+  session.nextAudioSeq += 1;
+  session.audio.push({
+    seq,
+    turnID,
+    generationID,
+    segment,
+    audioBase64: Buffer.from(audio).toString("base64"),
+    audioByteLength: audio.byteLength
+  });
+}
+
+function matchHTTPSessionRoute(pathname) {
+  const match = pathname.match(/^\/deep-response\/sessions\/([^/]+)\/([^/]+)$/);
+  if (!match) {
+    return null;
+  }
+  return {
+    sessionID: decodeURIComponent(match[1]),
+    action: match[2]
   };
 }
 
@@ -543,6 +948,14 @@ async function readRequestBody(request) {
     chunks.push(Buffer.from(chunk));
   }
   return Buffer.concat(chunks);
+}
+
+async function readJSONBody(request) {
+  const body = await readRequestBody(request);
+  if (body.byteLength === 0) {
+    return {};
+  }
+  return JSON.parse(body.toString("utf8"));
 }
 
 export function isDirectRun(importMetaURL, scriptPath) {

@@ -12,6 +12,8 @@
     "deep:render:sync-env": "node scripts/render-sync-deep-env.mjs",
     "deep:echo:test": "node scripts/test-deep-response-echo.mjs",
     "deep:realtime:test": "node scripts/test-deep-response-realtime.mjs",
+    "deep:http-session:test": "node scripts/test-deep-response-http-session.mjs",
+    "deep:streaming:provider:test": "node scripts/test-deep-response-streaming-provider.mjs",
     "test:node": "node --test scripts/*.test.mjs scripts/deep-response/**/*.test.mjs"
   },
   "dependencies": {}
