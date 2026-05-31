@@ -174,6 +174,84 @@ test("VoicePipeline streamSegmented yields first audio before followup generatio
   assert.equal(followup.value.segment, "followup");
 });
 
+test("VoicePipeline streamSegmented yields streaming TTS audio before TTS completes", async () => {
+  let releaseSecondAudio;
+  const secondAudioGate = new Promise((resolve) => {
+    releaseSecondAudio = resolve;
+  });
+  const asr = {
+    async transcribe() {
+      return {
+        transcript: "我今天很累",
+        timing: { transcript_final_ms: 100 }
+      };
+    }
+  };
+  const llm = {
+    async generate({ streamFull }) {
+      if (!streamFull) {
+        return {
+          text: "我听见你真的很累。",
+          firstPhrase: "我听见你真的很累。",
+          timing: { llm_first_phrase_ms: 200 }
+        };
+      }
+      return {
+        text: "",
+        firstPhrase: "",
+        timing: {}
+      };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      yield {
+        type: "audio_chunk",
+        audioChunk: Buffer.from(`${text}:first`),
+        sampleRate: 24000
+      };
+      await secondAudioGate;
+      yield {
+        type: "audio_chunk",
+        audioChunk: Buffer.from(`${text}:second`),
+        sampleRate: 24000
+      };
+      yield {
+        type: "done",
+        timing: { tts_first_audio_ms: 10, tts_total_ms: 30 },
+        connectID: "tts-stream"
+      };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20, 30]) });
+  const iterator = pipeline.streamSegmented({
+    audioChunks: [Buffer.from("voice")]
+  })[Symbol.asyncIterator]();
+
+  assert.equal((await iterator.next()).value.type, "transcript_final");
+  assert.deepEqual(await iterator.next(), {
+    value: {
+      type: "segment_text",
+      segment: "first",
+      text: "我听见你真的很累。"
+    },
+    done: false
+  });
+
+  const firstAudio = await iterator.next();
+  assert.equal(firstAudio.done, false);
+  assert.equal(firstAudio.value.type, "audio_chunk");
+  assert.equal(firstAudio.value.segment, "first");
+  assert.equal(firstAudio.value.audioChunk.toString("utf8"), "我听见你真的很累。:first");
+
+  releaseSecondAudio();
+  const secondAudio = await iterator.next();
+  assert.equal(secondAudio.done, false);
+  assert.equal(secondAudio.value.type, "audio_chunk");
+  assert.equal(secondAudio.value.audioChunk.toString("utf8"), "我听见你真的很累。:second");
+});
+
 function fakeClock(values) {
   let index = 0;
   return () => values[Math.min(index++, values.length - 1)];

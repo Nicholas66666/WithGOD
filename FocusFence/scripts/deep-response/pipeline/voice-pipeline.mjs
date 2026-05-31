@@ -50,6 +50,7 @@ export class VoicePipeline {
     const firstLLM = await this.llm.generate({
       transcript: asrResult.transcript,
       context,
+      messages: buildFirstPhraseMessages(asrResult.transcript, context),
       signal,
       streamFull: false,
       maxTokens: 80,
@@ -64,6 +65,7 @@ export class VoicePipeline {
     const followupLLM = await this.llm.generate({
       transcript: buildFollowupPrompt(asrResult.transcript, firstText),
       context,
+      messages: buildFollowupMessages(asrResult.transcript, firstText, context),
       signal,
       streamFull: true,
       maxTokens: 64
@@ -107,40 +109,52 @@ export class VoicePipeline {
     const firstLLM = await this.llm.generate({
       transcript: asrResult.transcript,
       context,
+      messages: buildFirstPhraseMessages(asrResult.transcript, context),
       signal,
       streamFull: false,
       maxTokens: 80,
       minChars: 14
     });
     const firstText = firstLLM.firstPhrase || firstLLM.text || "";
-    const firstTTS = await this.tts.synthesize({
-      text: firstText,
-      signal
-    });
-    yield {
-      type: "segment",
-      segment: "first",
-      text: firstText,
-      ...buildSegment(firstText, firstTTS)
-    };
+    let firstTTS;
+    if (typeof this.tts.synthesizeStream === "function") {
+      yield { type: "segment_text", segment: "first", text: firstText };
+      firstTTS = yield* streamTTSegment(this.tts, { segment: "first", text: firstText, signal });
+    } else {
+      firstTTS = await this.tts.synthesize({
+        text: firstText,
+        signal
+      });
+      yield {
+        type: "segment",
+        segment: "first",
+        text: firstText,
+        ...buildSegment(firstText, firstTTS)
+      };
+    }
 
     const followupLLM = await this.llm.generate({
       transcript: buildFollowupPrompt(asrResult.transcript, firstText),
       context,
+      messages: buildFollowupMessages(asrResult.transcript, firstText, context),
       signal,
       streamFull: true,
       maxTokens: 64
     });
     const followupText = removeRepeatedPrefix(followupLLM.text || followupLLM.firstPhrase || "", firstText);
-    const followupTTS = followupText
-      ? await this.tts.synthesize({ text: followupText, signal })
-      : { audioChunks: [], timing: {} };
-    yield {
-      type: "segment",
-      segment: "followup",
-      text: followupText,
-      ...buildSegment(followupText, followupTTS)
-    };
+    let followupTTS = { audioChunks: [], timing: {} };
+    if (followupText && typeof this.tts.synthesizeStream === "function") {
+      yield { type: "segment_text", segment: "followup", text: followupText };
+      followupTTS = yield* streamTTSegment(this.tts, { segment: "followup", text: followupText, signal });
+    } else if (followupText) {
+      followupTTS = await this.tts.synthesize({ text: followupText, signal });
+      yield {
+        type: "segment",
+        segment: "followup",
+        text: followupText,
+        ...buildSegment(followupText, followupTTS)
+      };
+    }
 
     const timing = {
       ...asrResult.timing,
@@ -173,11 +187,89 @@ function buildSegment(text, ttsResult) {
   };
 }
 
+async function* streamTTSegment(tts, { segment, text, signal }) {
+  const audioChunks = [];
+  let timing = {};
+  let sampleRate;
+  let connectID;
+  let mode;
+
+  for await (const event of tts.synthesizeStream({ text, signal })) {
+    if (event.type === "audio_chunk" && event.audioChunk) {
+      const audio = Buffer.from(event.audioChunk);
+      audioChunks.push(audio);
+      sampleRate = event.sampleRate || sampleRate;
+      yield {
+        type: "audio_chunk",
+        segment,
+        audioChunk: audio,
+        sampleRate
+      };
+    } else if (event.type === "done") {
+      timing = event.timing || timing;
+      sampleRate = event.sampleRate || sampleRate;
+      connectID = event.connectID || connectID;
+      mode = event.mode || mode;
+    }
+  }
+
+  return {
+    text,
+    audioChunks,
+    audioByteLength: audioChunks.reduce((sum, chunk) => sum + chunk.byteLength, 0),
+    sampleRate,
+    timing,
+    connectID,
+    mode
+  };
+}
+
+function buildFirstPhraseMessages(transcript, context = []) {
+  return [
+    { role: "system", content: scriptureCompanionSystemPrompt() },
+    ...context,
+    {
+      role: "user",
+      content: [
+        "第一句必须 8-28 个中文字符，先安静承接，不要讲道。",
+        "如果用户表达不想活、自伤、伤人、撑不住或立即危险，第二句必须建议现在就联系现实中的可信任的人，或当地紧急支持。",
+        "危机表达不能只做属灵安慰；先稳住安全，再用 1 句温柔陪伴。",
+        "非危机场景则用 1 句自然承接；不要输出编号、标题或 Markdown。",
+        "",
+        `用户 ASR transcript：${transcript}`
+      ].join("\n")
+    }
+  ];
+}
+
+function buildFollowupMessages(transcript, firstText, context = []) {
+  return [
+    { role: "system", content: scriptureCompanionSystemPrompt() },
+    ...context,
+    {
+      role: "user",
+      content: buildFollowupPrompt(transcript, firstText)
+    }
+  ];
+}
+
 function buildFollowupPrompt(transcript, firstText) {
   return [
     `用户刚才说：${transcript}`,
     `已经说过的第一句：${firstText}`,
     "请继续一句，35 个汉字以内，带用户回到经文或问一个很小的问题；不要重复已经说过的第一句。"
+  ].join("\n");
+}
+
+function scriptureCompanionSystemPrompt() {
+  return [
+    "你是一个以圣经为中心的属灵陪伴者，帮助用户和圣经对话。",
+    "你不代替神，不代替圣灵，不解释神隐藏的旨意，不做心理治疗诊断。",
+    "先陪伴，再解释；先命名痛苦，再带到经文。",
+    "每轮 1-3 句话，一次只问一个问题，不输出讲章。",
+    "经文不确定时不要编造章节。",
+    "危机表达必须建议联系现实中的可信任人或紧急支持。",
+    "禁止说：我是神，我对你说；圣灵现在告诉你；神一定要你这样做；这件事发生是因为神要教你；你只要有信心就不会痛苦；我医治你。"
   ].join("\n");
 }
 

@@ -461,6 +461,51 @@ test("DeepResponse HTTP session exposes first segment before followup finishes",
   }
 });
 
+test("DeepResponse HTTP session starts provider audio consumption before input stop", async () => {
+  let firstChunkSeenAt = 0;
+  let inputStopPostedAt = 0;
+  let firstChunkSeenBeforeStop = false;
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async *streamSegmented({ audioChunks }) {
+        for await (const chunk of audioChunks) {
+          if (!firstChunkSeenAt) {
+            firstChunkSeenAt = Date.now();
+            firstChunkSeenBeforeStop = inputStopPostedAt === 0;
+          }
+          assert(chunk.byteLength > 0);
+        }
+        yield { type: "transcript_final", transcript: "live transcript" };
+        yield { type: "segment", segment: "first", text: "ok", audioChunks: [Buffer.from("audio")] };
+        yield { type: "timing", timing: {}, providerMeta: {} };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {});
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+    await postBytes(`${base}/audio?turn_id=turn-live&seq=0`, Buffer.alloc(3_200, 1));
+    await waitFor(() => firstChunkSeenAt > 0);
+    inputStopPostedAt = Date.now();
+    await postJSON(`${base}/input-stop`, { turnID: "turn-live" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "timing");
+    });
+
+    assert(firstChunkSeenAt > 0);
+    assert(firstChunkSeenBeforeStop);
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse HTTP session rechunks large upload bodies before provider ASR", async () => {
   const seenChunkSizes = [];
   const server = await startDeepResponseServer({

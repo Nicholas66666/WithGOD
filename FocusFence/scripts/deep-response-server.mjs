@@ -208,6 +208,7 @@ async function handleHTTPSessionCreate(request, response, { sessions, recordEven
       audioByTurn: new Map(),
       events: [],
       audio: [],
+      turnStreams: new Map(),
       nextEventSeq: 0,
       nextAudioSeq: 0,
       canceledGenerations: new Set(),
@@ -276,7 +277,16 @@ function handleHTTPSessionRoute(request, response, options) {
   sendJSON(response, 404, { ok: false, error: "session_route_not_found" });
 }
 
-async function handleHTTPSessionAudio(request, response, { url, session, recordEvent = () => {} }) {
+async function handleHTTPSessionAudio(request, response, options) {
+  const {
+    url,
+    session,
+    mode,
+    env,
+    createPipeline,
+    audioReplayIntervalMs,
+    recordEvent = () => {}
+  } = options;
   const encodedBody = await readRequestBody(request);
   const encoding = String(request.headers["content-encoding"] || "").toLowerCase();
   const body = encoding === "deflate" ? inflateSync(encodedBody) : encodedBody;
@@ -290,6 +300,16 @@ async function handleHTTPSessionAudio(request, response, { url, session, recordE
   chunks.push(body);
   session.audioByTurn.set(turnID, chunks);
   session.state = "user_speaking";
+  const turnStream = ensureHTTPSessionTurnStream({
+    session,
+    turnID,
+    mode,
+    env,
+    createPipeline,
+    audioReplayIntervalMs,
+    recordEvent
+  });
+  turnStream?.queue.push(body);
   recordEvent("http_session_audio", {
     sessionID: session.sessionID,
     turnID,
@@ -326,6 +346,19 @@ async function handleHTTPSessionInputStop(request, response, options) {
     turnID,
     generationID
   });
+  const turnStream = session.turnStreams.get(turnID);
+  if (turnStream) {
+    turnStream.generationID = generationID;
+    turnStream.generationReady.resolve(generationID);
+    turnStream.queue.end();
+    sendJSON(response, 200, {
+      ok: true,
+      sessionID: session.sessionID,
+      turnID,
+      generationID
+    });
+    return;
+  }
   runHTTPSessionPipeline({ ...options, turnID, generationID }).catch((error) => {
     pushSessionEvent(session, {
       type: "error",
@@ -397,6 +430,65 @@ async function handleHTTPSessionEnd(request, response, { session, recordEvent = 
     sessionID: session.sessionID,
     state: session.state
   });
+}
+
+function ensureHTTPSessionTurnStream({
+  session,
+  turnID,
+  mode,
+  env,
+  createPipeline,
+  audioReplayIntervalMs,
+  recordEvent = () => {}
+}) {
+  if (mode === "echo") {
+    return null;
+  }
+  const existing = session.turnStreams.get(turnID);
+  if (existing) {
+    return existing;
+  }
+
+  const pipeline = createPipeline ? createPipeline() : createDefaultPipeline(env);
+  if (typeof pipeline.streamSegmented !== "function") {
+    return null;
+  }
+
+  const turnStream = {
+    queue: new AsyncChunkQueue(),
+    generationID: "",
+    generationReady: deferred()
+  };
+  session.turnStreams.set(turnID, turnStream);
+  runHTTPSessionStreamedPipeline({
+    session,
+    turnID,
+    generationID: turnStream.generationReady.promise,
+    stream: pipeline.streamSegmented({
+      audioChunks: replayChunks(rechunkPCM16Async(turnStream.queue, {
+        sampleRate: session.sampleRate || 16_000,
+        chunkMs: 100
+      }), audioReplayIntervalMs)
+    }),
+    recordEvent
+  }).catch((error) => {
+    pushSessionEvent(session, {
+      type: "error",
+      sessionID: session.sessionID,
+      turnID,
+      generationID: turnStream.generationID,
+      message: error instanceof Error ? error.message : String(error)
+    });
+    recordEvent("http_session_failed", {
+      sessionID: session.sessionID,
+      turnID,
+      generationID: turnStream.generationID,
+      message: error instanceof Error ? error.message : String(error)
+    });
+  }).finally(() => {
+    session.turnStreams.delete(turnID);
+  });
+  return turnStream;
 }
 
 function handleHTTPSessionEvents(response, { url, session }) {
@@ -566,13 +658,21 @@ async function runHTTPSessionStreamedPipeline({
   let followupText = "";
   let timing = {};
   let providerMeta = {};
+  let resolvedGenerationID = "";
+  const getGenerationID = async () => {
+    if (!resolvedGenerationID) {
+      resolvedGenerationID = typeof generationID?.then === "function" ? await generationID : generationID;
+    }
+    return resolvedGenerationID;
+  };
 
   for await (const event of stream) {
-    if (session.canceledGenerations.has(generationID)) {
+    const eventGenerationID = await getGenerationID();
+    if (session.canceledGenerations.has(eventGenerationID)) {
       recordEvent("http_session_stale_dropped", {
         sessionID: session.sessionID,
         turnID,
-        generationID
+        generationID: eventGenerationID
       });
       return;
     }
@@ -583,7 +683,7 @@ async function runHTTPSessionStreamedPipeline({
         type: "transcript_final",
         sessionID: session.sessionID,
         turnID,
-        generationID,
+        generationID: eventGenerationID,
         text: transcript
       });
     } else if (event.type === "segment") {
@@ -594,10 +694,31 @@ async function runHTTPSessionStreamedPipeline({
       }
       pushAssistantSegment(session, {
         turnID,
-        generationID,
+        generationID: eventGenerationID,
         segment: event.segment || "first",
         text: event.text || "",
         audioChunks: event.audioChunks || []
+      });
+    } else if (event.type === "segment_text") {
+      if (event.segment === "followup") {
+        followupText = event.text || "";
+      } else {
+        firstText = event.text || "";
+      }
+      pushAssistantSegment(session, {
+        turnID,
+        generationID: eventGenerationID,
+        segment: event.segment || "first",
+        text: event.text || "",
+        audioChunks: []
+      });
+    } else if (event.type === "audio_chunk") {
+      pushSessionAudio(session, {
+        turnID,
+        generationID: eventGenerationID,
+        segment: event.segment || "first",
+        audio: Buffer.from(event.audioChunk || []),
+        sampleRate: event.sampleRate
       });
     } else if (event.type === "timing") {
       timing = event.timing || {};
@@ -605,27 +726,28 @@ async function runHTTPSessionStreamedPipeline({
     }
   }
 
+  const eventGenerationID = await getGenerationID();
   pushSessionEvent(session, {
     type: "audio_done",
     sessionID: session.sessionID,
     turnID,
-    generationID,
+    generationID: eventGenerationID,
     reason: "provider_complete"
   });
   pushSessionEvent(session, {
     type: "timing",
     sessionID: session.sessionID,
     turnID,
-    generationID,
+    generationID: eventGenerationID,
     timing,
     providerMeta
   });
-  session.activeGenerations.delete(generationID);
+  session.activeGenerations.delete(eventGenerationID);
   session.state = "listening";
   recordEvent("http_session_complete", {
     sessionID: session.sessionID,
     turnID,
-    generationID,
+    generationID: eventGenerationID,
     transcript,
     firstText,
     followupText,
@@ -661,7 +783,7 @@ function pushSessionEvent(session, event) {
   session.events.push({ seq, at: new Date().toISOString(), ...event });
 }
 
-function pushSessionAudio(session, { turnID, generationID, segment, audio }) {
+function pushSessionAudio(session, { turnID, generationID, segment, audio, sampleRate = 24000 }) {
   const seq = session.nextAudioSeq;
   session.nextAudioSeq += 1;
   session.audio.push({
@@ -671,7 +793,7 @@ function pushSessionAudio(session, { turnID, generationID, segment, audio }) {
     segment,
     audioBase64: Buffer.from(audio).toString("base64"),
     audioByteLength: audio.byteLength,
-    sampleRate: 24000
+    sampleRate
   });
 }
 
@@ -1006,7 +1128,7 @@ function buildHTTPSegment(kind, text, audio) {
 
 async function* replayChunks(chunks, intervalMs) {
   let isFirst = true;
-  for (const chunk of chunks || []) {
+  for await (const chunk of chunks || []) {
     if (!isFirst && intervalMs > 0) {
       await sleep(intervalMs);
     }
@@ -1019,6 +1141,21 @@ function* chunkPCM16(pcm, { sampleRate = 16_000, chunkMs = 100 } = {}) {
   const bytesPerChunk = Math.max(2, Math.round(sampleRate * chunkMs / 1_000) * 2);
   for (let offset = 0; offset < pcm.byteLength; offset += bytesPerChunk) {
     yield pcm.subarray(offset, Math.min(offset + bytesPerChunk, pcm.byteLength));
+  }
+}
+
+async function* rechunkPCM16Async(chunks, { sampleRate = 16_000, chunkMs = 100 } = {}) {
+  const bytesPerChunk = Math.max(2, Math.round(sampleRate * chunkMs / 1_000) * 2);
+  let buffer = Buffer.alloc(0);
+  for await (const chunk of chunks) {
+    buffer = Buffer.concat([buffer, Buffer.from(chunk)]);
+    while (buffer.byteLength >= bytesPerChunk) {
+      yield buffer.subarray(0, bytesPerChunk);
+      buffer = buffer.subarray(bytesPerChunk);
+    }
+  }
+  if (buffer.byteLength > 0) {
+    yield buffer;
   }
 }
 
@@ -1064,6 +1201,76 @@ async function readJSONBody(request) {
     return {};
   }
   return JSON.parse(body.toString("utf8"));
+}
+
+function deferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((innerResolve, innerReject) => {
+    resolve = innerResolve;
+    reject = innerReject;
+  });
+  return { promise, resolve, reject };
+}
+
+class AsyncChunkQueue {
+  constructor() {
+    this.items = [];
+    this.waiters = [];
+    this.done = false;
+    this.error = null;
+  }
+
+  push(item) {
+    if (this.done || this.error) {
+      return;
+    }
+    const waiter = this.waiters.shift();
+    if (waiter) {
+      waiter.resolve({ value: item, done: false });
+      return;
+    }
+    this.items.push(item);
+  }
+
+  end() {
+    if (this.done) {
+      return;
+    }
+    this.done = true;
+    for (const waiter of this.waiters.splice(0)) {
+      waiter.resolve({ value: undefined, done: true });
+    }
+  }
+
+  throw(error) {
+    if (this.error) {
+      return;
+    }
+    this.error = error;
+    for (const waiter of this.waiters.splice(0)) {
+      waiter.reject(error);
+    }
+  }
+
+  [Symbol.asyncIterator]() {
+    return this;
+  }
+
+  next() {
+    if (this.items.length > 0) {
+      return Promise.resolve({ value: this.items.shift(), done: false });
+    }
+    if (this.error) {
+      return Promise.reject(this.error);
+    }
+    if (this.done) {
+      return Promise.resolve({ value: undefined, done: true });
+    }
+    return new Promise((resolve, reject) => {
+      this.waiters.push({ resolve, reject });
+    });
+  }
 }
 
 export function isDirectRun(importMetaURL, scriptPath) {

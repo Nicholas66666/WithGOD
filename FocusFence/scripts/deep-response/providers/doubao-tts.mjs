@@ -42,6 +42,49 @@ export class DoubaoTTSProvider {
   }
 
   async synthesizeWebSocket({ text, signal } = {}) {
+    const audioChunks = [];
+    let done = { timing: {}, connectID: "" };
+    for await (const event of this.synthesizeWebSocketStream({ text, signal })) {
+      if (event.type === "audio_chunk") {
+        audioChunks.push(event.audioChunk);
+      } else if (event.type === "done") {
+        done = event;
+      }
+    }
+    return {
+      audioChunks,
+      timing: done.timing || {},
+      connectID: done.connectID || "",
+      mode: done.mode
+    };
+  }
+
+  async *synthesizeStream({ text, signal } = {}) {
+    try {
+      yield* this.synthesizeWebSocketStream({ text, signal });
+    } catch (error) {
+      if (this.env.DEEP_RESPONSE_TTS_HTTP_FALLBACK !== "1") {
+        throw error;
+      }
+      const fallback = await this.synthesizeHTTP({ text, signal });
+      for (const chunk of fallback.audioChunks || []) {
+        yield {
+          type: "audio_chunk",
+          audioChunk: Buffer.from(chunk),
+          sampleRate: numberFromEnv(this.env, "DOUBAO_TTS_SAMPLE_RATE", 24000)
+        };
+      }
+      yield {
+        type: "done",
+        timing: fallback.timing || {},
+        connectID: fallback.connectID || "",
+        mode: fallback.mode || "http_fallback",
+        sampleRate: numberFromEnv(this.env, "DOUBAO_TTS_SAMPLE_RATE", 24000)
+      };
+    }
+  }
+
+  async *synthesizeWebSocketStream({ text, signal } = {}) {
     const startedAt = this.clock();
     const timing = {};
     const connectID = crypto.randomUUID();
@@ -54,74 +97,94 @@ export class DoubaoTTSProvider {
     });
     timing.tts_connect_ms = elapsed(this.clock, startedAt);
 
-    const audioChunks = [];
-    const done = new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error("doubao_tts_timeout")), this.timeoutMs);
-      const finish = (fn, value) => {
-        clearTimeout(timeout);
-        fn(value);
-      };
+    let audioChunkCount = 0;
+    let finished = false;
+    const queue = new AsyncEventQueue();
+    const timeout = setTimeout(() => queue.throw(new Error("doubao_tts_timeout")), this.timeoutMs);
+    const finish = () => {
+      if (finished) {
+        return;
+      }
+      finished = true;
+      clearTimeout(timeout);
+      queue.push({
+        type: "done",
+        timing,
+        connectID,
+        mode: "websocket",
+        sampleRate: numberFromEnv(this.env, "DOUBAO_TTS_SAMPLE_RATE", 24000)
+      });
+      queue.end();
+    };
+    const fail = (error) => {
+      clearTimeout(timeout);
+      queue.throw(error);
+    };
+
+    try {
       client.onBinary = (payload) => {
         const parsed = parseDoubaoTTSResponse(payload);
         if (parsed.error) {
-          finish(reject, new Error(parsed.error));
+          fail(new Error(parsed.error));
           return;
         }
         if (parsed.event === TTS_EVENTS.TTSResponse && parsed.messageType === AUDIO_ONLY_RESPONSE && parsed.payload.byteLength > 0) {
+          audioChunkCount += 1;
           timing.tts_first_audio_ms ??= elapsed(this.clock, startedAt);
-          audioChunks.push(parsed.payload);
+          queue.push({
+            type: "audio_chunk",
+            audioChunk: Buffer.from(parsed.payload),
+            sampleRate: numberFromEnv(this.env, "DOUBAO_TTS_SAMPLE_RATE", 24000)
+          });
         } else if (parsed.event === TTS_EVENTS.SessionFinished) {
-          finish(resolve);
+          finish();
         } else if (parsed.event === TTS_EVENTS.SessionFailed) {
-          finish(reject, new Error(`doubao_tts_session_failed ${parsed.payload.toString("utf8")}`));
+          fail(new Error(`doubao_tts_session_failed ${parsed.payload.toString("utf8")}`));
         }
       };
-      client.onText = (message) => finish(reject, new Error(`doubao_tts_unexpected_text ${message}`));
+      client.onText = (message) => fail(new Error(`doubao_tts_unexpected_text ${message}`));
       client.onClose = () => {
-        if (audioChunks.length > 0) {
-          finish(resolve);
+        if (audioChunkCount > 0) {
+          finish();
         } else {
-          finish(reject, new Error("doubao_tts_closed_without_audio"));
+          fail(new Error("doubao_tts_closed_without_audio"));
         }
       };
-      client.onError = (error) => finish(reject, error);
-    });
+      client.onError = (error) => fail(error);
 
-    client.sendBinary(buildDoubaoTTSEventRequest({
-      event: TTS_EVENTS.StartSession,
-      sessionID,
-      payload: buildDoubaoTTSPayload({
-        env: this.env,
+      client.sendBinary(buildDoubaoTTSEventRequest({
         event: TTS_EVENTS.StartSession,
-        speaker: this.env.DOUBAO_TTS_SPEAKER_ID
-      })
-    }));
-    client.sendBinary(buildDoubaoTTSEventRequest({
-      event: TTS_EVENTS.TaskRequest,
-      sessionID,
-      payload: buildDoubaoTTSPayload({
-        env: this.env,
+        sessionID,
+        payload: buildDoubaoTTSPayload({
+          env: this.env,
+          event: TTS_EVENTS.StartSession,
+          speaker: this.env.DOUBAO_TTS_SPEAKER_ID
+        })
+      }));
+      client.sendBinary(buildDoubaoTTSEventRequest({
         event: TTS_EVENTS.TaskRequest,
-        text,
-        speaker: this.env.DOUBAO_TTS_SPEAKER_ID
-      })
-    }));
-    client.sendBinary(buildDoubaoTTSEventRequest({
-      event: TTS_EVENTS.FinishSession,
-      sessionID,
-      payload: {}
-    }));
-    if (signal?.aborted) {
-      throw new Error("deep_response_aborted");
-    }
+        sessionID,
+        payload: buildDoubaoTTSPayload({
+          env: this.env,
+          event: TTS_EVENTS.TaskRequest,
+          text,
+          speaker: this.env.DOUBAO_TTS_SPEAKER_ID
+        })
+      }));
+      client.sendBinary(buildDoubaoTTSEventRequest({
+        event: TTS_EVENTS.FinishSession,
+        sessionID,
+        payload: {}
+      }));
+      if (signal?.aborted) {
+        throw new Error("deep_response_aborted");
+      }
 
-    try {
-      await done;
+      yield* queue;
     } finally {
+      clearTimeout(timeout);
       client.close();
     }
-
-    return { audioChunks, timing, connectID };
   }
 
   async synthesizeHTTP({ text, signal } = {}) {
@@ -275,4 +338,64 @@ function int32(value) {
 
 function elapsed(clock, startedAt) {
   return Math.round(clock() - startedAt);
+}
+
+class AsyncEventQueue {
+  constructor() {
+    this.items = [];
+    this.waiters = [];
+    this.done = false;
+    this.error = null;
+  }
+
+  push(item) {
+    if (this.done || this.error) {
+      return;
+    }
+    const waiter = this.waiters.shift();
+    if (waiter) {
+      waiter.resolve({ value: item, done: false });
+      return;
+    }
+    this.items.push(item);
+  }
+
+  end() {
+    if (this.done) {
+      return;
+    }
+    this.done = true;
+    for (const waiter of this.waiters.splice(0)) {
+      waiter.resolve({ value: undefined, done: true });
+    }
+  }
+
+  throw(error) {
+    if (this.error) {
+      return;
+    }
+    this.error = error;
+    for (const waiter of this.waiters.splice(0)) {
+      waiter.reject(error);
+    }
+  }
+
+  [Symbol.asyncIterator]() {
+    return this;
+  }
+
+  next() {
+    if (this.items.length > 0) {
+      return Promise.resolve({ value: this.items.shift(), done: false });
+    }
+    if (this.error) {
+      return Promise.reject(this.error);
+    }
+    if (this.done) {
+      return Promise.resolve({ value: undefined, done: true });
+    }
+    return new Promise((resolve, reject) => {
+      this.waiters.push({ resolve, reject });
+    });
+  }
 }
