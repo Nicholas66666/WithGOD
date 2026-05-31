@@ -370,7 +370,7 @@ test("DeepResponse HTTP session accepts audio chunks and exposes event and audio
     const events = await fetchJSON(`${base}/events?cursor=0`);
     assert(events.nextCursor > 0);
     assert(events.events.some((event) => event.type === "session_ready"));
-    assert(events.events.some((event) => event.type === "transcript_final" && event.text === "chunk-a+chunk-b"));
+    assert(events.events.some((event) => event.type === "transcript_final" && event.text === "chunk-achunk-b"));
     assert(events.events.some((event) => event.type === "assistant_text_delta" && event.delta === "first streamed phrase"));
     assert(events.events.some((event) => event.type === "assistant_text_delta" && event.delta === "followup streamed phrase"));
     assert(events.events.some((event) => event.type === "timing" && event.timing.voice_pipeline_total_ms === 64));
@@ -455,6 +455,49 @@ test("DeepResponse HTTP session exposes first segment before followup finishes",
       const events = await fetchJSON(`${base}/events?cursor=0`);
       return events.events.some((event) => event.type === "timing");
     });
+  } finally {
+    await server.close();
+  }
+});
+
+test("DeepResponse HTTP session rechunks large upload bodies before provider ASR", async () => {
+  const seenChunkSizes = [];
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async *streamSegmented({ audioChunks }) {
+        for await (const chunk of audioChunks) {
+          seenChunkSizes.push(chunk.byteLength);
+        }
+        yield { type: "transcript_final", transcript: `chunks:${seenChunkSizes.length}` };
+        yield {
+          type: "segment",
+          segment: "first",
+          text: "ok",
+          audioChunks: [Buffer.from("audio")]
+        };
+        yield { type: "timing", timing: {}, providerMeta: {} };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {});
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+    await postBytes(`${base}/audio?turn_id=turn-large&seq=0`, Buffer.alloc(8_000, 1));
+    await postBytes(`${base}/audio?turn_id=turn-large&seq=1`, Buffer.alloc(1_200, 2));
+    await postJSON(`${base}/input-stop`, { turnID: "turn-large" });
+
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "timing");
+    });
+
+    assert.deepEqual(seenChunkSizes, [3_200, 3_200, 2_800]);
   } finally {
     await server.close();
   }

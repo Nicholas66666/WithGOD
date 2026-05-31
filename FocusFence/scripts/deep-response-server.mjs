@@ -429,6 +429,10 @@ async function runHTTPSessionPipeline({
   recordEvent = () => {}
 }) {
   const inputChunks = session.audioByTurn.get(turnID) || [];
+  const providerInputChunks = chunkPCM16(Buffer.concat(inputChunks.map((chunk) => Buffer.from(chunk))), {
+    sampleRate: session.sampleRate || 16_000,
+    chunkMs: 100
+  });
   let result;
   if (mode === "echo") {
     const audio = Buffer.concat(inputChunks.map((chunk) => Buffer.from(chunk)));
@@ -451,7 +455,7 @@ async function runHTTPSessionPipeline({
         turnID,
         generationID,
         stream: pipeline.streamSegmented({
-          audioChunks: replayChunks(inputChunks, audioReplayIntervalMs)
+          audioChunks: replayChunks(providerInputChunks, audioReplayIntervalMs)
         }),
         recordEvent
       });
@@ -459,11 +463,11 @@ async function runHTTPSessionPipeline({
     }
     if (typeof pipeline.runSegmented === "function") {
       result = await pipeline.runSegmented({
-        audioChunks: replayChunks(inputChunks, audioReplayIntervalMs)
+        audioChunks: replayChunks(providerInputChunks, audioReplayIntervalMs)
       });
     } else {
       const fallback = await pipeline.run({
-        audioChunks: replayChunks(inputChunks, audioReplayIntervalMs)
+        audioChunks: replayChunks(providerInputChunks, audioReplayIntervalMs)
       });
       result = {
         transcript: fallback.transcript || "",
