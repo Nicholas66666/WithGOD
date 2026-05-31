@@ -1,10 +1,24 @@
 # Deep Response Xiaozhi-Style Voice POC Spec
 
 日期：2026-05-29
+更新：2026-05-31，目标升级为小智式持续语音会话。
 
 ## 目标
 
-Deep Response 的主力方向是“小智式级联语音链路”：
+Deep Response 的最终目标不是“一次录音请求”或“单轮语音回复”，而是“小智式持续语音会话”：
+
+```text
+用户进入 Deep Response
+-> Watch 建立持续 realtime session
+-> 用户说一句
+-> AI 流式听、流式想、流式说一句
+-> 用户可以等 AI 说完，也可以中途打断
+-> AI 停止旧输出，继续听用户下一句
+-> session 保留本次上下文和可控记忆
+-> 直到用户主动告别，或长时间安静后 AI 温和告别并结束
+```
+
+主力技术方向是“小智式级联语音链路”：
 
 ```text
 Watch streaming audio
@@ -19,6 +33,12 @@ POC 的目标不是先做完整产品，而是验证在真实 Apple Watch 场景
 - 用户说完后 1-2 秒内听到第一句属灵陪伴语音。
 - 用户打断时，旧语音能立即停止。
 - 多轮连续对话自然，不明显卡顿、断流或上下文错乱。
+- 同一个 session 内可以持续“一句接一句”对话，不要求用户每轮重新进入或重新建连接。
+- AI 说话时用户可以插话，系统必须把这视为正常 turn-taking，而不是异常错误。
+- session 内 AI 记得前文，不重复问刚问过的问题，不忘记用户刚表达的情绪和祷告内容。
+- session 结束后生成 transcript / summary / memory，异步持久化，供历史回看和后续 Deep Response 参考。
+- 长时间没有用户输入时，AI 可以先轻声确认一次，随后温和告别并关闭 session。
+- 用户明确说“拜拜”“好了”“先这样”“结束吧”等结束意图时，AI 应完成简短告别并关闭 session。
 - Watch / iPhone / server 的分工由实测指标决定，但首版 POC 不把 iPhone 放进核心实时链路。
 - 开发过程尽可能用本地电脑、脚本、模拟器完成验证；只有必须验证 Watch 真机麦克风、网络、播放、功耗或佩戴体验时，才要求人工配合真机测试。
 - Phase 1 可以使用固定音频/echo audio，但必须做得很薄，只作为 Watch/server 双向音频、播放、打断、旧音频丢弃的通道验收，不发展成另一条产品路线。
@@ -34,6 +54,9 @@ POC 的目标不是先做完整产品，而是验证在真实 Apple Watch 场景
 - MCP、RAG、工具调用进入第一句首响路径。
 - 本地 Watch ASR / LLM / TTS。
 - 长篇灵修讲章式回答。
+- 小智完整后台体系迁移。
+- 生产级长期记忆检索进入首响路径。
+- 在 POC 期把 Deep Response 合并进 Quick Response 主状态机。
 
 这里的“本地 Watch ASR / LLM / TTS”指在 Apple Watch 本机运行语音识别、语言模型或语音合成模型。Deep Response 首版 POC 默认这些能力都在 server/provider 侧完成。Watch 本地只做和实时体感直接相关的轻量任务，例如 VAD、音频预处理、上传、播放和打断检测。
 
@@ -44,10 +67,13 @@ Deep Response 是 Scripture Companion，不是神、圣灵、心理治疗师或�
 它必须：
 
 - 以语音对话为核心体验。
+- 像一个持续在场的语音陪伴 session，而不是一次性问答。
 - 先承接强情绪，再进入经文。
 - 第一声短、稳、具体、能让用户感觉被陪伴。
 - 每轮回应短，适合 Watch、AirPods 和强情绪状态。
 - 支持用户自然插话和打断。
+- 支持多轮上下文，不失忆、不机械重复。
+- 支持自然结束，而不是无限等待或突然断开。
 
 它不能：
 
@@ -88,11 +114,14 @@ Supabase 继续承担：
 Dedicated Realtime Voice Server 承担：
 
 - WebSocket 长连接。
+- Deep Response session 生命周期。
+- 多轮 turn-taking 状态机。
 - 音频 ingress / egress。
 - Streaming ASR / LLM / TTS 编排。
 - 打断与 turn 取消。
 - 首响 timing trace。
 - 短期会话上下文。
+- 会话摘要生成。
 - 向 Supabase 异步写入 Deep Response 记录。
 
 ## Volcengine / Doubao Provider Preparation
@@ -350,6 +379,7 @@ server 负责：
 
 - 认证 Watch session。
 - 管理每个 WebSocket session。
+- 管理 session lifecycle：start、listening、turn、interrupt、idle、goodbye、close。
 - 接收 Watch 音频帧。
 - 将音频送入 Streaming ASR。
 - 检测 user utterance final。
@@ -358,6 +388,9 @@ server 负责：
 - 调用 Streaming TTS。
 - 将音频帧发回 Watch。
 - 处理 abort：停止 LLM、停止 TTS、清队列、发 `tts.stop`。
+- 维护短期上下文：本 session 中最近若干轮用户话语、AI 回应、情绪状态、祷告主题。
+- 识别结束意图：用户明确告别、拒绝继续、或长时间静默。
+- 在 session 结束时生成 summary / memory candidate。
 - 记录完整 timing trace。
 - 异步写 Supabase。
 
@@ -368,6 +401,7 @@ server 负责：
 保留的思想：
 
 - 一个 WebSocket 连接对应一个独立 session handler。
+- session handler 是长期对象，不是一轮请求结束就销毁的 pipeline。
 - 设备上传小音频帧，server 统一编排 ASR / LLM / TTS。
 - ASR、LLM、TTS 都是 provider interface，可以替换。
 - TTS 队列按短句推进，不等完整回答。
@@ -375,6 +409,8 @@ server 负责：
 - 播放端先清本地音频，再等待 server 确认。
 - 音频帧要有节奏控制和小预缓冲。
 - 每段音频和文本必须绑定 turn。
+- 会话持续监听用户下一句话，除非用户告别、idle timeout 或连接失败。
+- 每轮对话都进入同一个 session context，避免失忆和重复。
 
 不迁移：
 
@@ -402,11 +438,34 @@ idle
 -> listening
 ```
 
+这是一个循环状态机。`assistant_speaking -> listening -> user_speaking -> assistant_speaking` 可以重复多轮，直到 session 进入 ending / ended。
+
 任何非终止状态都可以进入：
 
 ```text
 -> aborting
 -> listening
+```
+
+长时间没有用户输入时：
+
+```text
+listening
+-> idle_waiting
+-> idle_prompting
+-> listening
+-> goodbye_pending
+-> assistant_speaking
+-> ended
+```
+
+用户明确告别时：
+
+```text
+listening | user_speaking | assistant_speaking
+-> ending
+-> assistant_speaking
+-> ended
 ```
 
 终止状态：
@@ -423,6 +482,84 @@ idle
 - assistant speaking 时，如果 Watch 本地检测到用户开口，立即本地 stop playback，并发送 abort。
 - server 收到 abort 后必须停止旧 generation 的 LLM/TTS，并下发 `tts.stop`。
 - Watch 收到旧 turn 音频必须丢弃。
+- AI 说完一轮后默认回到 listening，而不是关闭 session。
+- session 关闭必须有明确原因：user_goodbye、idle_goodbye、manual_close、network_lost、provider_error。
+- 除非出现失败或用户结束，server 不应在一轮回答后主动销毁 session。
+
+## 持续对话与记忆
+
+Deep Response 的最终体验是“一直在一起说话”，不是用户每次按按钮发起孤立请求。
+
+### Session 内短期记忆
+
+server 在同一个 Deep Response session 中维护短期上下文：
+
+- 用户最近说过的 6-12 轮内容。
+- AI 最近回应过的核心句子。
+- 当前情绪标签，例如害怕、羞耻、疲惫、愤怒、孤单。
+- 当前属灵主题，例如被神听见、安息、赦免、忍耐、盼望。
+- 已经引用或提到过的经文，避免短时间重复。
+- AI 已经问过的问题，避免机械追问。
+
+短期记忆进入 LLM prompt，但不能拖慢第一句首响。第一句只读取最小必要上下文；更长上下文用于 continuation 或下一轮。
+
+### Session summary
+
+session 结束后，server 异步生成 summary：
+
+- 用户这次主要表达了什么。
+- AI 如何回应。
+- 提到的经文或属灵主题。
+- 是否有需要后续关怀的风险信号。
+- 下次 Deep Response 可以温柔记得的一两点。
+
+summary 不进入当前首响路径。它是 session 结束后的异步任务。
+
+### 长期记忆边界
+
+长期记忆是后续产品能力，但 POC 必须为它预留结构。
+
+首版长期记忆只允许使用少量、高信号、用户安全的摘要。不能把完整 transcript 无限制塞进 realtime prompt，也不能让 AI 过度“记住”用户敏感内容。
+
+长期记忆读取必须遵守：
+
+- 不影响第一句首响。
+- 不把过去痛苦强行带回当前会话。
+- 不做诊断。
+- 不替用户下属灵结论。
+- 用户未来应能查看和删除相关记忆。
+
+## 自然结束策略
+
+Deep Response 不应该在一轮回复后结束，也不应该无限挂着不收口。
+
+结束来源：
+
+- 用户明确说：`拜拜`、`好了`、`先这样`、`结束吧`、`谢谢你我先走了`。
+- 用户长时间无输入。
+- Watch / server 网络断开。
+- provider 连续失败。
+- 用户手动退出 Deep Response。
+
+idle 策略：
+
+- 短静默：继续 listening，不打扰。
+- 中等静默：可轻声确认一次，例如 `我还在，你可以慢慢来。`
+- 长静默：温和告别，例如 `那我们先停在这里。愿你今晚能稍微安稳一点。`
+
+结束意图检测必须谨慎：
+
+- `我不知道怎么结束` 不等于要结束。
+- `我好累` 不等于要结束。
+- `拜拜`、`先这样吧`、`不用说了` 更接近结束。
+- 如果不确定，AI 可以问一个极短确认问题。
+
+结束后：
+
+- server 发送 `session.end`。
+- Watch 停止麦克风采集和播放。
+- server 异步写 transcript / summary / memory candidate。
+- iPhone 后续同步历史详情。
 
 ## 协议
 
@@ -516,6 +653,30 @@ timing：
 
 ### Server 文本事件
 
+Session idle prompt：
+
+```json
+{
+  "type": "session",
+  "state": "idle_prompt",
+  "session_id": "session-001",
+  "reason": "medium_idle_timeout",
+  "text": "我还在，你可以慢慢来。"
+}
+```
+
+Session end：
+
+```json
+{
+  "type": "session",
+  "state": "end",
+  "session_id": "session-001",
+  "reason": "user_goodbye",
+  "summary_pending": true
+}
+```
+
 ASR partial：
 
 ```json
@@ -570,6 +731,17 @@ TTS stop：
   "turn_id": "turn-001",
   "generation_id": "assistant-001",
   "reason": "completed"
+}
+```
+
+Session summary completed：
+
+```json
+{
+  "type": "session",
+  "state": "summary_saved",
+  "session_id": "session-001",
+  "record_id": "deep-response-record-001"
 }
 ```
 
@@ -809,6 +981,11 @@ Derived metrics：
 - `barge_in_to_server_stop` P90 < 500ms。
 - 5 分钟连续对话不断流。
 - 10 分钟连续对话没有明显延迟漂移。
+- 同一个 session 内至少完成 8 轮“一句接一句”对话，不重新建连接。
+- AI 每轮说完后自动回到 listening。
+- 用户明确告别后，AI 简短告别并关闭 session。
+- 长时间静默后，AI 先确认一次，再温和告别并关闭 session。
+- session 结束后 transcript / summary / memory candidate 异步写入成功。
 - 打断后旧音频播放次数为 0。
 
 质量：
@@ -1008,20 +1185,38 @@ Phase 1 不应在固定音频/echo audio 上消耗过多时间。只要证明以
 
 ### Phase 2：Full Cascade
 
-目标：接入真实 Streaming ASR -> LLM -> TTS。
+目标：接入真实 Streaming ASR -> LLM -> TTS，并形成持续 session runtime。
 
 验证：
 
 - 真实语音首响。
 - 多轮上下文。
+- 同一 WebSocket session 内连续对话。
 - abort 取消旧 generation。
+- assistant speaking 后自动回到 listening。
+- 用户下一句复用前文 context。
+- 用户主动告别或 idle timeout 触发 session end。
+- session summary / memory candidate 异步生成。
 - 质量边界。
 
 通过标准：
 
 - first playback P90 < 2.0s。
 - 5 分钟连续对话稳定。
+- 至少 8 轮连续对话不重新连接。
 - 20 次打断无旧音频残留。
+- 3 次主动告别正确结束。
+- 3 次 idle goodbye 正确结束。
+- summary 写入成功且不进入首响路径。
+
+Phase 2 必须拆成可独立验收的小阶段：
+
+- Phase 2A：单轮真流式。验证 Watch 流式上传、server 流式 ASR/LLM/TTS、Watch 流式播放。
+- Phase 2B：Session runtime。引入 `DeepResponseSession`、turn id、generation id、状态机和 context。
+- Phase 2C：连续多轮对话。AI 说完后继续监听，用户下一句进入同一 session。
+- Phase 2D：Barge-in。用户在 AI 说话时开口，本地停播，server 取消旧 generation。
+- Phase 2E：Idle / Goodbye。用户告别或长时间静默时自然结束。
+- Phase 2F：Summary / Memory。结束后异步写 transcript、summary 和 memory candidate。
 
 ### Phase 3：Opus / Power Optimization
 
@@ -1162,6 +1357,9 @@ server 需要支持用本地 wav/pcm 文件模拟 Watch audio stream：
 - 真 Watch P90 首响小于 2 秒。
 - 打断体验稳定。
 - 5-10 分钟连续对话稳定。
+- 同一个 session 能自然完成多轮“一句接一句”的持续沟通。
+- 用户插话、主动告别、长时间静默结束都被视为正常会话行为。
+- session 记忆、summary 和历史写入链路稳定。
 - 第一声质量符合 Scripture Companion。
 - iPhone 不在核心链路中也能稳定工作。
 
