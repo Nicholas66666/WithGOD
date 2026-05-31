@@ -22,6 +22,8 @@ final class DeepResponseRealtimeClient: ObservableObject {
     @Published private(set) var connectionStage = "idle"
     @Published private(set) var receivedAudioBytes = 0
     @Published private(set) var receivedAudioChunks = 0
+    @Published private(set) var uploadedAudioChunks = 0
+    @Published private(set) var httpSessionID: String?
     @Published private(set) var lastTurnTranscript: String?
     @Published private(set) var lastTurnText: String?
     @Published private(set) var lastTurnFirstText: String?
@@ -36,6 +38,13 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private var openContinuation: CheckedContinuation<Void, Error>?
     private var isIntentionalDisconnect = false
     private let player = DeepResponseAudioPlayer()
+    private var httpTurnID: String?
+    private var httpGenerationID: String?
+    private var httpAudioSeq = 0
+    private var httpEventCursor = 0
+    private var httpOutputAudioCursor = 0
+    private var httpUploadQueue: [Data] = []
+    private var isDrainingHTTPUploads = false
 
     func checkHealth() async {
         do {
@@ -205,6 +214,212 @@ final class DeepResponseRealtimeClient: ObservableObject {
             lastHealthStatus = "Turn2 fail"
             setError("Turn2: \(Self.describe(error))", error: error)
             connectionStage = "http_turn_v2:fail"
+        }
+    }
+
+    func startHTTPSessionTurn() async throws {
+        connectionStage = "http_session:create"
+        var request = URLRequest(url: try Self.httpSessionURL(path: "/deep-response/sessions"))
+        request.httpMethod = "POST"
+        request.timeoutInterval = 20
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("DeepLab-watchOS", forHTTPHeaderField: "X-Deep-Response-Client")
+        request.httpBody = #"{"sampleRate":16000}"#.data(using: .utf8)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+        lastHealthStatus = "Session \(statusCode)"
+        guard statusCode == 200 else {
+            throw NSError(domain: "DeepResponseHTTP", code: statusCode, userInfo: [
+                NSLocalizedDescriptionKey: "Session \(statusCode)"
+            ])
+        }
+        let created = try JSONDecoder().decode(DeepResponseHTTPSessionCreateResponse.self, from: data)
+        guard created.ok else {
+            throw NSError(domain: "DeepResponseHTTP", code: -1, userInfo: [
+                NSLocalizedDescriptionKey: "Bad session response"
+            ])
+        }
+        httpSessionID = created.sessionID
+        httpTurnID = "turn-\(UUID().uuidString)"
+        httpGenerationID = nil
+        httpAudioSeq = 0
+        httpEventCursor = 0
+        httpOutputAudioCursor = 0
+        httpUploadQueue = []
+        isDrainingHTTPUploads = false
+        uploadedAudioChunks = 0
+        receivedAudioChunks = 0
+        receivedAudioBytes = 0
+        lastError = nil
+        lastErrorCode = nil
+        lastTurnTranscript = nil
+        lastTurnText = nil
+        lastTurnFirstText = nil
+        lastTurnFollowupText = nil
+        lastTurnTiming = nil
+        lastTurnTotalMs = nil
+        connectionStage = "http_session:ready"
+    }
+
+    func enqueueHTTPSessionAudio(_ audio: Data) {
+        guard !audio.isEmpty else {
+            return
+        }
+        httpUploadQueue.append(audio)
+        guard !isDrainingHTTPUploads else {
+            return
+        }
+        isDrainingHTTPUploads = true
+        Task { [weak self] in
+            await self?.drainHTTPSessionUploadQueue()
+        }
+    }
+
+    private func drainHTTPSessionUploadQueue() async {
+        while !httpUploadQueue.isEmpty {
+            let audio = httpUploadQueue.removeFirst()
+            await uploadHTTPSessionAudio(audio)
+        }
+        isDrainingHTTPUploads = false
+        if !httpUploadQueue.isEmpty {
+            isDrainingHTTPUploads = true
+            Task { [weak self] in
+                await self?.drainHTTPSessionUploadQueue()
+            }
+        }
+    }
+
+    private func uploadHTTPSessionAudio(_ audio: Data) async {
+        guard let sessionID = httpSessionID,
+              let turnID = httpTurnID,
+              !audio.isEmpty else {
+            return
+        }
+        let seq = httpAudioSeq
+        httpAudioSeq += 1
+        do {
+            let path = "/deep-response/sessions/\(sessionID)/audio?turn_id=\(turnID)&seq=\(seq)"
+            var request = URLRequest(url: try Self.httpSessionURL(path: path))
+            request.httpMethod = "POST"
+            request.timeoutInterval = 20
+            request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+            request.setValue("DeepLab-watchOS", forHTTPHeaderField: "X-Deep-Response-Client")
+            let (_, response) = try await URLSession.shared.upload(for: request, from: audio)
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+            if statusCode == 200 {
+                uploadedAudioChunks += 1
+                connectionStage = "http_session:up \(uploadedAudioChunks)"
+            } else {
+                lastError = "Upload \(statusCode)"
+                connectionStage = "http_session:upload_\(statusCode)"
+            }
+        } catch {
+            setError("Upload: \(Self.describe(error))", error: error)
+            connectionStage = "http_session:upload_fail"
+        }
+    }
+
+    func finishHTTPSessionTurn() async {
+        guard let sessionID = httpSessionID,
+              let turnID = httpTurnID else {
+            lastError = "No HTTP session"
+            return
+        }
+        do {
+            connectionStage = "http_session:stop"
+            await waitForPendingHTTPSessionUploads()
+            var request = URLRequest(url: try Self.httpSessionURL(path: "/deep-response/sessions/\(sessionID)/input-stop"))
+            request.httpMethod = "POST"
+            request.timeoutInterval = 20
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue("DeepLab-watchOS", forHTTPHeaderField: "X-Deep-Response-Client")
+            request.httpBody = #"{"turnID":"\#(turnID)"}"#.data(using: .utf8)
+            let (data, response) = try await URLSession.shared.data(for: request)
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+            lastHealthStatus = "Session \(statusCode)"
+            guard statusCode == 200 else {
+                lastError = "InputStop \(statusCode)"
+                connectionStage = "http_session:stop_\(statusCode)"
+                return
+            }
+            let stopped = try JSONDecoder().decode(DeepResponseHTTPSessionInputStopResponse.self, from: data)
+            httpGenerationID = stopped.generationID
+            try await pollHTTPSessionUntilDone(sessionID: sessionID)
+            connectionStage = "http_session:done"
+        } catch {
+            setError("Session: \(Self.describe(error))", error: error)
+            connectionStage = "http_session:fail"
+        }
+    }
+
+    private func waitForPendingHTTPSessionUploads() async {
+        while isDrainingHTTPUploads || !httpUploadQueue.isEmpty {
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        }
+    }
+
+    private func pollHTTPSessionUntilDone(sessionID: String) async throws {
+        let startedAt = Date()
+        var isDone = false
+        while !isDone && Date().timeIntervalSince(startedAt) < 120 {
+            let eventsURL = try Self.httpSessionURL(path: "/deep-response/sessions/\(sessionID)/events?cursor=\(httpEventCursor)")
+            let (eventData, eventResponse) = try await URLSession.shared.data(from: eventsURL)
+            if (eventResponse as? HTTPURLResponse)?.statusCode == 200 {
+                let batch = try JSONDecoder().decode(DeepResponseHTTPSessionEventsResponse.self, from: eventData)
+                httpEventCursor = batch.nextCursor
+                for event in batch.events {
+                    handleHTTPSessionEvent(event)
+                    if event.type == "audio_done" {
+                        isDone = true
+                    }
+                }
+            }
+
+            let audioURL = try Self.httpSessionURL(path: "/deep-response/sessions/\(sessionID)/audio?cursor=\(httpOutputAudioCursor)")
+            let (audioData, audioResponse) = try await URLSession.shared.data(from: audioURL)
+            if (audioResponse as? HTTPURLResponse)?.statusCode == 200 {
+                let batch = try JSONDecoder().decode(DeepResponseHTTPSessionAudioResponse.self, from: audioData)
+                httpOutputAudioCursor = batch.nextCursor
+                for chunk in batch.chunks {
+                    guard let data = Data(base64Encoded: chunk.audioBase64), !data.isEmpty else {
+                        continue
+                    }
+                    receivedAudioChunks += 1
+                    receivedAudioBytes += data.count
+                    player.enqueuePCM16(data, sampleRate: chunk.sampleRate ?? 24_000)
+                }
+            }
+
+            if !isDone {
+                try await Task.sleep(nanoseconds: 350_000_000)
+            }
+        }
+        if !isDone {
+            throw NSError(domain: "DeepResponseHTTP", code: -1001, userInfo: [
+                NSLocalizedDescriptionKey: "HTTP session timeout"
+            ])
+        }
+    }
+
+    private func handleHTTPSessionEvent(_ event: DeepResponseHTTPSessionEvent) {
+        if event.type == "transcript_final" {
+            lastTurnTranscript = event.text
+        } else if event.type == "assistant_text_delta" {
+            if event.segment == "followup" {
+                lastTurnFollowupText = event.delta
+            } else {
+                lastTurnFirstText = event.delta
+            }
+            lastTurnText = [lastTurnFirstText, lastTurnFollowupText]
+                .compactMap { $0 }
+                .filter { !$0.isEmpty }
+                .joined(separator: " ")
+        } else if event.type == "timing" {
+            lastTurnTiming = event.timing
+            lastTurnTotalMs = event.timing?.voicePipelineTotalMs
+        } else if event.type == "error" {
+            lastError = event.message ?? "HTTP session error"
         }
     }
 
@@ -479,6 +694,23 @@ final class DeepResponseRealtimeClient: ObservableObject {
         return url
     }
 
+    private static func httpSessionURL(path: String) throws -> URL {
+        let endpoint = try endpointURL()
+        var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
+        components?.scheme = endpoint.scheme == "wss" ? "https" : "http"
+        if let questionIndex = path.firstIndex(of: "?") {
+            components?.path = String(path[..<questionIndex])
+            components?.percentEncodedQuery = String(path[path.index(after: questionIndex)...])
+        } else {
+            components?.path = path
+            components?.query = nil
+        }
+        guard let url = components?.url else {
+            throw DeepResponseClientError.missingEndpoint
+        }
+        return url
+    }
+
     private static func makeRealtimeSession(delegate: URLSessionWebSocketDelegate) -> URLSession {
         let configuration = URLSessionConfiguration.default
         configuration.waitsForConnectivity = true
@@ -534,6 +766,58 @@ private struct DeepResponseHTTPTurnSegment: Decodable {
     let text: String
     let audioBase64: String
     let audioByteLength: Int
+}
+
+private struct DeepResponseHTTPSessionCreateResponse: Decodable {
+    let ok: Bool
+    let sessionID: String
+    let state: String
+    let sampleRate: Double
+}
+
+private struct DeepResponseHTTPSessionInputStopResponse: Decodable {
+    let ok: Bool
+    let sessionID: String
+    let turnID: String
+    let generationID: String
+}
+
+private struct DeepResponseHTTPSessionEventsResponse: Decodable {
+    let ok: Bool
+    let sessionID: String
+    let cursor: Int
+    let nextCursor: Int
+    let events: [DeepResponseHTTPSessionEvent]
+}
+
+private struct DeepResponseHTTPSessionEvent: Decodable {
+    let seq: Int
+    let type: String
+    let turnID: String?
+    let generationID: String?
+    let segment: String?
+    let text: String?
+    let delta: String?
+    let message: String?
+    let timing: DeepResponseTiming?
+}
+
+private struct DeepResponseHTTPSessionAudioResponse: Decodable {
+    let ok: Bool
+    let sessionID: String
+    let cursor: Int
+    let nextCursor: Int
+    let chunks: [DeepResponseHTTPSessionAudioChunk]
+}
+
+private struct DeepResponseHTTPSessionAudioChunk: Decodable {
+    let seq: Int
+    let turnID: String
+    let generationID: String
+    let segment: String
+    let audioBase64: String
+    let audioByteLength: Int
+    let sampleRate: Double?
 }
 
 private final class DeepResponseWebSocketDelegate: NSObject, URLSessionWebSocketDelegate {

@@ -1,6 +1,6 @@
 # Deep Response Active State
 
-更新：2026-05-31
+更新：2026-05-31 12:40 Asia/Shanghai
 
 这个文件是 Deep Response 开发的持久上下文入口。每次上下文压缩、换会话、长时间中断后，先读本文件，再继续开发。
 
@@ -96,24 +96,37 @@ Important finding:
 
 - Provider and HTTP session path works, but first phrase quality still needs tuning. One provider harness run produced an incomplete first phrase: `耶稣说：“凡劳苦担重担的人，可以`。Do not treat first-phrase policy as done.
 
-Next implementation milestone is **Milestone 2: Watch HTTP Transport Lab**.
+Current implementation milestone is **Milestone 2: Watch HTTP Transport Lab**.
 
 Do not ask user to test until Watch code is built, installed, and local/Render endpoints have already been self-checked.
 
-Expected deliverables:
+Implemented in current working tree:
 
 - DeepLab live mic frame upload over HTTP session.
-- Event/audio puller over HTTP session.
-- Compact UI for session state, chunks up/down, transcript/text/timing.
-- HTTP v2 fallback still present.
+- Serial HTTP upload queue to preserve PCM chunk order.
+- Event/audio puller over HTTP session polling.
+- Compact UI for session state, chunks up/down/bytes, transcript/text/timing.
+- Server audio chunk response includes `sampleRate: 24000`.
+
+Verified before manual Watch test:
+
+- `npm run test:node`: 73 passing.
+- `xcodebuild -scheme DeepResponseWatchLab -destination generic/platform=watchOS`: build succeeded.
+
+Still pending before asking user:
+
+- Commit and push the scoped Milestone 2 changes.
+- Deploy Render if server behavior changed.
+- Self-test Render HTTP session after deploy.
+- Install DeepLab on Watch when device is connected.
 
 Acceptance:
 
 - Swift build passes.
 - Render endpoints are reachable.
 - Watch app installs only when device is connected.
-- Manual Watch Gate 1: user confirms chunks upload while recording, event/audio pull reaches Watch, and UI is readable.
-- Manual Watch Gate 2: user confirms first playable audio in HTTP session mode and HTTP v2 fallback still works.
+- Manual Watch Gate 1: user confirms chunks upload while recording, event/audio pull reaches Watch, audio plays, and UI is readable.
+- Manual Watch Gate 2: user confirms first playable audio behavior is better than full JSON fallback or identifies current latency bottleneck.
 - No old app changes.
 
 ## Development Rhythm

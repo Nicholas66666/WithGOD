@@ -3,13 +3,12 @@ import SwiftUI
 struct DeepResponseDebugView: View {
     @StateObject private var client = DeepResponseRealtimeClient()
     @State private var isRecording = false
-    @State private var sentChunks = 0
     @State private var status = "Ready"
     @State private var recorder = DeepResponseMicrophoneRecorder()
 
     var body: some View {
         VStack(spacing: 8) {
-            Text("Deep v2")
+            Text("Deep HTTP")
                 .font(.headline.weight(.bold))
 
             statusBadge
@@ -20,6 +19,11 @@ struct DeepResponseDebugView: View {
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
+                Text("up \(client.uploadedAudioChunks) · down \(client.receivedAudioChunks) · \(client.receivedAudioBytes)b")
+                    .font(.caption2.monospacedDigit())
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                 Text(client.connectionStage)
                     .font(.caption2.monospaced())
                     .foregroundStyle(.secondary)
@@ -107,22 +111,26 @@ struct DeepResponseDebugView: View {
     private func toggleMicrophoneTurn() async {
         if isRecording {
             isRecording = false
-            status = "Sending voice"
+            status = "Finishing"
             let audio = recorder.stop()
-            sentChunks = max(1, audio.count / 3_200)
-            guard !audio.isEmpty else {
+            guard !audio.isEmpty || client.uploadedAudioChunks > 0 else {
                 status = "No audio"
                 return
             }
-            await client.runSegmentedHTTPTurn(audio)
-            status = client.lastError == nil ? "Voice turn v2 done" : "Voice turn v2 failed"
+            await client.finishHTTPSessionTurn()
+            status = client.lastError == nil ? "HTTP session done" : "HTTP session failed"
             return
         }
 
         do {
-            sentChunks = 0
+            status = "Starting session"
+            try await client.startHTTPSessionTurn()
             status = "Recording"
-            try await recorder.start()
+            try await recorder.start { chunk in
+                Task { @MainActor in
+                    client.enqueueHTTPSessionAudio(chunk)
+                }
+            }
             isRecording = true
         } catch {
             status = error.localizedDescription

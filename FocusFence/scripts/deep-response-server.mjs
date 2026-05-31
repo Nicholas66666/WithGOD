@@ -563,7 +563,8 @@ function pushSessionAudio(session, { turnID, generationID, segment, audio }) {
     generationID,
     segment,
     audioBase64: Buffer.from(audio).toString("base64"),
-    audioByteLength: audio.byteLength
+    audioByteLength: audio.byteLength,
+    sampleRate: 24000
   });
 }
 

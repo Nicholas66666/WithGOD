@@ -7,9 +7,10 @@ final class DeepResponseMicrophoneRecorder {
     private var converter: AVAudioConverter?
     private var targetFormat: AVAudioFormat?
     private var chunks: [Data] = []
+    private var onChunk: ((Data) -> Void)?
     private var isRunning = false
 
-    func start() async throws {
+    func start(onChunk: ((Data) -> Void)? = nil) async throws {
         guard !isRunning else {
             return
         }
@@ -36,6 +37,7 @@ final class DeepResponseMicrophoneRecorder {
 
         queue.sync {
             chunks = []
+            self.onChunk = onChunk
         }
         self.converter = converter
         self.targetFormat = targetFormat
@@ -60,6 +62,9 @@ final class DeepResponseMicrophoneRecorder {
         }
         converter = nil
         targetFormat = nil
+        queue.sync {
+            onChunk = nil
+        }
         try? AVAudioSession.sharedInstance().setActive(false, options: [])
 
         return queue.sync {
@@ -119,6 +124,7 @@ final class DeepResponseMicrophoneRecorder {
         }
 
         chunks.append(data)
+        onChunk?(data)
     }
 }
 
