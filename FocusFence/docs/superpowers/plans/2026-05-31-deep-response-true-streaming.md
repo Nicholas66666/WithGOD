@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build a real streaming Deep Response path for Watch: Watch streams microphone audio to the Node server, the server streams ASR/LLM/TTS progress, and Watch starts playback as audio chunks arrive.
+**Goal:** Build a continuous HTTP-streamed Deep Response path for Watch: Watch uploads microphone audio chunks over HTTP, receives server events/audio chunks over HTTP/SSE/chunked/polling, and keeps a multi-turn session alive until goodbye or idle end.
 
-**Architecture:** Keep `http-turn-v2` as the known-good fallback baseline. Add a separate streaming path under the existing DeepLab package and Node realtime server so old Watch app / Quick Response remain untouched. Validate in layers: provider streaming harness first, server streaming contract second, Watch Lab true streaming last.
+**Architecture:** Keep `http-turn-v2` as the known-good fallback baseline, then evolve it into an HTTP session transport. Watch transport is HTTP-first; WebSocket is not a mainline dependency on watchOS. Server-side provider connections to Doubao ASR/TTS may still use WebSocket because those run on Node, not on Watch.
 
-**Tech Stack:** watchOS SwiftUI, `URLSessionWebSocketTask`, Node.js HTTP/WebSocket server, Doubao ASR WebSocket, Ark LLM streaming, Doubao bidirectional TTS WebSocket, Render deployment, Node test runner.
+**Tech Stack:** watchOS SwiftUI, `URLSession` HTTP upload/download, SSE/chunked JSONL/short polling candidates, Node.js HTTP server, Doubao ASR WebSocket, Ark LLM streaming, Doubao bidirectional TTS WebSocket, Render deployment, Node test runner.
 
 ---
 
@@ -22,15 +22,15 @@
 - Latest branch: `codex/deep-response-lab`.
 - Latest validation UI commit: `84419f0 Trim DeepLab v2 validation screen`.
 - True streaming is still not complete:
-  - Watch -> Render WebSocket has previously failed with `-1001` / `-999`.
-  - Server provider WebSocket currently buffers all input chunks until `input_stop`.
+  - Watch -> Render WebSocket has previously failed with `-1001` / `-999` and is no longer mainline.
+  - HTTP v2 currently uploads one complete recording and returns one JSON response, not chunked session streaming.
   - `VoicePipeline.runSegmented` is sequential, not event-streaming.
   - TTS provider collects audio chunks before returning to caller.
 
 ## File Responsibilities
 
 - Modify `scripts/deep-response/protocol/deep-response-protocol.mjs`
-  - Own wire event names for streaming.
+  - Own HTTP session event names for streaming.
   - Add explicit turn/segment/generation fields where needed.
 
 - Modify `scripts/deep-response/protocol/deep-response-protocol.test.mjs`
@@ -57,16 +57,16 @@
   - Test ordering and timing semantics without real providers.
 
 - Modify `scripts/deep-response-server.mjs`
-  - Add true provider streaming handling for `/deep-response/realtime`.
+  - Add HTTP session streaming endpoints under `/deep-response/sessions`.
   - Keep `http-turn-v2` unchanged.
-  - Add debug events for WebSocket handshake, input chunks, first transcript, first phrase, first audio chunk, close/error reason.
+  - Add debug events for session start, audio chunk upload, event/audio delivery, first transcript, first phrase, first audio chunk, abort/end reason.
 
 - Modify `scripts/deep-response-server.test.mjs`
-  - Test realtime server emits progressive messages/audio before full completion.
+  - Test HTTP session server emits progressive messages/audio before full completion.
   - Test barge-in cancels current generation.
 
-- Modify `scripts/test-deep-response-realtime.mjs`
-  - Upgrade local/remote script harness to verify true streaming timing.
+- Create `scripts/test-deep-response-http-session.mjs`
+  - Add local/remote script harness to verify HTTP session streaming timing.
   - Output first transcript, first text, first audio, audio done, total.
 
 - Create `scripts/test-deep-response-streaming-provider.mjs`
@@ -76,11 +76,11 @@
 - Modify `package.json`
   - Add scripts:
     - `deep:streaming:provider:test`
-    - `deep:streaming:realtime:test`
+    - `deep:http-session:test`
 
 - Modify `Sources/DeepResponseWatchLab/DeepResponseRealtimeClient.swift`
-  - Add a dedicated true streaming turn API separate from HTTP v2.
-  - Connect WebSocket, send `session_start`, stream mic frames, send `input_stop`, receive text/audio chunks.
+  - Add a dedicated HTTP session streaming API separate from HTTP v2.
+  - Create session, upload audio chunks, poll/stream events, pull audio chunks, POST abort/end.
   - Keep `runSegmentedHTTPTurn` as fallback.
 
 - Modify `Sources/DeepResponseWatchLab/DeepResponseMicrophoneRecorder.swift`
@@ -93,7 +93,7 @@
 
 - Modify `Sources/DeepResponseWatchLab/DeepResponseDebugView.swift`
   - Add a two-mode control:
-    - Primary: true streaming.
+    - Primary: HTTP session streaming.
     - Fallback: HTTP v2.
   - Keep screen compact: transcript/text/audio/timing only.
 
@@ -130,18 +130,18 @@ Acceptance:
 - No Watch required.
 - No old app changes.
 
-## Phase 2C: Server True Streaming Contract
+## Phase 2C: Server HTTP Session Streaming Contract
 
-Goal: make `/deep-response/realtime` a real progressive event source.
+Goal: make `/deep-response/sessions` a real progressive HTTP session transport.
 
 - [ ] Define event contract:
-  - Client text:
-    - `session_start`
-    - `input_stop`
-    - `barge_in`
-  - Client binary:
-    - PCM16 16 kHz mic chunks.
-  - Server text:
+  - Client HTTP:
+    - `POST /deep-response/sessions`
+    - `POST /deep-response/sessions/{session_id}/audio`
+    - `POST /deep-response/sessions/{session_id}/input-stop`
+    - `POST /deep-response/sessions/{session_id}/abort`
+    - `POST /deep-response/sessions/{session_id}/end`
+  - Server HTTP events:
     - `session_ready`
     - `transcript_partial`
     - `transcript_final`
@@ -149,44 +149,44 @@ Goal: make `/deep-response/realtime` a real progressive event source.
     - `audio_done`
     - `timing`
     - `error`
-  - Server binary:
-    - PCM audio chunks, one chunk at a time.
+  - Server HTTP audio:
+    - PCM audio chunks with `generation_id`, `chunk_seq`, and cursor.
 
-- [ ] Change provider realtime path so it does not wait for `pipeline.run()`.
-  - Server should consume mic chunks during recording.
+- [ ] Change provider path so it does not wait for `pipeline.run()`.
+  - Server should accept mic chunks during recording through HTTP uploads.
   - After `input_stop`, server starts provider pipeline.
-  - As soon as a first phrase is speakable, server sends `assistant_text_delta`.
-  - As soon as TTS yields audio, server sends binary audio chunks to Watch.
+  - As soon as a first phrase is speakable, server stores/emits `assistant_text_delta`.
+  - As soon as TTS yields audio, server stores/emits audio chunks for Watch to pull/stream.
 
 - [ ] Add script test:
-  - `npm run deep:streaming:realtime:test -- --endpoint https://withgod-deep-response.onrender.com --pcm <fixture>`
+  - `npm run deep:http-session:test -- --endpoint https://withgod-deep-response.onrender.com --pcm <fixture>`
   - Expected:
-    - WebSocket opens.
-    - `session_ready` received.
+    - HTTP session starts.
+    - `session_ready` event received.
     - `transcript_final` received.
     - `assistant_text_delta` received before `audio_done`.
-    - First binary audio chunk received before final timing.
+    - First audio chunk received before final timing.
 
 Acceptance:
-- Node script proves true streaming against local server.
-- Then same script proves true streaming against Render.
-- If Render WebSocket still fails, diagnose at server/proxy layer before Watch UI work.
+- Node script proves HTTP session streaming against local server.
+- Then same script proves HTTP session streaming against Render.
+- If SSE/chunked is unstable on Watch, fallback to short-polling events/audio without changing server session semantics.
 
-## Phase 2D: Watch True Streaming Lab
+## Phase 2D: Watch HTTP Session Streaming Lab
 
-Goal: real Watch streams mic frames and starts playing server audio chunks before the whole response is done.
+Goal: real Watch uploads mic frames over HTTP and starts playing server audio chunks before the whole response is done.
 
 - [ ] Add live mic frame stream in DeepLab.
   - Frame size target: 100 ms PCM16.
   - Sample rate: 16 kHz input to server.
 
-- [ ] Add `runStreamingTurn()` in `DeepResponseRealtimeClient`.
-  - Connect WSS.
-  - Wait for `session_ready`.
+- [ ] Add `runHTTPSessionTurn()` in `DeepResponseRealtimeClient`.
+  - Create HTTP session.
+  - Wait for `session_ready` event through events endpoint.
   - Start mic stream.
-  - Send binary chunks while recording.
-  - On stop, send `input_stop`.
-  - Receive text and binary audio concurrently.
+  - Upload chunks while recording.
+  - On stop, POST `input-stop`.
+  - Receive text events and audio chunks concurrently through HTTP.
   - Enqueue audio chunks immediately.
 
 - [ ] Update `DeepResponseDebugView`.
@@ -203,7 +203,7 @@ Goal: real Watch streams mic frames and starts playing server audio chunks befor
 Acceptance:
 - On Watch, recording starts and sends chunks before stop.
 - After stop, Watch hears first audio as soon as server emits first TTS chunks.
-- UI shows streaming mode, not `Turn2`.
+- UI shows HTTP session streaming mode, not `Turn2`.
 - HTTP v2 fallback still works.
 
 ## Phase 2E: Barge-In and Cancellation
@@ -245,7 +245,25 @@ Acceptance:
 - First playable audio target:
   - POC acceptable: under 8 seconds after user stops speaking.
   - Good: under 5 seconds after user stops speaking.
-  - Excellent: under 3 seconds after user stops speaking.
+- Excellent: under 3 seconds after user stops speaking.
+
+## WebSocket Feasibility Spike
+
+Goal: keep WebSocket as a separate research path only if HTTP cannot meet first-playback or barge-in goals.
+
+Rules:
+- Do not connect ASR/LLM/TTS in this spike.
+- Test only Watch real-device WSS binary echo/audio.
+- Activate `AVAudioSession` before opening WebSocket.
+- Configure Watch audio background mode.
+- Simulator success does not count.
+- Real Watch must sustain 3-5 minutes of binary chunk send/receive.
+- Validate local-first abort and stale `generation_id` audio drop.
+- Failure must not block HTTP session streaming.
+
+Acceptance:
+- WebSocket can be reconsidered only after this spike passes on real Watch.
+- Even if it passes, HTTP remains the baseline for comparison until WebSocket beats it on first playback, abort, power, and recovery.
 
 ## Phase 3: Product Integration Decision
 
@@ -280,14 +298,14 @@ Acceptance:
 - New provider streaming harness:
   - `npm run deep:streaming:provider:test`
 
-- New realtime streaming script:
-  - `npm run deep:streaming:realtime:test`
+- New HTTP session streaming script:
+  - `npm run deep:http-session:test`
 
 - Render deploy:
   - `npm run deep:render:deploy`
 
 - Watch build:
-  - `xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /Users/nicho/Library/Developer/Xcode/DerivedData/Focus-cybkojzcswzxyscwwemxdhsnugsk DEEP_RESPONSE_REALTIME_ENDPOINT=wss://withgod-deep-response.onrender.com/deep-response/realtime build`
+  - `xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /Users/nicho/Library/Developer/Xcode/DerivedData/Focus-cybkojzcswzxyscwwemxdhsnugsk DEEP_RESPONSE_REALTIME_ENDPOINT=https://withgod-deep-response.onrender.com build`
 
 - Watch install:
   - `xcrun devicectl device install app --timeout 180 --device 6B873DBC-11D7-5F93-AA64-96FB0531C28B /Users/nicho/Library/Developer/Xcode/DerivedData/Focus-cybkojzcswzxyscwwemxdhsnugsk/Build/Products/Debug-watchos/DeepLab.app`
@@ -297,8 +315,8 @@ Acceptance:
 - All Node unit tests.
 - Provider credential/config checks.
 - Provider streaming benchmark from fixtures.
-- Local WebSocket server streaming script.
-- Render WebSocket streaming script if remote WSS works.
+- Local HTTP session streaming script.
+- Render HTTP session streaming script.
 - Watch app build.
 - Render deploy and `/health` / `/debug/config`.
 

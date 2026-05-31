@@ -42,7 +42,7 @@ POC 的目标不是先做完整产品，而是验证在真实 Apple Watch 场景
 - Watch / iPhone / server 的分工由实测指标决定，但首版 POC 不把 iPhone 放进核心实时链路。
 - 开发过程尽可能用本地电脑、脚本、模拟器完成验证；只有必须验证 Watch 真机麦克风、网络、播放、功耗或佩戴体验时，才要求人工配合真机测试。
 - Phase 1 可以使用固定音频/echo audio，但必须做得很薄，只作为 Watch/server 双向音频、播放、打断、旧音频丢弃的通道验收，不发展成另一条产品路线。
-- 公网 WSS 是最终必验项，但第一步不直接公网；先本地脚本和模拟器高频验证，再进入公网 Watch 真机验收。
+- Watch 端公网 HTTPS/HTTP streaming 是主线必验项；WebSocket 只作为隔离 feasibility spike，不作为 Deep Response 主流程依赖。
 
 ## 非目标
 
@@ -113,7 +113,7 @@ Supabase 继续承担：
 
 Dedicated Realtime Voice Server 承担：
 
-- WebSocket 长连接。
+- Watch HTTP session transport：audio chunk upload、event/audio chunk delivery、abort endpoint。
 - Deep Response session 生命周期。
 - 多轮 turn-taking 状态机。
 - 音频 ingress / egress。
@@ -123,6 +123,33 @@ Dedicated Realtime Voice Server 承担：
 - 短期会话上下文。
 - 会话摘要生成。
 - 向 Supabase 异步写入 Deep Response 记录。
+
+### Watch Transport Decision
+
+Watch 端 primary transport 使用 HTTP，而不是 WebSocket。
+
+原因：
+
+- Apple TN3135 将 `URLSessionWebSocketTask` 归入 watchOS low-level networking；模拟器允许不等于真机稳定可用。
+- 我们已经在真实 Watch + Render 上多次观察到 WSS `-1001`、`-999`、upgrade/receive 不稳定。
+- Deep Response 的主线目标是持续会话体验，不应依赖 watchOS 真机风险较高的 low-level networking。
+- Watch 到 server 可以用 HTTP 上传 audio chunks，用 HTTP/SSE/chunked/polling 拉取事件和 audio chunks，用 POST `/abort` 完成打断。
+- Server 到 Doubao ASR/TTS 仍可使用 WebSocket。这个 provider-side WebSocket 运行在 Node server，不受 Watch networking 限制。
+
+Watch transport 主线：
+
+```text
+POST /deep-response/sessions
+POST /deep-response/sessions/{session_id}/audio
+GET  /deep-response/sessions/{session_id}/events
+GET  /deep-response/sessions/{session_id}/audio
+POST /deep-response/sessions/{session_id}/abort
+POST /deep-response/sessions/{session_id}/end
+```
+
+`/events` 可按平台实测选择 SSE、chunked JSONL 或短轮询。`/audio` 可按实测选择 chunked PCM response、range-like pull 或短轮询 chunk pull。POC 优先选择 watchOS 真机最稳定、可观测性最高的 HTTP 形态。
+
+WebSocket 不删除，但降级为独立 spike。除非真机 spike 明确通过，否则不能把 Deep Response 主流程改回 Watch WebSocket。
 
 ## Volcengine / Doubao Provider Preparation
 
@@ -309,7 +336,7 @@ Required provider timing:
 
 开发过程中优先使用自动化和本地环境验证：
 
-1. Node 脚本模拟 Watch WebSocket client。
+1. Node 脚本模拟 Watch HTTP session client。
 2. 固定 PCM fixture 模拟用户说话。
 3. 本地 server timing trace。
 4. watchOS 模拟器验证 UI 状态和协议处理。
@@ -318,7 +345,7 @@ Required provider timing:
 必须真机验证的内容：
 
 - Watch 麦克风持续采集稳定性。
-- Watch WSS 直连公网 server 稳定性。
+- Watch HTTPS/HTTP streaming 直连公网 server 稳定性。
 - Watch speaker / AirPods 流式播放。
 - 佩戴状态下的打断体验。
 - 5-10 分钟 Deep Response 电量和发热。
@@ -378,7 +405,7 @@ server 是 Deep Response realtime session owner。
 server 负责：
 
 - 认证 Watch session。
-- 管理每个 WebSocket session。
+- 管理每个 Deep Response session。session 可以通过多条 HTTP 请求维持，不要求 Watch 长 WebSocket。
 - 管理 session lifecycle：start、listening、turn、interrupt、idle、goodbye、close。
 - 接收 Watch 音频帧。
 - 将音频送入 Streaming ASR。
@@ -400,7 +427,7 @@ server 负责：
 
 保留的思想：
 
-- 一个 WebSocket 连接对应一个独立 session handler。
+- 一个 Deep Response session 对应一个独立 session handler；Watch transport 可以是 HTTP，而不是必须绑定到一个 WebSocket 连接。
 - session handler 是长期对象，不是一轮请求结束就销毁的 pipeline。
 - 设备上传小音频帧，server 统一编排 ASR / LLM / TTS。
 - ASR、LLM、TTS 都是 provider interface，可以替换。
@@ -565,13 +592,13 @@ idle 策略：
 
 ### 连接
 
-Watch 使用 WSS 直连 Dedicated Realtime Voice Server。
+Watch 使用 HTTPS 直连 Dedicated Realtime Voice Server。Watch 主线不使用 WSS。
 
-握手：
+创建 session：
 
 ```json
 {
-  "type": "hello",
+  "type": "session_start",
   "protocol": "presence.deep_response.v1",
   "device": "watch",
   "session_id": "client-generated-or-empty",
@@ -590,7 +617,7 @@ server 响应：
 
 ```json
 {
-  "type": "hello",
+  "type": "session_ready",
   "session_id": "server-session-id",
   "server_time_ms": 1780000000000,
   "accepted_audio": {
@@ -601,6 +628,45 @@ server 响应：
     "frame_duration_ms": 40
   }
 }
+```
+
+HTTP endpoint：
+
+```text
+POST /deep-response/sessions
+```
+
+后续音频 chunk 上传：
+
+```text
+POST /deep-response/sessions/{session_id}/audio?turn_id=turn-001&seq=42
+Content-Type: application/octet-stream
+Body: PCM16 chunk
+```
+
+事件下行：
+
+```text
+GET /deep-response/sessions/{session_id}/events?cursor=...
+Accept: text/event-stream
+```
+
+如果 Watch 真机 SSE 不稳定，events endpoint 可以切换为 JSONL chunked response 或短轮询：
+
+```text
+GET /deep-response/sessions/{session_id}/events/poll?cursor=...
+```
+
+音频下行：
+
+```text
+GET /deep-response/sessions/{session_id}/audio?generation_id=assistant-001&cursor=...
+```
+
+打断：
+
+```text
+POST /deep-response/sessions/{session_id}/abort
 ```
 
 ### 控制消息
@@ -1022,7 +1088,7 @@ Derived metrics：
 Sources/PresenceWatchApp/DeepResponse/
   DeepResponseSessionViewModel.swift
   WatchDeepResponseAudioEngine.swift
-  WatchDeepResponseWebSocketClient.swift
+  WatchDeepResponseHTTPTransport.swift
   WatchStreamingAudioPlayer.swift
   WatchBargeInDetector.swift
   DeepResponseTimingTrace.swift
@@ -1033,7 +1099,7 @@ Sources/PresenceWatchApp/DeepResponse/
 
 - `DeepResponseSessionViewModel`：Deep Response UI/session 状态机。
 - `WatchDeepResponseAudioEngine`：麦克风采集、重采样、frame 输出。
-- `WatchDeepResponseWebSocketClient`：WSS 连接、JSON 控制消息、binary audio。
+- `WatchDeepResponseHTTPTransport`：HTTP session 创建、audio chunk upload、event/audio pull、abort/end。
 - `WatchStreamingAudioPlayer`：接收音频帧、小预缓冲、播放、清队列。
 - `WatchBargeInDetector`：assistant speaking 时检测用户开口。
 - `DeepResponseTimingTrace`：Watch timing 事件采集和上报。
@@ -1075,7 +1141,7 @@ presence-realtime-server/
       InterruptController
       TimingTrace
     transport/
-      WatchRealtimeWebSocket
+      WatchRealtimeHTTP
       MessageProtocol
     audio/
       AudioIngress
@@ -1128,7 +1194,7 @@ PASSED 15/15 checks
 - LLM first token / first phrase。
 - TTS first audio / RTF。
 - 选出首版组合。
-- 本地 WebSocket test client。
+- 本地 HTTP session test client。
 - 固定 PCM fixture。
 - 可重复 timing trace。
 - Doubao ASR real PCM speech fixture transcript。
@@ -1146,9 +1212,9 @@ PASSED 15/15 checks
 - ASR final 在合理 endpoint 后稳定返回。
 - provider timing trace 包含 ASR、LLM、TTS 各阶段耗时。
 
-### Phase 1：Watch Direct PCM Realtime
+### Phase 1：Watch Direct PCM HTTP Realtime
 
-目标：先用脚本和 watchOS 模拟器验证 PCM16 双向流，再进入 Watch 真机直连 server 验收。
+目标：先用脚本和 watchOS 模拟器验证 PCM16 HTTP 双向流，再进入 Watch 真机直连 server 验收。
 
 Phase 1 允许使用固定音频或 echo audio，不要求接入真实 TTS。
 
@@ -1191,7 +1257,7 @@ Phase 1 不应在固定音频/echo audio 上消耗过多时间。只要证明以
 
 - 真实语音首响。
 - 多轮上下文。
-- 同一 WebSocket session 内连续对话。
+- 同一 Deep Response session 内连续对话，不要求 Watch 维持 WebSocket。
 - abort 取消旧 generation。
 - assistant speaking 后自动回到 listening。
 - 用户下一句复用前文 context。
@@ -1251,7 +1317,7 @@ Phase 2 必须拆成可独立验收的小阶段：
 
 1. 本地 Node server + 脚本 client：最快验证协议、队列、timing 和 provider。
 2. 本地 Node server + watchOS 模拟器：验证 Watch UI/runtime 基本逻辑。
-3. 公网 WSS server + Watch 真机：验证真实网络、麦克风、播放和功耗。
+3. 公网 HTTPS server + Watch 真机：验证真实网络、麦克风、播放和功耗。
 
 不建议第一步直接上公网再修所有细节。
 
@@ -1261,16 +1327,32 @@ Phase 2 必须拆成可独立验收的小阶段：
 - 每次真机安装和人工测试成本高，应该留给本地无法证明的环节。
 - 公网环境会混入部署、证书、域名、网络抖动问题，过早引入会降低定位效率。
 
-但公网 WSS 是必经验收，不是可选项。只是在本地自动化通过后再进入。
+公网 HTTP streaming 是必经验收，不是可选项。只是在本地自动化通过后再进入。
 
 执行原则：
 
 - 本地和模拟器能验证的，不要求人工真机测试。
 - 真机测试只安排在阶段验收点。
-- 公网 WSS 只在本地协议、队列、timing 和模拟器基本逻辑通过后进入。
+- 公网 HTTP streaming 只在本地协议、队列、timing 和模拟器基本逻辑通过后进入。
 - 如果公网/真机失败，先用 timing trace 判断是部署网络问题还是业务链路问题，再决定是否回到本地复现。
 
 ## 测试脚本
+
+### WebSocket Feasibility Spike
+
+WebSocket 不属于 Watch 主线 transport。只有当 HTTP 路线被实测证明无法达到首响或打断目标时，才允许做独立 WebSocket feasibility spike。
+
+spike 约束：
+
+1. 只测试 Watch 真机 WSS binary echo/audio，不接 ASR、LLM、TTS。
+2. 建立 WebSocket 前配置并激活 `AVAudioSession`。
+3. 配置 Watch audio background mode。
+4. 模拟器结果不算验收。
+5. 必须在真实 Watch 上连续 3-5 分钟稳定收发 binary chunk。
+6. 必须验证 local-first abort 和旧 `generation_id` 音频丢弃。
+7. spike 失败不得阻塞 HTTP 主线。
+
+只有 spike 全部通过，才能把 Watch WebSocket 重新列入候选 transport。即使 spike 通过，也必须和 HTTP streaming 在同等真机条件下比较首响、打断、功耗和断线恢复后再决策。
 
 ### 固定音频回放
 
