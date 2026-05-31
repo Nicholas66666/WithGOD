@@ -65,39 +65,55 @@ more llm 6185ms
 more tts 650ms
 ```
 
-## Current Next Milestone
+## Current Progress
 
-Next implementation milestone is **Milestone 1: Provider And Server Harness**.
+Milestone 1 server/provider harness is implemented and self-tested as of commit `62335c3`.
 
-Build local/provider/server harness first. Do not start Watch HTTP session code until provider streamability and HTTP session semantics pass locally and on Render.
+Completed:
+
+- Added HTTP session runtime under `/deep-response/sessions`.
+- Added audio chunk upload, event cursor, audio cursor, input-stop, abort, end endpoints.
+- Added stale generation drop on abort.
+- Added multi-turn and explicit end server tests.
+- Added `scripts/test-deep-response-http-session.mjs`.
+- Added `scripts/test-deep-response-streaming-provider.mjs`.
+- Deployed server change to Render.
+- Verified remote session create/event/audio upload smoke.
+- Verified provider harness with generated speech fixture:
+  - transcript: `我今天有点累，想听一句安慰的话`
+  - asr final: `1871ms`
+  - llm first phrase: `6683ms`
+  - tts first audio: `418ms`
+  - first playable estimate: `8972ms`
+  - total: `19238ms`
+- Verified Render HTTP session with same fixture:
+  - transcript: `我今天有点累，想听一句安慰的话`
+  - audio chunks: `43`
+  - audio bytes: `316874`
+  - provider timing total: `19624ms`
+
+Important finding:
+
+- Provider and HTTP session path works, but first phrase quality still needs tuning. One provider harness run produced an incomplete first phrase: `耶稣说：“凡劳苦担重担的人，可以`。Do not treat first-phrase policy as done.
+
+Next implementation milestone is **Milestone 2: Watch HTTP Transport Lab**.
+
+Do not ask user to test until Watch code is built, installed, and local/Render endpoints have already been self-checked.
 
 Expected deliverables:
 
-- `scripts/test-deep-response-streaming-provider.mjs`
-- `deep:streaming:provider:test`
-- `scripts/test-deep-response-http-session.mjs`
-- `deep:http-session:test`
-- HTTP session endpoints under `/deep-response/sessions`
-- Provider timing report:
-  - `asr_final_ms`
-  - `llm_first_phrase_ms`
-  - `tts_first_audio_ms`
-  - `first_playable_audio_ms`
-  - `total_ms`
-- HTTP session report:
-  - session created
-  - audio chunks accepted
-  - transcript/text/audio events emitted
-  - first audio arrives before final timing
-  - abort drops stale generation
-  - scripted multi-turn and goodbye/idle flows pass
+- DeepLab live mic frame upload over HTTP session.
+- Event/audio puller over HTTP session.
+- Compact UI for session state, chunks up/down, transcript/text/timing.
+- HTTP v2 fallback still present.
 
 Acceptance:
 
-- Local provider script proves progressive first text/audio behavior.
-- Local HTTP session script passes.
-- Render HTTP session script passes.
-- No Watch test required.
+- Swift build passes.
+- Render endpoints are reachable.
+- Watch app installs only when device is connected.
+- Manual Watch Gate 1: user confirms chunks upload while recording, event/audio pull reaches Watch, and UI is readable.
+- Manual Watch Gate 2: user confirms first playable audio in HTTP session mode and HTTP v2 fallback still works.
 - No old app changes.
 
 ## Development Rhythm
