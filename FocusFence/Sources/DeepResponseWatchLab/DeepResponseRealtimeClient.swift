@@ -44,7 +44,10 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private var httpEventCursor = 0
     private var httpOutputAudioCursor = 0
     private var httpUploadQueue: [Data] = []
+    private var httpPendingUploadAudio = Data()
+    private var httpUploadFailureCount = 0
     private var isDrainingHTTPUploads = false
+    private let httpUploadBatchBytes = 9_600
 
     func checkHealth() async {
         do {
@@ -247,6 +250,8 @@ final class DeepResponseRealtimeClient: ObservableObject {
         httpEventCursor = 0
         httpOutputAudioCursor = 0
         httpUploadQueue = []
+        httpPendingUploadAudio = Data()
+        httpUploadFailureCount = 0
         isDrainingHTTPUploads = false
         uploadedAudioChunks = 0
         receivedAudioChunks = 0
@@ -266,6 +271,26 @@ final class DeepResponseRealtimeClient: ObservableObject {
         guard !audio.isEmpty else {
             return
         }
+        httpPendingUploadAudio.append(audio)
+        while httpPendingUploadAudio.count >= httpUploadBatchBytes {
+            let chunk = httpPendingUploadAudio.prefix(httpUploadBatchBytes)
+            queueHTTPSessionUpload(Data(chunk))
+            httpPendingUploadAudio.removeFirst(chunk.count)
+        }
+    }
+
+    private func flushHTTPSessionAudio() {
+        guard !httpPendingUploadAudio.isEmpty else {
+            return
+        }
+        queueHTTPSessionUpload(httpPendingUploadAudio)
+        httpPendingUploadAudio = Data()
+    }
+
+    private func queueHTTPSessionUpload(_ audio: Data) {
+        guard !audio.isEmpty else {
+            return
+        }
         httpUploadQueue.append(audio)
         guard !isDrainingHTTPUploads else {
             return
@@ -279,7 +304,10 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private func drainHTTPSessionUploadQueue() async {
         while !httpUploadQueue.isEmpty {
             let audio = httpUploadQueue.removeFirst()
-            await uploadHTTPSessionAudio(audio)
+            let uploaded = await uploadHTTPSessionAudio(audio)
+            if !uploaded {
+                httpUploadFailureCount += 1
+            }
         }
         isDrainingHTTPUploads = false
         if !httpUploadQueue.isEmpty {
@@ -290,34 +318,41 @@ final class DeepResponseRealtimeClient: ObservableObject {
         }
     }
 
-    private func uploadHTTPSessionAudio(_ audio: Data) async {
+    private func uploadHTTPSessionAudio(_ audio: Data) async -> Bool {
         guard let sessionID = httpSessionID,
               let turnID = httpTurnID,
               !audio.isEmpty else {
-            return
+            return true
         }
         let seq = httpAudioSeq
         httpAudioSeq += 1
-        do {
-            let path = "/deep-response/sessions/\(sessionID)/audio?turn_id=\(turnID)&seq=\(seq)"
-            var request = URLRequest(url: try Self.httpSessionURL(path: path))
-            request.httpMethod = "POST"
-            request.timeoutInterval = 20
-            request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
-            request.setValue("DeepLab-watchOS", forHTTPHeaderField: "X-Deep-Response-Client")
-            let (_, response) = try await URLSession.shared.upload(for: request, from: audio)
-            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
-            if statusCode == 200 {
-                uploadedAudioChunks += 1
-                connectionStage = "http_session:up \(uploadedAudioChunks)"
-            } else {
+        for attempt in 1...3 {
+            do {
+                let path = "/deep-response/sessions/\(sessionID)/audio?turn_id=\(turnID)&seq=\(seq)"
+                var request = URLRequest(url: try Self.httpSessionURL(path: path))
+                request.httpMethod = "POST"
+                request.timeoutInterval = 20
+                request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+                request.setValue("DeepLab-watchOS", forHTTPHeaderField: "X-Deep-Response-Client")
+                let (_, response) = try await URLSession.shared.upload(for: request, from: audio)
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+                if statusCode == 200 {
+                    uploadedAudioChunks += 1
+                    connectionStage = "http_session:up \(uploadedAudioChunks)"
+                    return true
+                }
                 lastError = "Upload \(statusCode)"
                 connectionStage = "http_session:upload_\(statusCode)"
+            } catch {
+                setError("Upload: \(Self.describe(error))", error: error)
+                connectionStage = "http_session:upload_fail \(attempt)"
             }
-        } catch {
-            setError("Upload: \(Self.describe(error))", error: error)
-            connectionStage = "http_session:upload_fail"
+
+            if attempt < 3 {
+                try? await Task.sleep(nanoseconds: UInt64(attempt) * 300_000_000)
+            }
         }
+        return false
     }
 
     func finishHTTPSessionTurn() async {
@@ -328,7 +363,13 @@ final class DeepResponseRealtimeClient: ObservableObject {
         }
         do {
             connectionStage = "http_session:stop"
+            flushHTTPSessionAudio()
             await waitForPendingHTTPSessionUploads()
+            guard httpUploadFailureCount == 0 else {
+                lastError = "Upload failed \(httpUploadFailureCount)"
+                connectionStage = "http_session:upload_failed"
+                return
+            }
             var request = URLRequest(url: try Self.httpSessionURL(path: "/deep-response/sessions/\(sessionID)/input-stop"))
             request.httpMethod = "POST"
             request.timeoutInterval = 20
