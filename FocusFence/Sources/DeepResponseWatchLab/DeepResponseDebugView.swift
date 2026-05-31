@@ -19,11 +19,18 @@ struct DeepResponseDebugView: View {
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
-                Text("up \(client.uploadedAudioChunks) · down \(client.receivedAudioChunks) · \(client.receivedAudioBytes)b")
+                Text("up \(client.uploadedAudioChunks) \(client.uploadedAudioBytes)b · down \(client.receivedAudioChunks) \(client.receivedAudioBytes)b")
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
+                if let clientTiming = client.lastClientTimingText {
+                    Text(clientTiming)
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.55)
+                }
                 Text(client.connectionStage)
                     .font(.caption2.monospaced())
                     .foregroundStyle(.secondary)

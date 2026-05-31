@@ -23,6 +23,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
     @Published private(set) var receivedAudioBytes = 0
     @Published private(set) var receivedAudioChunks = 0
     @Published private(set) var uploadedAudioChunks = 0
+    @Published private(set) var uploadedAudioBytes = 0
     @Published private(set) var httpSessionID: String?
     @Published private(set) var lastTurnTranscript: String?
     @Published private(set) var lastTurnText: String?
@@ -30,6 +31,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
     @Published private(set) var lastTurnFollowupText: String?
     @Published private(set) var lastTurnTotalMs: Int?
     @Published private(set) var lastTurnTiming: DeepResponseTiming?
+    @Published private(set) var lastClientTimingText: String?
 
     private var task: URLSessionWebSocketTask?
     private var receiveTask: Task<Void, Never>?
@@ -47,7 +49,9 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private var httpPendingUploadAudio = Data()
     private var httpUploadFailureCount = 0
     private var isDrainingHTTPUploads = false
-    private let httpUploadBatchBytes = 9_600
+    private var httpStopStartedAt: Date?
+    private var httpFirstAudioMs: Int?
+    private let httpUploadBatchBytes = 64_000
 
     func checkHealth() async {
         do {
@@ -253,7 +257,10 @@ final class DeepResponseRealtimeClient: ObservableObject {
         httpPendingUploadAudio = Data()
         httpUploadFailureCount = 0
         isDrainingHTTPUploads = false
+        httpStopStartedAt = nil
+        httpFirstAudioMs = nil
         uploadedAudioChunks = 0
+        uploadedAudioBytes = 0
         receivedAudioChunks = 0
         receivedAudioBytes = 0
         lastError = nil
@@ -264,6 +271,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
         lastTurnFollowupText = nil
         lastTurnTiming = nil
         lastTurnTotalMs = nil
+        lastClientTimingText = nil
         connectionStage = "http_session:ready"
     }
 
@@ -338,6 +346,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
                 let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
                 if statusCode == 200 {
                     uploadedAudioChunks += 1
+                    uploadedAudioBytes += audio.count
                     connectionStage = "http_session:up \(uploadedAudioChunks)"
                     return true
                 }
@@ -362,9 +371,15 @@ final class DeepResponseRealtimeClient: ObservableObject {
             return
         }
         do {
+            let stopStartedAt = Date()
+            httpStopStartedAt = stopStartedAt
+            httpFirstAudioMs = nil
+            lastClientTimingText = nil
             connectionStage = "http_session:stop"
             flushHTTPSessionAudio()
             await waitForPendingHTTPSessionUploads()
+            let uploadMs = Self.elapsedMs(since: stopStartedAt)
+            lastClientTimingText = "upl \(uploadMs)"
             guard httpUploadFailureCount == 0 else {
                 lastError = "Upload failed \(httpUploadFailureCount)"
                 connectionStage = "http_session:upload_failed"
@@ -386,7 +401,11 @@ final class DeepResponseRealtimeClient: ObservableObject {
             }
             let stopped = try JSONDecoder().decode(DeepResponseHTTPSessionInputStopResponse.self, from: data)
             httpGenerationID = stopped.generationID
+            let inputStopMs = Self.elapsedMs(since: stopStartedAt)
+            lastClientTimingText = "upl \(uploadMs) · stop \(inputStopMs)"
             try await pollHTTPSessionUntilDone(sessionID: sessionID)
+            let doneMs = Self.elapsedMs(since: stopStartedAt)
+            lastClientTimingText = "upl \(uploadMs) · first \(httpFirstAudioMs ?? 0) · done \(doneMs)"
             connectionStage = "http_session:done"
         } catch {
             setError("Session: \(Self.describe(error))", error: error)
@@ -434,6 +453,11 @@ final class DeepResponseRealtimeClient: ObservableObject {
                     playbackAudio.append(data)
                 }
                 if !playbackAudio.isEmpty {
+                    if httpFirstAudioMs == nil, let stopStartedAt = httpStopStartedAt {
+                        httpFirstAudioMs = Self.elapsedMs(since: stopStartedAt)
+                        let uploadText = lastClientTimingText ?? "upl ?"
+                        lastClientTimingText = "\(uploadText) · first \(httpFirstAudioMs ?? 0)"
+                    }
                     player.enqueuePCM16(playbackAudio, sampleRate: playbackSampleRate ?? 24_000)
                 }
             }
@@ -784,6 +808,10 @@ final class DeepResponseRealtimeClient: ObservableObject {
             return "\(nsError.domain) \(nsError.code) | \(underlying.domain) \(underlying.code)"
         }
         return "\(nsError.domain) \(nsError.code)"
+    }
+
+    private static func elapsedMs(since start: Date) -> Int {
+        Int(Date().timeIntervalSince(start) * 1_000)
     }
 }
 
