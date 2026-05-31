@@ -552,6 +552,56 @@ test("DeepResponse HTTP session accepts deflated audio upload bodies", async () 
   }
 });
 
+test("DeepResponse HTTP session accepts turn metadata from Watch upload headers", async () => {
+  const seenTurns = [];
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async *streamSegmented({ audioChunks }) {
+        const collected = [];
+        for await (const chunk of audioChunks) {
+          collected.push(Buffer.from(chunk).toString("utf8"));
+        }
+        seenTurns.push(collected.join(""));
+        yield { type: "transcript_final", transcript: collected.join("") };
+        yield { type: "segment", segment: "first", text: "ok", audioChunks: [Buffer.from("audio")] };
+        yield { type: "timing", timing: {}, providerMeta: {} };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {});
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+    const response = await fetch(`${base}/audio`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "X-Deep-Response-Turn": "turn-header",
+        "X-Deep-Response-Seq": "7"
+      },
+      body: Buffer.from("header-audio")
+    });
+    assert.equal(response.ok, true);
+    const uploaded = await response.json();
+    assert.equal(uploaded.turnID, "turn-header");
+    assert.equal(uploaded.seq, 7);
+
+    await postJSON(`${base}/input-stop`, { turnID: "turn-header" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "timing");
+    });
+    assert.deepEqual(seenTurns, ["header-audio"]);
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse HTTP session abort drops stale generation audio", async () => {
   let releasePipeline;
   const pipelineStarted = new Promise((resolve) => {

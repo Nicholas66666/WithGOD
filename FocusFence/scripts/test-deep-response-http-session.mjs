@@ -2,15 +2,18 @@
 
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { pathToFileURL } from "node:url";
+import { deflateSync } from "node:zlib";
 
 export function parseHTTPSessionArgs(argv) {
   const args = {
     endpoint: "http://127.0.0.1:8797",
     pcmPath: "",
     chunkMs: 100,
+    uploadSleepMs: null,
     pollMs: 250,
     timeoutMs: 90_000,
     outputAudioPath: "",
+    deflate: false,
     verbose: false
   };
 
@@ -25,6 +28,9 @@ export function parseHTTPSessionArgs(argv) {
     } else if (arg === "--chunk-ms") {
       args.chunkMs = Number(argv[index + 1] || args.chunkMs);
       index += 1;
+    } else if (arg === "--upload-sleep-ms") {
+      args.uploadSleepMs = Number(argv[index + 1] || 0);
+      index += 1;
     } else if (arg === "--poll-ms") {
       args.pollMs = Number(argv[index + 1] || args.pollMs);
       index += 1;
@@ -34,6 +40,8 @@ export function parseHTTPSessionArgs(argv) {
     } else if (arg === "--out-audio") {
       args.outputAudioPath = argv[index + 1] || "";
       index += 1;
+    } else if (arg === "--deflate") {
+      args.deflate = true;
     } else if (arg === "--verbose") {
       args.verbose = true;
     } else if (arg === "--help" || arg === "-h") {
@@ -57,6 +65,8 @@ export async function runHTTPSessionProbe(args) {
   const startedAt = performance.now();
   const pcm = readFileSync(args.pcmPath);
   const chunks = [...chunkPCM16(pcm, { sampleRate: 16_000, chunkMs: args.chunkMs })];
+  let encodedUploadBytes = 0;
+  let decodedUploadBytes = 0;
   const created = await postJSON(buildURL(args.endpoint, "/deep-response/sessions"), {
     sampleRate: 16_000
   });
@@ -64,16 +74,28 @@ export async function runHTTPSessionProbe(args) {
   const turnID = `turn_${Date.now()}`;
   const basePath = `/deep-response/sessions/${encodeURIComponent(sessionID)}`;
 
+  const uploadStartedAt = performance.now();
+  const uploadSleepMs = args.uploadSleepMs ?? args.chunkMs;
   for (let index = 0; index < chunks.length; index += 1) {
-    await postBytes(buildURL(args.endpoint, `${basePath}/audio?turn_id=${turnID}&seq=${index}`), chunks[index]);
-    await sleep(args.chunkMs);
+    const uploaded = await postBytes(
+      buildURL(args.endpoint, `${basePath}/audio?turn_id=${turnID}&seq=${index}`),
+      chunks[index],
+      { deflate: args.deflate }
+    );
+    encodedUploadBytes += uploaded.encodedBytes || chunks[index].byteLength;
+    decodedUploadBytes += uploaded.bytes || chunks[index].byteLength;
+    if (uploadSleepMs > 0) {
+      await sleep(uploadSleepMs);
+    }
   }
+  const uploadEndedAt = performance.now();
   await postJSON(buildURL(args.endpoint, `${basePath}/input-stop`), { turnID });
 
   let eventCursor = 0;
   let audioCursor = 0;
   const events = [];
   const audioChunks = [];
+  let firstAudioAt = null;
 
   await waitFor(async () => {
     const eventBatch = await fetchJSON(buildURL(args.endpoint, `${basePath}/events?cursor=${eventCursor}`));
@@ -87,6 +109,9 @@ export async function runHTTPSessionProbe(args) {
 
     const audioBatch = await fetchJSON(buildURL(args.endpoint, `${basePath}/audio?cursor=${audioCursor}`));
     audioCursor = audioBatch.nextCursor;
+    if (firstAudioAt == null && audioBatch.chunks.length > 0) {
+      firstAudioAt = performance.now();
+    }
     audioChunks.push(...audioBatch.chunks);
     return events.some((event) => event.type === "timing")
       && events.some((event) => event.type === "audio_done");
@@ -94,8 +119,14 @@ export async function runHTTPSessionProbe(args) {
 
   const summary = summarizeHTTPSessionResult({
     startedAt,
+    uploadStartedAt,
+    uploadEndedAt,
+    firstAudioAt,
     endedAt: performance.now(),
     sessionID,
+    uploadChunks: chunks.length,
+    encodedUploadBytes,
+    decodedUploadBytes,
     events,
     audioChunks
   });
@@ -107,7 +138,19 @@ export async function runHTTPSessionProbe(args) {
   return summary;
 }
 
-export function summarizeHTTPSessionResult({ startedAt, endedAt, sessionID, events, audioChunks }) {
+export function summarizeHTTPSessionResult({
+  startedAt,
+  uploadStartedAt,
+  uploadEndedAt,
+  firstAudioAt,
+  endedAt,
+  sessionID,
+  uploadChunks = 0,
+  encodedUploadBytes = 0,
+  decodedUploadBytes = 0,
+  events,
+  audioChunks
+}) {
   const transcript = events.find((event) => event.type === "transcript_final")?.text || "";
   const text = events
     .filter((event) => event.type === "assistant_text_delta")
@@ -118,7 +161,12 @@ export function summarizeHTTPSessionResult({ startedAt, endedAt, sessionID, even
   return {
     ok: Boolean(transcript || text || audioByteLength > 0),
     elapsedMs: Math.round(endedAt - startedAt),
+    uploadMs: uploadStartedAt != null && uploadEndedAt != null ? Math.round(uploadEndedAt - uploadStartedAt) : null,
+    firstAudioMs: firstAudioAt != null ? Math.round(firstAudioAt - startedAt) : null,
     sessionID,
+    uploadChunks,
+    encodedUploadBytes,
+    decodedUploadBytes,
     transcript,
     text,
     audioByteLength,
@@ -151,11 +199,15 @@ async function postJSON(url, body) {
   return response.json();
 }
 
-async function postBytes(url, body) {
+async function postBytes(url, body, { deflate = false } = {}) {
+  const encodedBody = deflate ? deflateSync(body) : body;
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/octet-stream" },
-    body
+    headers: {
+      "Content-Type": "application/octet-stream",
+      ...(deflate ? { "Content-Encoding": "deflate" } : {})
+    },
+    body: encodedBody
   });
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}: ${await response.text()}`);
@@ -193,9 +245,12 @@ Options:
   --endpoint <url>      DeepResponse HTTP server endpoint. Default: http://127.0.0.1:8797
   --pcm <path>          Required. Raw 16kHz mono int16 PCM speech fixture.
   --chunk-ms <ms>       Upload chunk duration. Default: 100
+  --upload-sleep-ms <ms>
+                         Sleep after each upload. Default: chunk-ms. Use 0 for pure network drain timing.
   --poll-ms <ms>        Poll interval for events/audio. Default: 250
   --timeout-ms <ms>     Probe timeout. Default: 90000
   --out-audio <path>    Optional output path for returned PCM bytes.
+  --deflate             Compress uploaded PCM chunks with Content-Encoding: deflate.
   --verbose             Print event batches.
 `);
 }

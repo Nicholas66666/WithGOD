@@ -1,5 +1,4 @@
 import Foundation
-import Compression
 
 enum DeepResponseClientError: LocalizedError {
     case missingEndpoint
@@ -53,7 +52,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private var isDrainingHTTPUploads = false
     private var httpStopStartedAt: Date?
     private var httpFirstAudioMs: Int?
-    private let httpUploadBatchBytes = 64_000
+    private let httpUploadBatchBytes = 16_000
 
     func checkHealth() async {
         do {
@@ -123,6 +122,14 @@ final class DeepResponseRealtimeClient: ObservableObject {
             setError("Echo: \(Self.describe(error))", error: error)
             connectionStage = "http_echo:fail"
         }
+    }
+
+    func runHTTPEchoFixture() async {
+        let audio = Self.fixturePCMChunks(durationSeconds: 1, chunkMilliseconds: 1_000)
+            .reduce(into: Data()) { result, chunk in
+                result.append(chunk)
+            }
+        await runHTTPEcho(audio)
     }
 
     func runHTTPTurn(_ audio: Data) async {
@@ -339,17 +346,17 @@ final class DeepResponseRealtimeClient: ObservableObject {
         httpAudioSeq += 1
         for attempt in 1...3 {
             do {
-                let uploadBody = audio.deflated() ?? audio
-                let path = "/deep-response/sessions/\(sessionID)/audio?turn_id=\(turnID)&seq=\(seq)"
+                let uploadBody = audio
+                let path = "/deep-response/sessions/\(sessionID)/audio"
                 var request = URLRequest(url: try Self.httpSessionURL(path: path))
                 request.httpMethod = "POST"
                 request.timeoutInterval = 20
                 request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
-                if uploadBody.count != audio.count {
-                    request.setValue("deflate", forHTTPHeaderField: "Content-Encoding")
-                }
+                request.setValue(turnID, forHTTPHeaderField: "X-Deep-Response-Turn")
+                request.setValue(String(seq), forHTTPHeaderField: "X-Deep-Response-Seq")
                 request.setValue("DeepLab-watchOS", forHTTPHeaderField: "X-Deep-Response-Client")
-                let (_, response) = try await URLSession.shared.upload(for: request, from: uploadBody)
+                request.httpBody = uploadBody
+                let (_, response) = try await URLSession.shared.data(for: request)
                 let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
                 if statusCode == 200 {
                     uploadedAudioChunks += 1
@@ -418,6 +425,21 @@ final class DeepResponseRealtimeClient: ObservableObject {
         } catch {
             setError("Session: \(Self.describe(error))", error: error)
             connectionStage = "http_session:fail"
+        }
+    }
+
+    func runHTTPSessionFixtureTurn() async {
+        do {
+            try await startHTTPSessionTurn()
+            connectionStage = "http_fixture:upload"
+            for chunk in Self.fixturePCMChunks(durationSeconds: 4, chunkMilliseconds: 500) {
+                enqueueHTTPSessionAudio(chunk)
+                try await Task.sleep(nanoseconds: 30_000_000)
+            }
+            await finishHTTPSessionTurn()
+        } catch {
+            setError("Fixture: \(Self.describe(error))", error: error)
+            connectionStage = "http_fixture:fail"
         }
     }
 
@@ -716,7 +738,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private static func healthURL() throws -> URL {
         let endpoint = try endpointURL()
         var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
-        components?.scheme = endpoint.scheme == "wss" ? "https" : "http"
+        components?.scheme = httpTransportScheme(for: endpoint)
         components?.path = "/health"
         components?.query = nil
         guard let url = components?.url else {
@@ -728,7 +750,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private static func httpProbeURL() throws -> URL {
         let endpoint = try endpointURL()
         var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
-        components?.scheme = endpoint.scheme == "wss" ? "https" : "http"
+        components?.scheme = httpTransportScheme(for: endpoint)
         components?.path = "/debug/http-probe"
         components?.query = nil
         guard let url = components?.url else {
@@ -740,7 +762,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private static func httpEchoURL() throws -> URL {
         let endpoint = try endpointURL()
         var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
-        components?.scheme = endpoint.scheme == "wss" ? "https" : "http"
+        components?.scheme = httpTransportScheme(for: endpoint)
         components?.path = "/debug/http-echo"
         components?.query = nil
         guard let url = components?.url else {
@@ -752,7 +774,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private static func httpTurnURL() throws -> URL {
         let endpoint = try endpointURL()
         var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
-        components?.scheme = endpoint.scheme == "wss" ? "https" : "http"
+        components?.scheme = httpTransportScheme(for: endpoint)
         components?.path = "/deep-response/http-turn"
         components?.query = nil
         guard let url = components?.url else {
@@ -764,7 +786,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private static func httpTurnV2URL() throws -> URL {
         let endpoint = try endpointURL()
         var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
-        components?.scheme = endpoint.scheme == "wss" ? "https" : "http"
+        components?.scheme = httpTransportScheme(for: endpoint)
         components?.path = "/deep-response/http-turn-v2"
         components?.query = nil
         guard let url = components?.url else {
@@ -776,7 +798,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private static func httpSessionURL(path: String) throws -> URL {
         let endpoint = try endpointURL()
         var components = URLComponents(url: endpoint, resolvingAgainstBaseURL: false)
-        components?.scheme = endpoint.scheme == "wss" ? "https" : "http"
+        components?.scheme = httpTransportScheme(for: endpoint)
         if let questionIndex = path.firstIndex(of: "?") {
             components?.path = String(path[..<questionIndex])
             components?.percentEncodedQuery = String(path[path.index(after: questionIndex)...])
@@ -801,6 +823,17 @@ final class DeepResponseRealtimeClient: ObservableObject {
         return URLSession(configuration: configuration, delegate: delegate, delegateQueue: nil)
     }
 
+    private static func httpTransportScheme(for endpoint: URL) -> String {
+        switch endpoint.scheme?.lowercased() {
+        case "https":
+            return "https"
+        case "wss":
+            return "https"
+        default:
+            return "http"
+        }
+    }
+
     private static func describe(_ error: Error) -> String {
         let nsError = error as NSError
         var details = "\(nsError.domain) \(nsError.code): \(nsError.localizedDescription)"
@@ -821,35 +854,31 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private static func elapsedMs(since start: Date) -> Int {
         Int(Date().timeIntervalSince(start) * 1_000)
     }
-}
 
-private extension Data {
-    func deflated() -> Data? {
-        guard !isEmpty else {
-            return nil
+    private static func fixturePCMChunks(durationSeconds: Int, chunkMilliseconds: Int) -> [Data] {
+        let sampleRate = 16_000
+        let totalFrames = durationSeconds * sampleRate
+        let framesPerChunk = max(1, sampleRate * chunkMilliseconds / 1_000)
+        var chunks: [Data] = []
+        var chunk = Data(capacity: framesPerChunk * MemoryLayout<Int16>.size)
+
+        for frame in 0..<totalFrames {
+            let envelope = sin(Double(frame) / Double(sampleRate) * .pi)
+            let carrier = sin(2 * .pi * 220 * Double(frame) / Double(sampleRate))
+            var sample = Int16(max(-1, min(1, carrier * envelope)) * 7_000)
+            withUnsafeBytes(of: &sample) { bytes in
+                chunk.append(contentsOf: bytes)
+            }
+            if chunk.count >= framesPerChunk * MemoryLayout<Int16>.size {
+                chunks.append(chunk)
+                chunk = Data(capacity: framesPerChunk * MemoryLayout<Int16>.size)
+            }
         }
 
-        return withUnsafeBytes { sourceBuffer in
-            guard let sourcePointer = sourceBuffer.bindMemory(to: UInt8.self).baseAddress else {
-                return nil
-            }
-            let destinationCapacity = count + 64
-            let destinationPointer = UnsafeMutablePointer<UInt8>.allocate(capacity: destinationCapacity)
-            defer { destinationPointer.deallocate() }
-
-            let encodedSize = compression_encode_buffer(
-                destinationPointer,
-                destinationCapacity,
-                sourcePointer,
-                count,
-                nil,
-                COMPRESSION_ZLIB
-            )
-            guard encodedSize > 0, encodedSize < count else {
-                return nil
-            }
-            return Data(bytes: destinationPointer, count: encodedSize)
+        if !chunk.isEmpty {
+            chunks.append(chunk)
         }
+        return chunks
     }
 }
 

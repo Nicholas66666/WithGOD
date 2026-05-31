@@ -5,6 +5,7 @@ struct DeepResponseDebugView: View {
     @State private var isRecording = false
     @State private var status = "Ready"
     @State private var recorder = DeepResponseMicrophoneRecorder()
+    @State private var didRunAutorunFixture = false
 
     var body: some View {
         VStack(spacing: 8) {
@@ -32,8 +33,10 @@ struct DeepResponseDebugView: View {
                         .minimumScaleFactor(0.55)
                 }
                 Text(client.connectionStage)
-                    .font(.caption2.monospaced())
+                    .font(.system(size: 10, design: .monospaced))
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                 if let errorCode = client.lastErrorCode {
                     Text(errorCode)
                         .font(.caption2.monospaced())
@@ -104,6 +107,9 @@ struct DeepResponseDebugView: View {
                 isRecording = false
             }
         }
+        .task {
+            await runAutorunFixtureIfRequested()
+        }
     }
 
     private var statusBadge: some View {
@@ -142,5 +148,25 @@ struct DeepResponseDebugView: View {
         } catch {
             status = error.localizedDescription
         }
+    }
+
+    private func runAutorunFixtureIfRequested() async {
+        #if targetEnvironment(simulator)
+        guard !didRunAutorunFixture,
+              ProcessInfo.processInfo.environment["DEEP_RESPONSE_AUTORUN_FIXTURE"] == "1"
+                || ProcessInfo.processInfo.environment["DEEP_RESPONSE_AUTORUN_ECHO"] == "1" else {
+            return
+        }
+        didRunAutorunFixture = true
+        if ProcessInfo.processInfo.environment["DEEP_RESPONSE_AUTORUN_ECHO"] == "1" {
+            status = "Echo fixture"
+            await client.runHTTPEchoFixture()
+            status = client.lastError == nil ? "Echo fixture done" : "Echo fixture failed"
+            return
+        }
+        status = "Fixture"
+        await client.runHTTPSessionFixtureTurn()
+        status = client.lastError == nil ? "Fixture done" : "Fixture failed"
+        #endif
     }
 }

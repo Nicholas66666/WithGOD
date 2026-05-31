@@ -280,8 +280,12 @@ async function handleHTTPSessionAudio(request, response, { url, session, recordE
   const encodedBody = await readRequestBody(request);
   const encoding = String(request.headers["content-encoding"] || "").toLowerCase();
   const body = encoding === "deflate" ? inflateSync(encodedBody) : encodedBody;
-  const turnID = url.searchParams.get("turn_id") || "turn-1";
-  const seq = Number(url.searchParams.get("seq") || 0);
+  const turnID = url.searchParams.get("turn_id")
+    || String(request.headers["x-deep-response-turn"] || "")
+    || "turn-1";
+  const seq = Number(url.searchParams.get("seq")
+    || request.headers["x-deep-response-seq"]
+    || 0);
   const chunks = session.audioByTurn.get(turnID) || [];
   chunks.push(body);
   session.audioByTurn.set(turnID, chunks);

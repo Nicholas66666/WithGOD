@@ -13,9 +13,11 @@ test("parseHTTPSessionArgs requires a PCM fixture by default", () => {
     endpoint: "http://127.0.0.1:8797",
     pcmPath: "fixtures/speech.pcm",
     chunkMs: 100,
+    uploadSleepMs: null,
     pollMs: 250,
     timeoutMs: 90_000,
     outputAudioPath: "",
+    deflate: false,
     verbose: false
   });
 });
@@ -28,20 +30,25 @@ test("parseHTTPSessionArgs accepts endpoint chunk polling and output options", (
     "fixtures/speech.pcm",
     "--chunk-ms",
     "40",
+    "--upload-sleep-ms",
+    "0",
     "--poll-ms",
     "100",
     "--timeout-ms",
     "120000",
     "--out-audio",
     "/tmp/out.pcm",
+    "--deflate",
     "--verbose"
   ]), {
     endpoint: "https://example.test",
     pcmPath: "fixtures/speech.pcm",
     chunkMs: 40,
+    uploadSleepMs: 0,
     pollMs: 100,
     timeoutMs: 120_000,
     outputAudioPath: "/tmp/out.pcm",
+    deflate: true,
     verbose: true
   });
 });
@@ -57,8 +64,14 @@ test("chunkPCM16 splits PCM into realtime-sized chunks", () => {
 test("summarizeHTTPSessionResult reports first audio and timing", () => {
   const summary = summarizeHTTPSessionResult({
     startedAt: 1_000,
+    uploadStartedAt: 1_100,
+    uploadEndedAt: 1_300,
+    firstAudioAt: 2_000,
     endedAt: 2_500,
     sessionID: "drs_1",
+    uploadChunks: 2,
+    encodedUploadBytes: 80,
+    decodedUploadBytes: 160,
     events: [
       { type: "session_ready" },
       { type: "transcript_final", text: "我很累" },
@@ -74,7 +87,12 @@ test("summarizeHTTPSessionResult reports first audio and timing", () => {
   assert.deepEqual(summary, {
     ok: true,
     elapsedMs: 1_500,
+    uploadMs: 200,
+    firstAudioMs: 1_000,
     sessionID: "drs_1",
+    uploadChunks: 2,
+    encodedUploadBytes: 80,
+    decodedUploadBytes: 160,
     transcript: "我很累",
     text: "我听见你很累。",
     audioByteLength: 300,

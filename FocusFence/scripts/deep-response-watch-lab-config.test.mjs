@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 const project = readFileSync(new URL("../project.yml", import.meta.url), "utf8");
 const presenceWatchApp = readFileSync(new URL("../Sources/PresenceWatchApp/PresenceWatchApp.swift", import.meta.url), "utf8");
 const labInfo = readFileSync(new URL("../Sources/DeepResponseWatchLab/Info.plist", import.meta.url), "utf8");
+const realtimeClient = readFileSync(new URL("../Sources/DeepResponseWatchLab/DeepResponseRealtimeClient.swift", import.meta.url), "utf8");
 
 test("PresenceWatch keeps its normal entry point without DeepResponse debug routing", () => {
   assert(!presenceWatchApp.includes("DeepResponseDebugView()"));
@@ -19,4 +20,10 @@ test("DeepResponseWatchLab is a separate Watch target with its own bundle id and
   assert(project.includes("NSLocalNetworkUsageDescription:"));
   assert(labInfo.includes("NSLocalNetworkUsageDescription"));
   assert(!labInfo.includes("WKRunsIndependentlyOfCompanionApp"));
+});
+
+test("DeepResponseWatchLab preserves HTTPS endpoints for HTTP transport", () => {
+  assert(realtimeClient.includes("case \"https\":"));
+  assert(realtimeClient.includes("case \"wss\":"));
+  assert(realtimeClient.includes("return \"https\""));
 });
