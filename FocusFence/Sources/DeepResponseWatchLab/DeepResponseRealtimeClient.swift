@@ -53,6 +53,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private var httpStopStartedAt: Date?
     private var httpFirstAudioMs: Int?
     private let httpUploadBatchBytes = 16_000
+    private var httpSessionPollTask: Task<Void, Error>?
 
     func checkHealth() async {
         do {
@@ -268,6 +269,11 @@ final class DeepResponseRealtimeClient: ObservableObject {
         isDrainingHTTPUploads = false
         httpStopStartedAt = nil
         httpFirstAudioMs = nil
+        httpSessionPollTask?.cancel()
+        httpSessionPollTask = Task { [weak self] in
+            guard let self else { return }
+            try await self.pollHTTPSessionUntilDone(sessionID: created.sessionID)
+        }
         uploadedAudioChunks = 0
         uploadedAudioBytes = 0
         uploadedEncodedBytes = 0
@@ -418,7 +424,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
             httpGenerationID = stopped.generationID
             let inputStopMs = Self.elapsedMs(since: stopStartedAt)
             lastClientTimingText = "upl \(uploadMs) · stop \(inputStopMs)"
-            try await pollHTTPSessionUntilDone(sessionID: sessionID)
+            try await httpSessionPollTask?.value
             let doneMs = Self.elapsedMs(since: stopStartedAt)
             lastClientTimingText = "upl \(uploadMs) · first \(httpFirstAudioMs ?? 0) · done \(doneMs)"
             connectionStage = "http_session:done"
@@ -493,7 +499,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
             }
 
             if !isDone {
-                try await Task.sleep(nanoseconds: 350_000_000)
+                try await Task.sleep(nanoseconds: 120_000_000)
             }
         }
         if !isDone {
@@ -576,6 +582,8 @@ final class DeepResponseRealtimeClient: ObservableObject {
     func disconnect() {
         receiveTask?.cancel()
         receiveTask = nil
+        httpSessionPollTask?.cancel()
+        httpSessionPollTask = nil
         isIntentionalDisconnect = true
         task?.cancel(with: .goingAway, reason: nil)
         task = nil
