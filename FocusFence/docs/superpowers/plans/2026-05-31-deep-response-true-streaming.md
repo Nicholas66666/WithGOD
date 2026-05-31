@@ -56,126 +56,154 @@ The implementation must preserve these hard boundaries:
 - iPhone is not in the realtime path.
 - `http-turn-v2` remains as fallback and regression baseline.
 
-## Phase Map And Expected Effects
+## Final Milestone Plan
 
-### Phase A: Provider Streamability
+The earlier A-G list is consolidated into four milestones. The rule is: do not ask for Watch testing until a milestone has exhausted script/local/Render validation.
 
-Effect:
-- No Watch involved.
-- Fixture PCM proves provider chain can produce first text/audio progressively.
-- We know whether Doubao TTS can yield first audio before full session finish.
+### Milestone 1: Provider And Server Harness
 
-Deliverables:
-- `scripts/test-deep-response-streaming-provider.mjs`
-- `deep:streaming:provider:test`
-- Provider timing report with `asr_final_ms`, `llm_first_phrase_ms`, `tts_first_audio_ms`, `first_playable_audio_ms`.
+Purpose:
+- Prove progressive provider behavior and HTTP session semantics without Watch.
+- Reduce risk before any manual testing.
+
+Implementation:
+- Add provider streamability harness.
+- Add `DeepResponseSession` runtime in Node.
+- Add HTTP session endpoints:
+  - `POST /deep-response/sessions`
+  - `POST /deep-response/sessions/{session_id}/audio`
+  - `POST /deep-response/sessions/{session_id}/input-stop`
+  - `GET /deep-response/sessions/{session_id}/events`
+  - `GET /deep-response/sessions/{session_id}/audio`
+  - `POST /deep-response/sessions/{session_id}/abort`
+  - `POST /deep-response/sessions/{session_id}/end`
+- Add local and Render script tests.
+
+Expected effect:
+- A Node script can simulate Watch.
+- It can upload fixture chunks, stop input, receive transcript/text/audio events, and verify first audio arrives before final timing.
+- It can simulate abort and stale generation drop.
+- It can run multi-turn and goodbye/idle flows without a real Watch.
+
+Validation before user:
+- `npm run test:node`
+- `npm run deep:streaming:provider:test`
+- `npm run deep:http-session:test` locally
+- `npm run deep:render:deploy`
+- `npm run deep:http-session:test -- --endpoint https://withgod-deep-response.onrender.com`
+
+Manual Watch test:
+- None.
 
 Gate:
-- Continue only when local provider harness proves progressive provider output.
+- Do not start Watch code until this milestone passes locally and on Render.
 
-### Phase B: HTTP Session Server
+### Milestone 2: Watch HTTP Transport Lab
 
-Effect:
-- Server has `DeepResponseSession` runtime.
-- Session state survives across many HTTP requests.
-- Audio chunks, events, audio output chunks, abort, end all bind to `session_id`, `turn_id`, `generation_id`.
-- Node script can simulate Watch without a real device.
+Purpose:
+- Prove real Watch can upload live audio chunks over HTTP and pull events/audio over the selected HTTP mode.
+- Keep provider complexity optional for first Watch validation.
 
-Deliverables:
-- `POST /deep-response/sessions`
-- `POST /deep-response/sessions/{session_id}/audio`
-- `POST /deep-response/sessions/{session_id}/input-stop`
-- `GET /deep-response/sessions/{session_id}/events`
-- `GET /deep-response/sessions/{session_id}/audio`
-- `POST /deep-response/sessions/{session_id}/abort`
-- `POST /deep-response/sessions/{session_id}/end`
-- `scripts/test-deep-response-http-session.mjs`
-- `deep:http-session:test`
+Implementation:
+- Add live mic frame streaming in DeepLab.
+- Add HTTP chunk uploader.
+- Add event/audio puller using the most stable Watch-compatible option:
+  - try SSE/chunked JSONL if reliable;
+  - fall back to short polling if needed.
+- Keep `http-turn-v2` fallback button.
+- Keep UI compact and diagnostic.
 
-Gate:
-- Local and Render script tests prove first event/audio chunk arrives before final timing.
-
-### Phase C: Watch HTTP Chunk Upload
-
-Effect:
-- Watch records live mic frames and uploads chunks while recording, not after the full recording ends.
+Expected effect:
+- Watch starts sending chunks while user is still recording.
 - Server debug events show chunk arrival during recording.
-- No provider dependency required for first Watch validation.
+- Watch receives event/audio chunks through HTTP session endpoints.
+- Watch can play an audio response without waiting for a full JSON response.
 
-Deliverables:
-- Live frame stream in DeepLab recorder.
-- `WatchHTTPAudioUploader` behavior inside DeepLab client.
-- Compact DeepLab UI showing `session`, `turn`, `chunks up`, `events`, `audio chunks`.
+Validation before user:
+- Swift build succeeds.
+- Local mock server or Render script verifies endpoints.
+- If Watch code changed, install only after device is connected.
 
-Gate:
-- Real Watch test confirms chunks upload while recording.
+Manual Watch test gate 1:
+- User confirms chunks upload while recording.
+- User confirms event/audio pull path reaches Watch.
+- User confirms no UI crowding.
 
-### Phase D: Watch HTTP Event/Audio Pull
+Manual Watch test gate 2:
+- User confirms first playable audio in HTTP session mode.
+- User confirms HTTP v2 fallback still works.
 
-Effect:
-- Watch receives transcript/text/audio chunks through HTTP session endpoints.
-- Watch starts playing audio chunks before full response completion.
-- HTTP v2 fallback remains available.
+### Milestone 3: Continuous Conversation Runtime
 
-Deliverables:
-- Event puller using SSE, chunked JSONL, or short polling based on real Watch behavior.
-- Audio chunk puller with cursor/generation filtering.
-- Streaming playback with small prebuffer.
+Purpose:
+- Turn single HTTP session streaming into Xiaozhi-style multi-turn conversation.
 
-Gate:
-- Real Watch hears first playable audio from HTTP session mode.
+Implementation:
+- Add session state machine:
+  - listening
+  - user_speaking
+  - assistant_thinking
+  - assistant_speaking
+  - idle_waiting
+  - ending
+  - ended
+- Add short-term context memory.
+- Add turn and generation lifecycle.
+- Add multi-turn script tests.
+- Add explicit goodbye and idle timeout flows.
 
-### Phase E: Continuous Multi-Turn Session
+Expected effect:
+- AI speaks, then returns to listening.
+- User can continue several turns in the same session.
+- Server remembers recent user emotion/topic and avoids obvious repetition.
+- User can say goodbye.
+- Idle timeout produces a gentle close.
 
-Effect:
-- AI returns to listening after speaking.
-- User can speak multiple turns inside the same session.
-- Server context remembers recent turns.
+Validation before user:
+- `deep:http-session:test` covers at least 8 script-driven turns.
+- Script tests cover user goodbye.
+- Script tests cover idle goodbye.
+- Render endpoint passes the same session tests.
 
-Deliverables:
-- `DeepResponseSession` state machine.
-- Short-term session memory.
-- Multi-turn script test.
-- DeepLab session UI showing current state and turn count.
+Manual Watch test gate 3:
+- User completes a short 3-5 turn conversation.
+- User verifies it does not reconnect each turn.
+- User verifies goodbye/idle ending feels natural enough for POC.
 
-Gate:
-- Script test completes at least 8 turns in one session.
-- Real Watch manual test completes 3-5 turns without reconnecting.
+### Milestone 4: Barge-In And Product-Readiness Checkpoint
 
-### Phase F: Barge-In
+Purpose:
+- Make interruption feel natural and decide whether this is ready to move beyond DeepLab.
 
-Effect:
-- User starts speaking while AI is speaking.
-- Watch stops playback locally first.
-- Watch posts `/abort`.
-- Server cancels old generation and stale audio is ignored.
+Implementation:
+- Local-first stop in Watch playback.
+- POST `/abort`.
+- Server cancels active generation.
+- Watch drops stale generation audio.
+- Add timing traces:
+  - `barge_in_to_local_stop`
+  - `barge_in_to_server_stop`
+  - `stale_audio_after_abort_count`
+- Add summary/memory candidate write path or stub, depending on integration readiness.
 
-Deliverables:
-- Generation IDs on events/audio.
-- Local-first playback stop.
-- `/abort` server handling.
-- Stale generation drop tests.
+Expected effect:
+- While AI is speaking, user can start speaking and old audio stops quickly.
+- Old response never leaks into the new turn.
+- Session closes with transcript/summary/memory candidate.
 
-Gate:
-- Script test proves stale generation audio is dropped.
-- Real Watch test confirms old audio stops immediately.
+Validation before user:
+- Script test proves abort and stale generation drop.
+- Render script passes abort test.
+- Watch build and install are ready.
 
-### Phase G: Idle / Goodbye / Memory
+Manual Watch test gate 4:
+- User tests interrupting while AI speaks.
+- User reports whether old audio stops immediately.
+- User reports whether new turn starts cleanly.
 
-Effect:
-- User can say goodbye to end.
-- Long idle triggers gentle confirmation and then goodbye.
-- Session closes cleanly and writes transcript/summary/memory candidate asynchronously.
-
-Deliverables:
-- Goodbye intent classifier/rules.
-- Idle timers.
-- `session.end` event.
-- Summary writer stub or Supabase writer, depending on integration readiness.
-
-Gate:
-- Script tests cover explicit goodbye and idle goodbye.
-- Real Watch manual test confirms natural ending behavior.
+Product gate:
+- Only after Milestone 4 do we discuss hidden entry or product integration.
+- Quick Response remains untouched until explicit approval.
 
 ## File Responsibilities
 
@@ -250,153 +278,6 @@ Gate:
 - Modify `Sources/DeepResponseWatchLab/DeepResponseProtocol.swift`
   - Add streaming event fields such as `turn_id`, `segment`, `generation_id`, `delta`, and timing keys if needed.
 
-## Phase 2B: Provider Streaming Harness
-
-Goal: prove real provider streaming off-device before touching Watch.
-
-- [ ] Add provider streaming tests for Ark LLM:
-  - Input: fixed transcript string.
-  - Expected: first phrase available before full completion.
-  - Command: `npm run test:node`.
-
-- [ ] Add provider streaming tests for Doubao TTS:
-  - Input: one short Chinese sentence.
-  - Expected: first audio chunk yielded before session finish.
-  - Command: `npm run deep:streaming:provider:test`.
-
-- [ ] Add provider streaming benchmark:
-  - Input: existing fixture PCM.
-  - Expected output fields:
-    - `asr_first_partial_ms`
-    - `asr_final_ms`
-    - `llm_first_token_ms`
-    - `llm_first_phrase_ms`
-    - `tts_first_audio_ms`
-    - `first_playable_audio_ms`
-    - `total_ms`
-
-Acceptance:
-- Local/provider script can show first playable audio without waiting for full followup text.
-- No Watch required.
-- No old app changes.
-
-## Phase 2C: Server HTTP Session Streaming Contract
-
-Goal: make `/deep-response/sessions` a real progressive HTTP session transport.
-
-- [ ] Define event contract:
-  - Client HTTP:
-    - `POST /deep-response/sessions`
-    - `POST /deep-response/sessions/{session_id}/audio`
-    - `POST /deep-response/sessions/{session_id}/input-stop`
-    - `POST /deep-response/sessions/{session_id}/abort`
-    - `POST /deep-response/sessions/{session_id}/end`
-  - Server HTTP events:
-    - `session_ready`
-    - `transcript_partial`
-    - `transcript_final`
-    - `assistant_text_delta`
-    - `audio_done`
-    - `timing`
-    - `error`
-  - Server HTTP audio:
-    - PCM audio chunks with `generation_id`, `chunk_seq`, and cursor.
-
-- [ ] Change provider path so it does not wait for `pipeline.run()`.
-  - Server should accept mic chunks during recording through HTTP uploads.
-  - After `input_stop`, server starts provider pipeline.
-  - As soon as a first phrase is speakable, server stores/emits `assistant_text_delta`.
-  - As soon as TTS yields audio, server stores/emits audio chunks for Watch to pull/stream.
-
-- [ ] Add script test:
-  - `npm run deep:http-session:test -- --endpoint https://withgod-deep-response.onrender.com --pcm <fixture>`
-  - Expected:
-    - HTTP session starts.
-    - `session_ready` event received.
-    - `transcript_final` received.
-    - `assistant_text_delta` received before `audio_done`.
-    - First audio chunk received before final timing.
-
-Acceptance:
-- Node script proves HTTP session streaming against local server.
-- Then same script proves HTTP session streaming against Render.
-- If SSE/chunked is unstable on Watch, fallback to short-polling events/audio without changing server session semantics.
-
-## Phase 2D: Watch HTTP Session Streaming Lab
-
-Goal: real Watch uploads mic frames over HTTP and starts playing server audio chunks before the whole response is done.
-
-- [ ] Add live mic frame stream in DeepLab.
-  - Frame size target: 100 ms PCM16.
-  - Sample rate: 16 kHz input to server.
-
-- [ ] Add `runHTTPSessionTurn()` in `DeepResponseRealtimeClient`.
-  - Create HTTP session.
-  - Wait for `session_ready` event through events endpoint.
-  - Start mic stream.
-  - Upload chunks while recording.
-  - On stop, POST `input-stop`.
-  - Receive text events and audio chunks concurrently through HTTP.
-  - Enqueue audio chunks immediately.
-
-- [ ] Update `DeepResponseDebugView`.
-  - Primary button: streaming mic.
-  - Secondary fallback button: HTTP v2.
-  - Display:
-    - `mode: stream` or `mode: http2`
-    - `you`
-    - `text`
-    - `first audio`
-    - `asr/llm/tts/total`
-    - last error compactly.
-
-Acceptance:
-- On Watch, recording starts and sends chunks before stop.
-- After stop, Watch hears first audio as soon as server emits first TTS chunks.
-- UI shows HTTP session streaming mode, not `Turn2`.
-- HTTP v2 fallback still works.
-
-## Phase 2E: Barge-In and Cancellation
-
-Goal: streaming behaves like an interactive voice loop, not a one-shot HTTP request.
-
-- [ ] Add generation IDs to all server events.
-- [ ] On Watch barge-in or new recording:
-  - Stop local playback.
-  - Send `barge_in`.
-  - Ignore stale audio/text with old generation ID.
-- [ ] Server cancels active ASR/LLM/TTS work where possible.
-
-Acceptance:
-- While audio is playing, starting a new turn stops old audio.
-- Server does not keep sending stale chunks into the next turn.
-- Script test covers stale generation drop.
-- Watch manual test confirms old reply stops.
-
-## Phase 2F: Latency Optimization
-
-Goal: reduce perceived first response time after true streaming works.
-
-Optimization order:
-- ASR:
-  - Trim leading/trailing silence on Watch or server.
-  - Avoid excessive replay delay.
-  - Measure partial vs final transcript if provider supports it.
-- LLM:
-  - Smaller first-response prompt.
-  - Lower first phrase max tokens.
-  - Tune first phrase minimum characters.
-- TTS:
-  - Use shorter first phrase.
-  - Reuse provider connection if Doubao API permits stable session reuse.
-  - Keep first phrase natural but short.
-
-Acceptance:
-- First playable audio target:
-  - POC acceptable: under 8 seconds after user stops speaking.
-  - Good: under 5 seconds after user stops speaking.
-  - Excellent: under 3 seconds after user stops speaking.
-
 ## WebSocket Feasibility Spike
 
 Goal: keep WebSocket as a separate research path only if HTTP cannot meet first-playback or barge-in goals.
@@ -420,7 +301,7 @@ Acceptance:
 Goal: decide how to merge DeepResponse into the real app without risking old stable behavior.
 
 Preconditions:
-- DeepLab true streaming passes Watch manual test.
+- DeepLab HTTP session streaming passes Watch manual test.
 - HTTP v2 fallback passes Watch manual test.
 - Barge-in behaves acceptably.
 - Render deploy and env sync are documented.
