@@ -19,7 +19,7 @@ struct DeepResponseDebugView: View {
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(.secondary)
                 }
-                Text("up \(client.uploadedAudioChunks) \(client.uploadedAudioBytes)b · down \(client.receivedAudioChunks) \(client.receivedAudioBytes)b")
+                Text("up \(client.uploadedAudioChunks) \(client.uploadedEncodedBytes)/\(client.uploadedAudioBytes)b · down \(client.receivedAudioChunks) \(client.receivedAudioBytes)b")
                     .font(.caption2.monospacedDigit())
                     .foregroundStyle(.secondary)
                     .lineLimit(1)

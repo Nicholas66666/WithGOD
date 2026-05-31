@@ -1,4 +1,5 @@
 import Foundation
+import Compression
 
 enum DeepResponseClientError: LocalizedError {
     case missingEndpoint
@@ -24,6 +25,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
     @Published private(set) var receivedAudioChunks = 0
     @Published private(set) var uploadedAudioChunks = 0
     @Published private(set) var uploadedAudioBytes = 0
+    @Published private(set) var uploadedEncodedBytes = 0
     @Published private(set) var httpSessionID: String?
     @Published private(set) var lastTurnTranscript: String?
     @Published private(set) var lastTurnText: String?
@@ -261,6 +263,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
         httpFirstAudioMs = nil
         uploadedAudioChunks = 0
         uploadedAudioBytes = 0
+        uploadedEncodedBytes = 0
         receivedAudioChunks = 0
         receivedAudioBytes = 0
         lastError = nil
@@ -336,17 +339,22 @@ final class DeepResponseRealtimeClient: ObservableObject {
         httpAudioSeq += 1
         for attempt in 1...3 {
             do {
+                let uploadBody = audio.deflated() ?? audio
                 let path = "/deep-response/sessions/\(sessionID)/audio?turn_id=\(turnID)&seq=\(seq)"
                 var request = URLRequest(url: try Self.httpSessionURL(path: path))
                 request.httpMethod = "POST"
                 request.timeoutInterval = 20
                 request.setValue("application/octet-stream", forHTTPHeaderField: "Content-Type")
+                if uploadBody.count != audio.count {
+                    request.setValue("deflate", forHTTPHeaderField: "Content-Encoding")
+                }
                 request.setValue("DeepLab-watchOS", forHTTPHeaderField: "X-Deep-Response-Client")
-                let (_, response) = try await URLSession.shared.upload(for: request, from: audio)
+                let (_, response) = try await URLSession.shared.upload(for: request, from: uploadBody)
                 let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
                 if statusCode == 200 {
                     uploadedAudioChunks += 1
                     uploadedAudioBytes += audio.count
+                    uploadedEncodedBytes += uploadBody.count
                     connectionStage = "http_session:up \(uploadedAudioChunks)"
                     return true
                 }
@@ -812,6 +820,36 @@ final class DeepResponseRealtimeClient: ObservableObject {
 
     private static func elapsedMs(since start: Date) -> Int {
         Int(Date().timeIntervalSince(start) * 1_000)
+    }
+}
+
+private extension Data {
+    func deflated() -> Data? {
+        guard !isEmpty else {
+            return nil
+        }
+
+        return withUnsafeBytes { sourceBuffer in
+            guard let sourcePointer = sourceBuffer.bindMemory(to: UInt8.self).baseAddress else {
+                return nil
+            }
+            let destinationCapacity = count + 64
+            let destinationPointer = UnsafeMutablePointer<UInt8>.allocate(capacity: destinationCapacity)
+            defer { destinationPointer.deallocate() }
+
+            let encodedSize = compression_encode_buffer(
+                destinationPointer,
+                destinationCapacity,
+                sourcePointer,
+                count,
+                nil,
+                COMPRESSION_ZLIB
+            )
+            guard encodedSize > 0, encodedSize < count else {
+                return nil
+            }
+            return Data(bytes: destinationPointer, count: encodedSize)
+        }
     }
 }
 

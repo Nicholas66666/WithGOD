@@ -3,6 +3,7 @@
 import { createServer } from "node:http";
 import crypto from "node:crypto";
 import { pathToFileURL } from "node:url";
+import { inflateSync } from "node:zlib";
 
 import {
   DEEP_RESPONSE_EVENTS,
@@ -276,7 +277,9 @@ function handleHTTPSessionRoute(request, response, options) {
 }
 
 async function handleHTTPSessionAudio(request, response, { url, session, recordEvent = () => {} }) {
-  const body = await readRequestBody(request);
+  const encodedBody = await readRequestBody(request);
+  const encoding = String(request.headers["content-encoding"] || "").toLowerCase();
+  const body = encoding === "deflate" ? inflateSync(encodedBody) : encodedBody;
   const turnID = url.searchParams.get("turn_id") || "turn-1";
   const seq = Number(url.searchParams.get("seq") || 0);
   const chunks = session.audioByTurn.get(turnID) || [];
@@ -287,14 +290,17 @@ async function handleHTTPSessionAudio(request, response, { url, session, recordE
     sessionID: session.sessionID,
     turnID,
     seq,
-    bytes: body.byteLength
+    bytes: body.byteLength,
+    encodedBytes: encodedBody.byteLength,
+    encoding
   });
   sendJSON(response, 200, {
     ok: true,
     sessionID: session.sessionID,
     turnID,
     seq,
-    bytes: body.byteLength
+    bytes: body.byteLength,
+    encodedBytes: encodedBody.byteLength
   });
 }
 

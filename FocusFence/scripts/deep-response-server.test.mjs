@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { deflateSync } from "node:zlib";
 
 import { startDeepResponseServer } from "./deep-response-server.mjs";
 import { DEEP_RESPONSE_EVENTS, buildDeepResponseURL, encodeDeepResponseMessage } from "./deep-response/protocol/deep-response-protocol.mjs";
@@ -498,6 +499,54 @@ test("DeepResponse HTTP session rechunks large upload bodies before provider ASR
     });
 
     assert.deepEqual(seenChunkSizes, [3_200, 3_200, 2_800]);
+  } finally {
+    await server.close();
+  }
+});
+
+test("DeepResponse HTTP session accepts deflated audio upload bodies", async () => {
+  const seenChunkSizes = [];
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async *streamSegmented({ audioChunks }) {
+        for await (const chunk of audioChunks) {
+          seenChunkSizes.push(chunk.byteLength);
+        }
+        yield { type: "transcript_final", transcript: "ok" };
+        yield { type: "segment", segment: "first", text: "ok", audioChunks: [Buffer.from("audio")] };
+        yield { type: "timing", timing: {}, providerMeta: {} };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {});
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+    const pcm = Buffer.alloc(6_400, 1);
+    const response = await fetch(`${base}/audio?turn_id=turn-deflate&seq=0`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/octet-stream",
+        "Content-Encoding": "deflate"
+      },
+      body: deflateSync(pcm)
+    });
+    assert.equal(response.ok, true);
+    const uploaded = await response.json();
+    assert.equal(uploaded.bytes, pcm.byteLength);
+    assert(uploaded.encodedBytes < uploaded.bytes);
+
+    await postJSON(`${base}/input-stop`, { turnID: "turn-deflate" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "timing");
+    });
+    assert.deepEqual(seenChunkSizes, [3_200, 3_200]);
   } finally {
     await server.close();
   }
