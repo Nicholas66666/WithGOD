@@ -345,7 +345,7 @@ async function* streamTTSegment(tts, { segment, text, signal }) {
 
 function buildFirstPhraseMessages(transcript, context = []) {
   return [
-    { role: "system", content: scriptureCompanionSystemPrompt() },
+    { role: "system", content: firstPhraseSystemPrompt() },
     ...context,
     {
       role: "user",
@@ -361,6 +361,15 @@ function buildFirstPhraseMessages(transcript, context = []) {
       ].join("\n")
     }
   ];
+}
+
+function firstPhraseSystemPrompt() {
+  return [
+    "你只负责生成语音对话的第一句回应。",
+    "这一句只承接用户感受，不引用经文，不提圣经书名、章节、神学解释或属灵建议。",
+    "不要自称神，不代表神说话，不诊断用户。",
+    "输出必须是一句自然中文短句，适合被温柔读出来。"
+  ].join("\n");
 }
 
 function buildFollowupMessages(transcript, firstText, context = []) {
