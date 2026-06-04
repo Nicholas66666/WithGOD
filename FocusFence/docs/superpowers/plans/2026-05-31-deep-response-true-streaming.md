@@ -775,6 +775,25 @@ S6 memory recall probe update 2026-06-04:
 - Development remained self-test only; no user-operated Watch testing was required.
 - Integration remains blocked by the explicit integration gate until user approval; this update does not touch Quick Response.
 
+S6 memory recall dedupe update 2026-06-04:
+- Added exact-summary dedupe to the JSONL memory recall loader.
+- Recall now scans recent JSONL rows from newest to oldest, skips duplicate summaries, and restores chronological order for the final context block.
+- This keeps repeated fixture/session summaries from bloating prompt context and reduces repeated assistant behavior.
+- Added regression coverage proving duplicate persisted summaries are recalled once while older unique memories remain available.
+- Verification:
+  - RED test first failed because repeated summaries produced `memoryRecallCount: 3`.
+  - `node --test scripts/deep-response-server.test.mjs --test-name-pattern "deduplicates repeated persisted memory recall"`: passed.
+  - `node --test scripts/deep-response-server.test.mjs scripts/test-deep-response-http-conversation.test.mjs`: `37/37` passed.
+  - `npm run test:node`: `143/143` passed.
+  - Fire/Volcengine service restarted with the server update; health returned `200`.
+  - Remote `node scripts/test-deep-response-http-conversation.mjs --endpoint http://124.174.96.149:8797 --pcm /private/tmp/deep-response-http-speed.pcm --turns 2 --chunk-ms 1000 --upload-sleep-ms 1000 --poll-ms 50 --wait-ms 800 --timeout-ms 120000 --pipeline-mode cascade --end-reason memory_dedupe_probe --expect-memory-recalled --expect-session-end --expect-late-audio-409 --expect-memory-candidate --expect-memory-persisted`: passed.
+  - Remote `memoryRecalled.count`: `3`.
+  - Remote stop-to-first-audio: `222ms`, `211ms`.
+  - Remote full HTTP smoke with idle goodbye and forbidden-pattern gates passed; abort stale audio remained `0` / `0`.
+  - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-memory-dedupe-build build`: `BUILD SUCCEEDED`.
+- Development remained self-test only; no user-operated Watch testing was required.
+- Integration remains blocked by the explicit integration gate until user approval; this update does not touch Quick Response.
+
 Product gate:
 - Only after S1-S5 self-tests pass and any explicitly requested final experience check is acceptable.
 - User approves whether to integrate into old Watch app or keep separate for more Lab testing.

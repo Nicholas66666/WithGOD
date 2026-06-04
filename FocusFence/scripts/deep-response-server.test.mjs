@@ -1551,6 +1551,81 @@ test("DeepResponse HTTP session recalls recent persisted JSONL memory into new s
   }
 });
 
+test("DeepResponse HTTP session deduplicates repeated persisted memory recall summaries", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "deep-response-memory-dedupe-"));
+  const memoryPath = join(tempDir, "memory.jsonl");
+  const repeatedSummary = "User: 我最近一直说工作压力很大。\nAI: 我会记得你需要慢一点。";
+  writeFileSync(memoryPath, [
+    JSON.stringify({
+      sessionID: "session-1",
+      summary: "User: 我以前提过夜里会害怕。\nAI: 我会记得夜里要温柔一点。",
+      persisted: true,
+      createdAt: "2026-06-04T00:00:00.000Z"
+    }),
+    JSON.stringify({
+      sessionID: "session-2",
+      summary: repeatedSummary,
+      persisted: true,
+      createdAt: "2026-06-04T01:00:00.000Z"
+    }),
+    JSON.stringify({
+      sessionID: "session-3",
+      summary: repeatedSummary,
+      persisted: true,
+      createdAt: "2026-06-04T02:00:00.000Z"
+    })
+  ].join("\n") + "\n", "utf8");
+
+  const seenContexts = [];
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    env: {
+      DEEP_RESPONSE_MEMORY_JSONL_PATH: memoryPath,
+      DEEP_RESPONSE_MEMORY_RECALL_LIMIT: "3"
+    },
+    createPipeline: () => ({
+      async *streamSegmented({ audioChunks, context }) {
+        for await (const _chunk of audioChunks) {
+          // Drain upload stream before replying.
+        }
+        seenContexts.push(context);
+        yield { type: "transcript_final", transcript: "今天压力又来了" };
+        yield {
+          type: "segment",
+          segment: "first",
+          text: "我记得这份压力。",
+          audioChunks: [Buffer.from("memory-dedupe-audio")]
+        };
+        yield { type: "timing", timing: {}, providerMeta: {} };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {});
+    assert.equal(created.memoryRecallCount, 2);
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+
+    await postBytes(`${base}/audio?turn_id=turn-memory-dedupe&seq=0`, Buffer.from("pressure"));
+    await postJSON(`${base}/input-stop`, { turnID: "turn-memory-dedupe" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "timing" && event.turnID === "turn-memory-dedupe");
+    });
+
+    const contextText = seenContexts[0][0].content;
+    assert.equal((contextText.match(/工作压力很大/g) || []).length, 1);
+    assert.equal((contextText.match(/夜里会害怕/g) || []).length, 1);
+  } finally {
+    await server.close();
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test("DeepResponse server chunks HTTP realtime turn PCM before provider pipeline", async () => {
   const seenChunkSizes = [];
   const server = await startDeepResponseServer({

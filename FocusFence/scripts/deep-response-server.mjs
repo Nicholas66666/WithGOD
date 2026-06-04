@@ -291,7 +291,7 @@ async function loadHTTPSessionMemoryContext(env = {}) {
   } catch {
     return { count: 0, context: [] };
   }
-  const summaries = text
+  const rows = text
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter(Boolean)
@@ -302,9 +302,20 @@ async function loadHTTPSessionMemoryContext(env = {}) {
         return null;
       }
     })
-    .filter((row) => row && typeof row.summary === "string" && row.summary.trim())
-    .slice(-recallLimit)
-    .map((row) => row.summary.trim().slice(0, 600));
+    .filter((row) => row && typeof row.summary === "string" && row.summary.trim());
+  const summaries = [];
+  const seenSummaries = new Set();
+  for (const row of rows.slice().reverse()) {
+    const summary = row.summary.trim().slice(0, 600);
+    if (seenSummaries.has(summary)) {
+      continue;
+    }
+    seenSummaries.add(summary);
+    summaries.unshift(summary);
+    if (summaries.length >= recallLimit) {
+      break;
+    }
+  }
   if (summaries.length === 0) {
     return { count: 0, context: [] };
   }
