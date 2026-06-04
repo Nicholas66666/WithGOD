@@ -4,6 +4,8 @@ import assert from "node:assert/strict";
 import {
   collectSessionLifecycleEvents,
   collectForbiddenConversationTextFailures,
+  collectRepeatedOpeningStemFailures,
+  collectRepeatedConversationReplyFailures,
   parseHTTPConversationArgs,
   summarizeTurn
 } from "./test-deep-response-http-conversation.mjs";
@@ -29,7 +31,9 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
     "--expect-memory-candidate",
     "--expect-memory-persisted",
     "--expect-memory-recalled",
-    "--forbid-text-pattern", "你还想听|你还是想听|你又想听|喊累|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)"
+    "--forbid-identical-consecutive-replies",
+    "--max-opening-stem-repeats", "2",
+    "--forbid-text-pattern", "你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|是还想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)"
   ]);
 
   assert.equal(args.turns, 8);
@@ -39,7 +43,9 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
   assert.equal(args.expectMemoryCandidate, true);
   assert.equal(args.expectMemoryPersisted, true);
   assert.equal(args.expectMemoryRecalled, true);
-  assert.deepEqual(args.forbiddenTextPatterns, ["你还想听|你还是想听|你又想听|喊累|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)"]);
+  assert.equal(args.forbidIdenticalConsecutiveReplies, true);
+  assert.equal(args.maxOpeningStemRepeats, 2);
+  assert.deepEqual(args.forbiddenTextPatterns, ["你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|是还想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)"]);
 });
 
 test("summarizeTurn concatenates streaming text deltas without inserting spaces", () => {
@@ -146,38 +152,78 @@ test("collectForbiddenConversationTextFailures flags turn text and memory summar
     memoryCandidate: {
       summary: "User: 今天我累\nAI: 你还是想听安慰的话呀。\nAI: 你还在喊累呀。\nAI: 你又觉得累了。\nAI: 你又累了。"
     }
-  }, ["你还想听|你还是想听|你又想听|喊累|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)"]);
+  }, ["你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)"]);
 
   assert.deepEqual(failures, [
     {
       source: "turn",
       turnID: "turn-2",
-      forbiddenPattern: "你还想听|你还是想听|你又想听|喊累|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)",
+      forbiddenPattern: "你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)",
       text: "你还想听安慰的话呀。《诗篇》里说，神是我们的避难所。"
     },
     {
       source: "turn",
       turnID: "turn-3",
-      forbiddenPattern: "你还想听|你还是想听|你又想听|喊累|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)",
+      forbiddenPattern: "你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)",
       text: "你还在喊累呀。《诗篇》里说，神是我们的力量。"
     },
     {
       source: "turn",
       turnID: "turn-4",
-      forbiddenPattern: "你还想听|你还是想听|你又想听|喊累|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)",
+      forbiddenPattern: "你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)",
       text: "你今天还是觉得累。《诗篇》说，他会赐下能力。"
     },
     {
       source: "turn",
       turnID: "turn-5",
-      forbiddenPattern: "你还想听|你还是想听|你又想听|喊累|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)",
+      forbiddenPattern: "你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)",
       text: "你又感到疲惫了。《以赛亚书》里说，神会让你如鹰展翅上腾。"
     },
     {
       source: "memory_candidate",
       turnID: "",
-      forbiddenPattern: "你还想听|你还是想听|你又想听|喊累|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)",
+      forbiddenPattern: "你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)",
       text: "User: 今天我累\nAI: 你还是想听安慰的话呀。\nAI: 你还在喊累呀。\nAI: 你又觉得累了。\nAI: 你又累了。"
+    }
+  ]);
+});
+
+test("collectRepeatedOpeningStemFailures flags overused session openings", () => {
+  const failures = collectRepeatedOpeningStemFailures([
+    { turnID: "turn-1", text: "那咱就缓缓。“主是我的力量。”" },
+    { turnID: "turn-2", text: "那咱歇一下吧。“疲乏的，他赐能力。”" },
+    { turnID: "turn-3", text: "那你先歇一歇。“你们得力在乎平静安稳。”" },
+    { turnID: "turn-4", text: "那咱再歇会儿。“你们要休息。”" },
+    { turnID: "turn-5", text: "我陪你慢下来。“主必加添你的力量。”" }
+  ], { maxRepeats: 2 });
+
+  assert.deepEqual(failures, [
+    {
+      openingStem: "那咱",
+      count: 3,
+      maxRepeats: 2,
+      turnIDs: ["turn-1", "turn-2", "turn-4"],
+      samples: [
+        "那咱就缓缓。“主是我的力量。”",
+        "那咱歇一下吧。“疲乏的，他赐能力。”",
+        "那咱再歇会儿。“你们要休息。”"
+      ]
+    }
+  ]);
+});
+
+test("collectRepeatedConversationReplyFailures flags identical adjacent replies", () => {
+  const failures = collectRepeatedConversationReplyFailures([
+    { turnID: "turn-1", text: "你还没说完呢，是不是累得慌？“主赐能力给软弱的人。”" },
+    { turnID: "turn-2", text: " 你还没说完呢，是不是累得慌？“主赐能力给软弱的人。” " },
+    { turnID: "turn-3", text: "我陪你慢下来。“主赐能力给软弱的人。”" }
+  ]);
+
+  assert.deepEqual(failures, [
+    {
+      turnID: "turn-2",
+      previousTurnID: "turn-1",
+      repeatedText: "你还没说完呢，是不是累得慌？“主赐能力给软弱的人。”"
     }
   ]);
 });

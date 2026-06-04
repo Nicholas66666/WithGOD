@@ -1275,7 +1275,7 @@ function sanitizeHTTPSessionMemorySummary(summary) {
 }
 
 function isLookupStyleComfortLine(line) {
-  return /给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听|喊累|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)/u.test(String(line || ""));
+  return /给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|是还想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)/u.test(String(line || ""));
 }
 
 function isGoodbyeTranscript(transcript) {

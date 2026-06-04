@@ -118,6 +118,7 @@ test("VoicePipeline creates one complete spoken reply without followup generatio
   assert.match(prompt, /不要把安慰请求转成圣经知识问答/);
   assert.match(prompt, /不要问用户想从哪卷书或哪句经文开始/);
   assert.match(prompt, /不要问用户想从哪里开始听/);
+  assert.match(prompt, /不要连续多轮都用同一个开头/);
 });
 
 test("VoicePipeline prompt explicitly forbids repeating previous assistant reply", async () => {
@@ -616,6 +617,133 @@ test("VoicePipeline streamCascadeTurn normalizes repeated-fatigue variants obser
   assert.match(text, /^我听见你真的累了。/);
   assert.doesNotMatch(text, /你又累|你又感到疲惫|你又觉得疲惫/);
   assert.deepEqual(ttsTexts, ["我听见你真的累了。", "《以赛亚书》里说，神会让你如鹰展翅上腾。"]);
+});
+
+test("VoicePipeline streamCascadeTurn rotates overused opening stems from context before speech", async () => {
+  const ttsTexts = [];
+  const asr = {
+    async *transcribeStream() {
+      yield { type: "transcript_final", transcript: "今天我很累，想听一句安慰。", timing: { transcript_final_ms: 1000 } };
+    }
+  };
+  const llm = {
+    async *streamTokens() {
+      yield { type: "delta", delta: "那咱再歇会儿。“你们要休息，要知道我是神。”" };
+      yield { type: "done", timing: { llm_first_token_ms: 100, llm_total_ms: 200 } };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      ttsTexts.push(text);
+      yield { type: "audio_chunk", audioChunk: Buffer.from(`${text}:audio`), sampleRate: 24000 };
+      yield { type: "done", timing: { tts_first_audio_ms: 80 }, connectID: "tts-opening-rotated" };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20, 30]) });
+  const events = [];
+  for await (const event of pipeline.streamCascadeTurn({
+    audioChunks: [Buffer.from("voice")],
+    turnID: "turn-3",
+    generationID: "gen-3",
+    maxSpokenReplyChars: 80,
+    context: [
+      { role: "assistant", content: "那咱就缓缓。“主是我的力量。”" },
+      { role: "assistant", content: "那咱歇一下吧。“疲乏的，他赐能力。”" }
+    ]
+  })) {
+    events.push(event);
+  }
+
+  const text = events
+    .filter((event) => event.type === "assistant_text_delta")
+    .map((event) => event.delta)
+    .join("");
+  assert.match(text, /^我陪你慢下来。/);
+  assert.doesNotMatch(text, /^那咱/);
+  assert.deepEqual(ttsTexts, ["我陪你慢下来。", "“你们要休息，要知道我是神。”"]);
+});
+
+test("VoicePipeline streamCascadeTurn removes dangling particles after normalized comfort openings", async () => {
+  const ttsTexts = [];
+  const asr = {
+    async *transcribeStream() {
+      yield { type: "transcript_final", transcript: "今天我很累，想听一句安慰。", timing: { transcript_final_ms: 1000 } };
+    }
+  };
+  const llm = {
+    async *streamTokens() {
+      yield { type: "delta", delta: "你还是感到累了。了。“主必赐你平安。”" };
+      yield { type: "done", timing: { llm_first_token_ms: 100, llm_total_ms: 200 } };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      ttsTexts.push(text);
+      yield { type: "audio_chunk", audioChunk: Buffer.from(`${text}:audio`), sampleRate: 24000 };
+      yield { type: "done", timing: { tts_first_audio_ms: 80 }, connectID: "tts-dangling-particle-normalized" };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20, 30]) });
+  const events = [];
+  for await (const event of pipeline.streamCascadeTurn({
+    audioChunks: [Buffer.from("voice")],
+    turnID: "turn-1",
+    generationID: "gen-1",
+    maxSpokenReplyChars: 80
+  })) {
+    events.push(event);
+  }
+
+  const text = events
+    .filter((event) => event.type === "assistant_text_delta")
+    .map((event) => event.delta)
+    .join("");
+  assert.equal(text, "我听见你真的累了。“主必赐你平安。”");
+  assert.doesNotMatch(text, /。了。/);
+  assert.deepEqual(ttsTexts, ["我听见你真的累了。", "“主必赐你平安。”"]);
+});
+
+test("VoicePipeline streamCascadeTurn removes dangling modal particles after normalized comfort openings", async () => {
+  const ttsTexts = [];
+  const asr = {
+    async *transcribeStream() {
+      yield { type: "transcript_final", transcript: "今天我很累，想听一句安慰。", timing: { transcript_final_ms: 1000 } };
+    }
+  };
+  const llm = {
+    async *streamTokens() {
+      yield { type: "delta", delta: "你还是觉得累了呢。“主必赐你平安。”" };
+      yield { type: "done", timing: { llm_first_token_ms: 100, llm_total_ms: 200 } };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      ttsTexts.push(text);
+      yield { type: "audio_chunk", audioChunk: Buffer.from(`${text}:audio`), sampleRate: 24000 };
+      yield { type: "done", timing: { tts_first_audio_ms: 80 }, connectID: "tts-modal-particle-normalized" };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20, 30]) });
+  const events = [];
+  for await (const event of pipeline.streamCascadeTurn({
+    audioChunks: [Buffer.from("voice")],
+    turnID: "turn-1",
+    generationID: "gen-1",
+    maxSpokenReplyChars: 80
+  })) {
+    events.push(event);
+  }
+
+  const text = events
+    .filter((event) => event.type === "assistant_text_delta")
+    .map((event) => event.delta)
+    .join("");
+  assert.equal(text, "我听见你真的累了。“主必赐你平安。”");
+  assert.doesNotMatch(text, /。呢。/);
+  assert.deepEqual(ttsTexts, ["我听见你真的累了。", "“主必赐你平安。”"]);
 });
 
 test("VoicePipeline streamCascadeTurn keeps reading LLM while first phrase TTS is active", async () => {

@@ -22,6 +22,8 @@ export function parseHTTPConversationArgs(argv) {
     expectMemoryCandidate: false,
     expectMemoryPersisted: false,
     expectMemoryRecalled: false,
+    forbidIdenticalConsecutiveReplies: false,
+    maxOpeningStemRepeats: 0,
     forbiddenTextPatterns: [],
     verbose: false
   };
@@ -69,6 +71,11 @@ export function parseHTTPConversationArgs(argv) {
       args.expectMemoryCandidate = true;
     } else if (arg === "--expect-memory-recalled") {
       args.expectMemoryRecalled = true;
+    } else if (arg === "--forbid-identical-consecutive-replies") {
+      args.forbidIdenticalConsecutiveReplies = true;
+    } else if (arg === "--max-opening-stem-repeats") {
+      args.maxOpeningStemRepeats = Number(argv[index + 1] || 0);
+      index += 1;
     } else if (arg === "--forbid-text-pattern") {
       args.forbiddenTextPatterns.push(argv[index + 1] || "");
       index += 1;
@@ -227,6 +234,18 @@ export async function runHTTPConversationProbe(args) {
   if (forbiddenTextFailures.length > 0) {
     throw new Error(`Forbidden conversation text failures: ${JSON.stringify(forbiddenTextFailures, null, 2)}`);
   }
+  const repeatedOpeningStemFailures = collectRepeatedOpeningStemFailures(turns, {
+    maxRepeats: args.maxOpeningStemRepeats
+  });
+  if (repeatedOpeningStemFailures.length > 0) {
+    throw new Error(`Repeated opening stem failures: ${JSON.stringify(repeatedOpeningStemFailures, null, 2)}`);
+  }
+  const repeatedReplyFailures = args.forbidIdenticalConsecutiveReplies
+    ? collectRepeatedConversationReplyFailures(turns)
+    : [];
+  if (repeatedReplyFailures.length > 0) {
+    throw new Error(`Repeated conversation reply failures: ${JSON.stringify(repeatedReplyFailures, null, 2)}`);
+  }
 
   let lateAudioRejected = null;
   if (args.expectLateAudio409) {
@@ -259,6 +278,8 @@ export async function runHTTPConversationProbe(args) {
     memoryRecalled,
     memoryCandidate,
     forbiddenTextFailures,
+    repeatedOpeningStemFailures,
+    repeatedReplyFailures,
     lateAudioRejected,
     elapsedMs: Math.round(performance.now() - startedAt),
     turns
@@ -373,6 +394,69 @@ export function collectForbiddenConversationTextFailures({
     }
   }
   return failures;
+}
+
+export function collectRepeatedOpeningStemFailures(turns = [], { maxRepeats = 0 } = {}) {
+  const limit = Number(maxRepeats || 0);
+  if (!Number.isFinite(limit) || limit <= 0) {
+    return [];
+  }
+  const groups = new Map();
+  for (const turn of turns || []) {
+    const text = String(turn?.text || "").trim();
+    const openingStem = extractOpeningStem(text);
+    if (!openingStem) {
+      continue;
+    }
+    const group = groups.get(openingStem) || { openingStem, turnIDs: [], samples: [] };
+    group.turnIDs.push(turn?.turnID || "");
+    group.samples.push(text);
+    groups.set(openingStem, group);
+  }
+  return [...groups.values()]
+    .filter((group) => group.turnIDs.length > limit)
+    .map((group) => ({
+      openingStem: group.openingStem,
+      count: group.turnIDs.length,
+      maxRepeats: limit,
+      turnIDs: group.turnIDs,
+      samples: group.samples.slice(0, 3)
+    }));
+}
+
+export function collectRepeatedConversationReplyFailures(turns = []) {
+  const failures = [];
+  let previous = null;
+  for (const turn of turns || []) {
+    const text = String(turn?.text || "").trim();
+    const normalizedText = normalizeConversationReplyText(text);
+    if (previous && normalizedText && normalizedText === previous.normalizedText) {
+      failures.push({
+        turnID: turn?.turnID || "",
+        previousTurnID: previous.turnID,
+        repeatedText: text
+      });
+    }
+    if (normalizedText) {
+      previous = {
+        turnID: turn?.turnID || "",
+        normalizedText
+      };
+    }
+  }
+  return failures;
+}
+
+function normalizeConversationReplyText(text) {
+  return String(text || "").replace(/\s+/g, "").trim();
+}
+
+function extractOpeningStem(text) {
+  const cleaned = String(text || "")
+    .replace(/^[\s"'“”‘’]+/u, "")
+    .trim();
+  const match = cleaned.match(/^([\p{Script=Han}]{2})/u);
+  return match ? match[1] : "";
 }
 
 function buildURL(endpoint, path) {

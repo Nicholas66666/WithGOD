@@ -1564,6 +1564,23 @@ Latest partial-ASR standard smoke gate:
 
 ## Test Commands
 
+Latest remote conversation quality gate:
+- User correction remains hard policy: Watch transport is HTTP only, and development validation is self-test only by default. User-operated Watch testing is not a phase gate.
+- Added an 8-turn Fire/Volcengine conversation gate for identical adjacent replies, repeated assistant opening stems, incomplete-utterance misreads, and stale followup questions.
+- Standard forbidden comfort pattern now includes `没说完`, `只说.*想听`, and `是还想听` in addition to the lookup-style, harsh repeated-comfort, and mechanical tired/fatigue patterns.
+- VoicePipeline now rotates overused opening stems from session context and normalizes dangling modal particles after comfort-opening rewrites before assistant text or TTS audio is emitted.
+- Server memory summaries sanitize the same stale/incomplete comfort phrases before persisted memory is recalled into a new session.
+- Verification:
+  - `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/test-deep-response-http-conversation.test.mjs scripts/package-scripts.test.mjs scripts/test-deep-response-http-smoke.test.mjs`: `39/39` passed.
+  - `npm run test:node`: `172/172` passed.
+  - Direct ECS file sync was used for `scripts/deep-response-server.mjs` and `scripts/deep-response/pipeline/voice-pipeline.mjs`; `deep-response` restarted as `active`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Fire/Volcengine smoke stop-to-first-audio: `213ms`, `228ms`; smoke failures `[]`.
+  - Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Fire/Volcengine 8-turn stop-to-first-audio: `1745ms`, `1760ms`, `1714ms`, `1785ms`, `2479ms`, `1791ms`, `1763ms`, `2149ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- No user-operated Watch test was requested or required.
+
 - Unit and server tests:
   - `npm run test:node`
 

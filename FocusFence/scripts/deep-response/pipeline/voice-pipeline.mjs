@@ -52,7 +52,7 @@ export class VoicePipeline {
     const startedAt = this.clock();
     const asrResult = await this.asr.transcribe(toAsyncIterable(audioChunks), { signal });
     const replyLLM = await this.generateCompleteReply({ transcript: asrResult.transcript, context, signal });
-    const replyText = normalizeAssistantPhraseText(replyLLM.text || replyLLM.firstPhrase || "");
+    const replyText = normalizeAssistantPhraseText(replyLLM.text || replyLLM.firstPhrase || "", { context });
     const replyTTS = await this.tts.synthesize({
       text: replyText,
       signal
@@ -94,7 +94,7 @@ export class VoicePipeline {
     };
 
     const replyLLM = await this.generateCompleteReply({ transcript: asrResult.transcript, context, signal });
-    const replyText = normalizeAssistantPhraseText(replyLLM.text || replyLLM.firstPhrase || "");
+    const replyText = normalizeAssistantPhraseText(replyLLM.text || replyLLM.firstPhrase || "", { context });
     let replyTTS;
     if (typeof this.tts.synthesizeStream === "function") {
       yield { type: "segment_text", segment: "reply", text: replyText };
@@ -200,7 +200,7 @@ export class VoicePipeline {
             }
 
             for (const phrase of phraseChunker.push(delta)) {
-              const phraseText = normalizeAssistantPhraseText(phrase.text);
+              const phraseText = normalizeAssistantPhraseText(phrase.text, { context });
               if (!phraseText) {
                 continue;
               }
@@ -229,7 +229,7 @@ export class VoicePipeline {
           }
 
           for (const phrase of phraseChunker.flush()) {
-            const phraseText = normalizeAssistantPhraseText(phrase.text);
+            const phraseText = normalizeAssistantPhraseText(phrase.text, { context });
             if (!phraseText) {
               continue;
             }
@@ -713,11 +713,13 @@ function buildCompleteReplyMessages(transcript, context = []) {
         "第一句必须是 6-14 个中文字符的日常口语承接，适合立刻语音播放。",
         "第一句不要直接引用经文，不要出现书名、章节、引号或冒号。",
         "第二句如果出现，只能很轻地带到一句经文或一个小问题；不要每次都固定用同一句开头。",
+        "不要连续多轮都用同一个开头；如果前文多次以“那咱”开头，本轮必须换成别的自然说法。",
         "如果用户是在要安慰，必须直接安慰他的感受。",
         "如果用户是在要安慰，第一句要先像日常陪伴一样承接情绪，不要说“我给你找一句”“我给你读一句”“你还想听”。",
         "用户重复要安慰时，直接承接具体感受，不要说“你还是想听安慰的话”“你又想听安慰的话”。",
         "绝对不要说“你还想听安慰呀”“你还想听安慰的话呀”“你还是想听安慰呀”。",
         "不要机械重复用户的累；不要说“你还是觉得累”“你又累了”“你又觉得累”“你又感到疲惫”。",
+        "不要误判用户没说完；用户已经表达想听安慰时，不要说“你还没说完”“只说想听”。",
         "不要把回答开成查经或找经文动作；经文只能作为陪伴中的轻轻一句。",
         "不要把安慰请求转成圣经知识问答、猜谜、讲故事开场或轻松测试。",
         "不要问用户想从哪卷书或哪句经文开始，除非用户主动提出要查经。",
@@ -780,14 +782,55 @@ function countSpokenChars(text) {
   return [...String(text || "").replace(/\s+/g, "")].length;
 }
 
-function normalizeAssistantPhraseText(text) {
-  return String(text || "")
+function normalizeAssistantPhraseText(text, { context = [] } = {}) {
+  const normalized = String(text || "")
     .replace(/^你(?:还|还是|又)?想听安慰(?:的话)?呀?[，。]?/u, "我听见你真的累了。")
     .replace(/^你还在喊累呀?[，。]?/u, "我听见你真的累了。")
     .replace(/^你(?:今天)?还是(?:觉得|有点)?累(?:了|呀)?[，。]?/u, "我听见你真的累了。")
+    .replace(/^你(?:今天)?还是(?:觉得|感到)(?:累|疲惫)了?[呀，。]?/u, "我听见你真的累了。")
     .replace(/^你又累(?:了|呀)?[，。]?/u, "我听见你真的累了。")
     .replace(/^你又(?:觉得|感到)(?:累|疲惫)了?[呀，。]?/u, "我听见你真的累了。")
+    .replace(/^你(?:只说.*想听|.*没说完)[^。！？!?；;]*[。！？!?；;]?/u, "我听见你真的累了。")
+    .replace(/^是还想听安慰的话吗[？?，。]?/u, "")
+    .replace(/^我听见你真的累了。[了呢呀啊]+\s*[，。]?/u, "我听见你真的累了。")
+    .replace(/^[了呢呀啊]+[，。]?/u, "")
     .trim();
+  return rotateOverusedOpeningStem(normalized, { context });
+}
+
+function rotateOverusedOpeningStem(text, { context = [], maxRepeats = 2 } = {}) {
+  const openingStem = extractOpeningStem(text);
+  if (!openingStem || countAssistantOpeningStem(context, openingStem) < maxRepeats) {
+    return text;
+  }
+  const replacement = pickOpeningReplacement(context, openingStem, maxRepeats);
+  return String(text || "").replace(/^[^。！？!?；;]*[。！？!?；;]?/u, replacement);
+}
+
+function pickOpeningReplacement(context, avoidedStem, maxRepeats) {
+  const candidates = [
+    "我陪你慢下来。",
+    "先把这口气放下。",
+    "不用硬撑着。"
+  ];
+  return candidates.find((candidate) => {
+    const stem = extractOpeningStem(candidate);
+    return stem && stem !== avoidedStem && countAssistantOpeningStem(context, stem) < maxRepeats;
+  }) || "我陪你慢下来。";
+}
+
+function countAssistantOpeningStem(context, openingStem) {
+  return (context || []).filter((entry) => {
+    return entry?.role === "assistant" && extractOpeningStem(entry.content) === openingStem;
+  }).length;
+}
+
+function extractOpeningStem(text) {
+  const cleaned = String(text || "")
+    .replace(/^[\s"'“”‘’]+/u, "")
+    .trim();
+  const match = cleaned.match(/^([\p{Script=Han}]{2})/u);
+  return match ? match[1] : "";
 }
 
 function findCompleteFirstPhrase(text, { minChars = 8 } = {}) {
