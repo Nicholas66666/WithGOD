@@ -403,6 +403,8 @@ Latest results:
 
 ### Milestone S5: Hands-Free Conversation Loop
 
+Status: partially complete. Server-side goodbye/idle lifecycle and remote smoke self-tests are complete; Watch automatic listening/VAD loop remains.
+
 Purpose:
 - Move from manual press-to-talk turns toward Xiaozhi-style continuous conversation.
 
@@ -431,6 +433,36 @@ Acceptance:
 - Continuous conversation feels coherent.
 - No reconnect per turn.
 - Barge-in local stop target `<= 500ms` by user perception; script stale audio remains `0`.
+
+Completed evidence:
+- Added automatic HTTP session end on goodbye transcript intent such as `拜拜` / `再见` / `结束对话`.
+- Added configurable `idleTimeoutMs` to HTTP session creation and automatic `session_end` with reason `idle_timeout`.
+- Ended sessions reject late audio uploads with HTTP `409` and `session_ended`.
+- Extended HTTP smoke to include remote idle lifecycle validation.
+- Verified:
+
+```bash
+node --test scripts/deep-response-server.test.mjs
+node --test scripts/test-deep-response-http-smoke.test.mjs
+npm run test:node
+npm run deep:volc:deploy
+npm run deep:http-smoke:test -- --endpoint http://124.174.96.149:8797 --pcm /private/tmp/deep-response-http-speed.pcm --turns 2 --chunk-ms 1000 --upload-sleep-ms 1000 --poll-ms 50 --timeout-ms 120000 --observe-ms 3000 --idle-timeout-ms 150 --idle-observe-ms 2000 --max-stop-to-first-audio-ms 3000 --retries 1 --pipeline-mode cascade
+```
+
+Latest results:
+- `scripts/deep-response-server.test.mjs`: `22/22` passed.
+- `scripts/test-deep-response-http-smoke.test.mjs`: `2/2` passed.
+- `npm run test:node`: `108/108` passed.
+- Fire/Volcengine deployment: remote `HEAD` at `5f3a0e3`, service `active`, health `200`.
+- Fire/Volcengine smoke: `ok: true`.
+- stop-to-first audio: `1681ms`, `1546ms`.
+- abort stale audio chunks/bytes: `0` / `0`.
+- idle session ended in `193ms` with reason `idle_timeout`; late audio upload returned `409 session_ended`.
+
+Remaining:
+- Watch automatic return-to-listening loop after playback.
+- Local VAD/silence detection or server-assisted endpointing so user turns can end without a manual tap.
+- Script or simulator-level state-machine checks for listening -> speaking -> assistant -> listening -> ended.
 
 ### Milestone S6: Memory/Summary And Product Integration Decision
 
@@ -583,13 +615,15 @@ Completed:
 - Server turn/generation lifecycle for HTTP sessions.
 - Fire/Volcengine two-turn script probe.
 - Watch client session reuse across repeated manual mic turns.
+- Server-side goodbye intent closes the session.
+- Server-side idle timeout closes the session.
+- Fire/Volcengine smoke validates conversation, abort, and idle lifecycle.
 
 Remaining:
 
 - Automatic return-to-listening loop on Watch.
 - VAD or silence detection to end user turn without manual tap.
-- Explicit goodbye intent test and endpoint behavior.
-- Idle timeout and gentle close.
+- A real gentle goodbye audio/text turn before idle close, if needed for the product feel.
 
 Expected effect:
 - AI speaks, then returns to listening.
