@@ -236,6 +236,24 @@ Latest Fire/Volcengine deployment:
 - Remote abort stale audio chunks/bytes: `0` / `0`.
 - Remote idle lifecycle: session ended in `195ms` with reason `idle_timeout`; late audio upload returned `409 session_ended`.
 
+Latest quote-boundary optimization:
+- Added provider probe timing fields:
+  - `first_phrase_after_transcript_final_ms`
+  - `first_audio_after_first_phrase_ms`
+- Added quote-intro phrase boundary so text such as `那你可以听听这句话：“...` can speak the lead-in before waiting for the full scripture quote.
+- Preserved unfinished scripture reference protection.
+- `npm run test:node`: `124/124` passed.
+- `npm run deep:cascade:provider:test -- --pcm /private/tmp/deep-response-http-speed.pcm --turns 3 --replay-interval-ms 20 --phrase-max-chars 24`: passed.
+- Provider-side timing after quote-boundary optimization:
+  - `first_phrase_after_transcript_final_ms`: `783ms`, `704ms`, `851ms`
+  - `first_audio_after_transcript_final_ms`: `1238ms`, `1153ms`, `1341ms`
+  - `first_audio_after_first_phrase_ms`: `455ms`, `449ms`, `490ms`
+- Fire/Volcengine note: ECS GitHub fetch failed twice due outbound TLS/connectivity errors, so this verification used direct SSH file sync for the four changed script files after commit `b4b110a` had been pushed to GitHub.
+- Fire/Volcengine HTTP cascade smoke after direct sync: passed.
+- Remote stop-to-first-audio after direct sync: `1702ms`, `1331ms`.
+- Remote abort stale audio chunks/bytes: `0` / `0`.
+- Remote idle lifecycle: session ended in `198ms` with reason `idle_timeout`; late audio upload returned `409 session_ended`.
+
 ### Milestone S2: Real Provider Cascade Harness
 
 Status: completed for provider-only cascade harness on branch `codex/deep-response-lab`.
