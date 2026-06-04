@@ -9,6 +9,7 @@ This gate exists to prevent the DeepResponse Lab work from drifting into the sta
 - Quick Response main flow stays untouched.
 - DeepResponseWatchLab remains the active test package.
 - DeepLab is the only user-facing surface for this POC until approval changes.
+- Product integration decision artifact: `docs/superpowers/plans/2026-06-05-deep-response-product-integration-decision.md`.
 - Watch transport remains HTTP-only.
 - No WebSocket feasibility or fallback work is part of the integration path.
 - Standard package scripts must not expose Watch WSS echo or DeepResponse WebSocket development entrypoints.

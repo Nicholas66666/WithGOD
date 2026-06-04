@@ -1325,6 +1325,30 @@ Latest client-facing DeepResponse WebSocket server cleanup:
   - Remote source gate `node --test scripts/deep-response-integration-gate.test.mjs`: `5/5` passed after deleting stale ECS copies of `scripts/watch-wss-echo-server.mjs` and `scripts/watch-wss-echo-server.test.mjs`.
 - Development remained self-test only; no user-operated Watch testing was required.
 
+Latest S6 product integration decision artifact:
+- Added `docs/superpowers/plans/2026-06-05-deep-response-product-integration-decision.md`.
+- Current decision: keep DeepResponse in the independent Lab target.
+- Quick Response / PresenceWatchApp integration remains explicitly blocked until user approval.
+- The decision artifact records:
+  - HTTP-only transport.
+  - self-test-first validation surface.
+  - DeepResponseWatchLab as the active test package.
+  - Quick Response main flow untouched.
+  - feature flag and rollback tag requirements before any future integration work.
+  - no Watch WebSocket or client-facing DeepResponse WebSocket transport.
+- Strengthened `scripts/deep-response-integration-gate.test.mjs` so the S6 decision artifact is required and machine-checkable.
+- Verification:
+  - RED `node --test scripts/deep-response-integration-gate.test.mjs` first failed because `docs/superpowers/plans/2026-06-05-deep-response-product-integration-decision.md` did not exist.
+  - `node --test scripts/deep-response-integration-gate.test.mjs`: `6/6` passed.
+  - `npm run deep:selftest:full`: passed.
+  - Nested `npm run test:node`: `145/145` passed.
+  - Nested Fire/Volcengine smoke memory recall: `count: 3`, `store: jsonl`.
+  - Nested Fire/Volcengine smoke stop-to-first-audio: `231ms`, `234ms`.
+  - Nested Fire/Volcengine smoke abort stale audio chunks/bytes: `0` / `0`.
+  - Nested Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
+  - Nested `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
+- Development remained self-test only; no user-operated Watch testing was required.
+
 ## File Responsibilities
 
 - Modify `scripts/deep-response/providers/doubao-asr.mjs`
