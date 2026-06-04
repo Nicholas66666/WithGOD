@@ -21,6 +21,7 @@ export function parseHTTPConversationArgs(argv) {
     expectLateAudio409: false,
     expectMemoryCandidate: false,
     expectMemoryPersisted: false,
+    expectMemoryRecalled: false,
     verbose: false
   };
 
@@ -65,6 +66,8 @@ export function parseHTTPConversationArgs(argv) {
     } else if (arg === "--expect-memory-persisted") {
       args.expectMemoryPersisted = true;
       args.expectMemoryCandidate = true;
+    } else if (arg === "--expect-memory-recalled") {
+      args.expectMemoryRecalled = true;
     } else if (arg === "--verbose") {
       args.verbose = true;
     } else if (arg === "--help" || arg === "-h") {
@@ -97,7 +100,22 @@ export async function runHTTPConversationProbe(args) {
   const basePath = `/deep-response/sessions/${encodeURIComponent(sessionID)}`;
   let eventCursor = 0;
   let audioCursor = 0;
+  let memoryRecalled = null;
   const turns = [];
+
+  if (args.expectMemoryRecalled) {
+    if (Number(created.memoryRecallCount || 0) <= 0) {
+      throw new Error(`Expected memory recall count > 0, got ${JSON.stringify(created)}`);
+    }
+    await waitFor(async () => {
+      const eventBatch = await fetchJSON(buildURL(args.endpoint, `${basePath}/events?cursor=${eventCursor}${buildWaitQuery(args.waitMs)}`));
+      eventCursor = eventBatch.nextCursor;
+      ({ memoryRecalled } = collectSessionLifecycleEvents(eventBatch.events, {
+        memoryRecalled
+      }));
+      return Number(memoryRecalled?.count || 0) > 0;
+    }, { timeoutMs: args.timeoutMs, intervalMs: args.pollMs });
+  }
 
   for (let turnIndex = 0; turnIndex < args.turns; turnIndex += 1) {
     const turnStartedAt = performance.now();
@@ -173,7 +191,8 @@ export async function runHTTPConversationProbe(args) {
       ({ sessionEnd, memoryCandidate } = collectSessionLifecycleEvents(eventBatch.events, {
         endReason: args.endReason,
         sessionEnd,
-        memoryCandidate
+        memoryCandidate,
+        memoryRecalled
       }));
       return sessionEnd?.reason === args.endReason;
     }, { timeoutMs: args.timeoutMs, intervalMs: args.pollMs });
@@ -185,7 +204,8 @@ export async function runHTTPConversationProbe(args) {
       ({ sessionEnd, memoryCandidate } = collectSessionLifecycleEvents(eventBatch.events, {
         endReason: args.endReason,
         sessionEnd,
-        memoryCandidate
+        memoryCandidate,
+        memoryRecalled
       }));
       return memoryCandidate?.summary;
     }, { timeoutMs: args.timeoutMs, intervalMs: args.pollMs });
@@ -224,6 +244,7 @@ export async function runHTTPConversationProbe(args) {
     sessionID,
     ended,
     sessionEnd,
+    memoryRecalled,
     memoryCandidate,
     lateAudioRejected,
     elapsedMs: Math.round(performance.now() - startedAt),
@@ -287,16 +308,19 @@ export function summarizeTurn({
 export function collectSessionLifecycleEvents(events, {
   endReason = "",
   sessionEnd = null,
-  memoryCandidate = null
+  memoryCandidate = null,
+  memoryRecalled = null
 } = {}) {
   for (const event of events || []) {
     if (event.type === "session_end" && (!endReason || event.reason === endReason)) {
       sessionEnd = event;
     } else if (event.type === "memory_candidate" && event.summary) {
       memoryCandidate = event;
+    } else if (event.type === "memory_recalled" && Number(event.count || 0) > 0) {
+      memoryRecalled = event;
     }
   }
-  return { sessionEnd, memoryCandidate };
+  return { sessionEnd, memoryCandidate, memoryRecalled };
 }
 
 function buildURL(endpoint, path) {
@@ -377,6 +401,8 @@ Options:
                         Require an async memory_candidate event after session end.
   --expect-memory-persisted
                         Require memory_candidate.persisted=true and a non-empty store.
+  --expect-memory-recalled
+                        Require session creation to recall persisted memory into context.
   --verbose             Print turn event batches.
 `);
 }

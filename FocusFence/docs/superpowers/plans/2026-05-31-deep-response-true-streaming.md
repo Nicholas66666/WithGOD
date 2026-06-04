@@ -755,6 +755,26 @@ S6 memory recall update 2026-06-04:
 - Development remained self-test only; no user-operated Watch testing was required.
 - Integration remains blocked by the explicit integration gate until user approval; this update does not touch Quick Response.
 
+S6 memory recall probe update 2026-06-04:
+- Extended `scripts/test-deep-response-http-conversation.mjs` with `--expect-memory-recalled`.
+- The probe now verifies memory recall through the same self-test path used for remote conversation validation:
+  - session creation must return `memoryRecallCount > 0`
+  - the event stream must emit `memory_recalled`
+  - the final JSON summary includes `memoryRecalled`
+- This replaces ad hoc curl checks as the normal Fire/Volcengine recall gate.
+- Verification:
+  - RED test first failed on unknown `--expect-memory-recalled` and missing `memoryRecalled` collection.
+  - `node --test scripts/test-deep-response-http-conversation.test.mjs`: `5/5` passed.
+  - `node --test scripts/test-deep-response-http-conversation.test.mjs scripts/deep-response-server.test.mjs`: `36/36` passed.
+  - `npm run test:node`: `142/142` passed.
+  - Remote `node scripts/test-deep-response-http-conversation.mjs --endpoint http://124.174.96.149:8797 --pcm /private/tmp/deep-response-http-speed.pcm --turns 2 --chunk-ms 1000 --upload-sleep-ms 1000 --poll-ms 50 --wait-ms 800 --timeout-ms 120000 --pipeline-mode cascade --end-reason memory_recall_probe --expect-memory-recalled --expect-session-end --expect-late-audio-409 --expect-memory-candidate --expect-memory-persisted`: passed.
+  - Remote `memoryRecalled.count`: `3`.
+  - Remote `memory_candidate.persisted`: `true`.
+  - Remote stop-to-first-audio: `203ms`, `206ms`.
+  - Remote late audio after end returned `409 session_ended`.
+- Development remained self-test only; no user-operated Watch testing was required.
+- Integration remains blocked by the explicit integration gate until user approval; this update does not touch Quick Response.
+
 Product gate:
 - Only after S1-S5 self-tests pass and any explicitly requested final experience check is acceptable.
 - User approves whether to integrate into old Watch app or keep separate for more Lab testing.

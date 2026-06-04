@@ -26,7 +26,8 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
     "--expect-session-end",
     "--expect-late-audio-409",
     "--expect-memory-candidate",
-    "--expect-memory-persisted"
+    "--expect-memory-persisted",
+    "--expect-memory-recalled"
   ]);
 
   assert.equal(args.turns, 8);
@@ -35,6 +36,7 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
   assert.equal(args.expectLateAudio409, true);
   assert.equal(args.expectMemoryCandidate, true);
   assert.equal(args.expectMemoryPersisted, true);
+  assert.equal(args.expectMemoryRecalled, true);
 });
 
 test("summarizeTurn concatenates streaming text deltas without inserting spaces", () => {
@@ -90,14 +92,18 @@ test("summarizeTurn reports HTTP phrase and audio receive timing", () => {
 
 test("collectSessionLifecycleEvents keeps memory candidate from same batch as session end", () => {
   const state = collectSessionLifecycleEvents([
+    { type: "memory_recalled", count: 2, store: "jsonl" },
     { type: "session_end", reason: "memory_probe_complete" },
     { type: "memory_candidate", summary: "User: tired" }
   ], {
     endReason: "memory_probe_complete",
     sessionEnd: null,
-    memoryCandidate: null
+    memoryCandidate: null,
+    memoryRecalled: null
   });
 
   assert.equal(state.sessionEnd.reason, "memory_probe_complete");
   assert.equal(state.memoryCandidate.summary, "User: tired");
+  assert.equal(state.memoryRecalled.count, 2);
+  assert.equal(state.memoryRecalled.store, "jsonl");
 });
