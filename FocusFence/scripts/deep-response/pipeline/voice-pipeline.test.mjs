@@ -103,6 +103,9 @@ test("VoicePipeline creates one complete spoken reply without followup generatio
   assert.equal(llmCalls[0].streamFull, true);
   assert.match(llmCalls[0].transcript, /我今天很累/);
   assert.doesNotMatch(llmCalls[0].transcript, /已经说过的第一句/);
+  const prompt = llmCalls[0].messages.at(-1).content;
+  assert.match(prompt, /第一句.*6-14 个中文字符/);
+  assert.match(prompt, /第一句.*不要直接引用经文/);
 });
 
 test("VoicePipeline streamSegmented emits one reply segment and no followup segment", async () => {
