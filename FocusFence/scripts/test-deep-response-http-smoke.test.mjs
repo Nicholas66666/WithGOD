@@ -18,6 +18,7 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
     "--idle-observe-ms", "1000",
     "--idle-goodbye",
     "--expect-abort-next-turn",
+    "--expect-memory-recalled",
     "--forbid-text-pattern", "大卫.*歌利亚",
     "--forbid-text-pattern", "你知道.*为什么"
   ]);
@@ -30,6 +31,7 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
   assert.equal(args.idleObserveMs, 1000);
   assert.equal(args.idleGoodbye, true);
   assert.equal(args.expectAbortNextTurn, true);
+  assert.equal(args.expectMemoryRecalled, true);
   assert.deepEqual(args.forbiddenTextPatterns, ["大卫.*歌利亚", "你知道.*为什么"]);
 });
 

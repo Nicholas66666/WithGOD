@@ -29,6 +29,7 @@ export function parseHTTPSmokeArgs(argv) {
     retries: 2,
     pipelineMode: "",
     expectAbortNextTurn: false,
+    expectMemoryRecalled: false,
     forbiddenTextPatterns: [],
     verbose: false
   };
@@ -81,6 +82,8 @@ export function parseHTTPSmokeArgs(argv) {
       index += 1;
     } else if (arg === "--expect-abort-next-turn") {
       args.expectAbortNextTurn = true;
+    } else if (arg === "--expect-memory-recalled") {
+      args.expectMemoryRecalled = true;
     } else if (arg === "--forbid-text-pattern") {
       args.forbiddenTextPatterns.push(argv[index + 1] || "");
       index += 1;
@@ -114,6 +117,7 @@ export async function runHTTPSmokeProbe(args) {
     "--wait-ms", String(args.waitMs),
     "--timeout-ms", String(args.timeoutMs),
     ...(args.pipelineMode ? ["--pipeline-mode", args.pipelineMode] : []),
+    ...(args.expectMemoryRecalled ? ["--expect-memory-recalled"] : []),
     ...(args.verbose ? ["--verbose"] : [])
   ]);
   const conversation = await withRetries(() => runHTTPConversationProbe(conversationArgs), {
@@ -172,6 +176,10 @@ export async function runHTTPSmokeProbe(args) {
       ok: conversation.ok,
       sessionID: conversation.sessionID,
       elapsedMs: conversation.elapsedMs,
+      memoryRecalled: conversation.memoryRecalled ? {
+        count: conversation.memoryRecalled.count,
+        store: conversation.memoryRecalled.store
+      } : null,
       turns: conversation.turns.map((turn) => ({
         turnID: turn.turnID,
         generationID: turn.generationID,
@@ -392,6 +400,7 @@ Options:
   --retries <n>                    Retry each top-level probe after transient network failures. Default: 2
   --pipeline-mode <m>              Optional HTTP session pipeline mode, e.g. cascade.
   --expect-abort-next-turn         Require abort probe to complete another turn in the same session.
+  --expect-memory-recalled         Require conversation probe to recall persisted memory into context.
   --forbid-text-pattern <regex>    Fail if any assistant reply matches this regex. Repeatable.
   --verbose                        Print event details from child probes.
 `);

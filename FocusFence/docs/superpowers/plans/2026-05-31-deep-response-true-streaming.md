@@ -1122,6 +1122,22 @@ Latest abort next-turn `turn_done` gate:
   - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-abort-next-turn-done-build build`: `BUILD SUCCEEDED`.
 - Development remained self-test only; no user-operated Watch testing was required.
 
+Latest full-smoke memory recall gate:
+- Added `--expect-memory-recalled` to `scripts/test-deep-response-http-smoke.mjs`.
+- The standard full HTTP smoke can now require persisted JSONL memory recall through the same remote self-test path that already covers conversation turns, authoritative `turn_done`, abort resume, stale-audio rejection, idle goodbye, and forbidden reply-pattern gates.
+- The full-smoke summary now includes `conversation.memoryRecalled.count` and `conversation.memoryRecalled.store`.
+- Verification:
+  - RED test first failed with `Unknown argument: --expect-memory-recalled`.
+  - `node --test scripts/test-deep-response-http-smoke.test.mjs scripts/test-deep-response-http-conversation.test.mjs`: `10/10` passed.
+  - `npm run test:node`: `148/148` passed.
+  - Fire/Volcengine full HTTP smoke with `--expect-memory-recalled`, `--expect-abort-next-turn`, `--idle-goodbye`, `--wait-ms 800`, cascade mode, and forbidden-pattern gates: passed.
+  - Latest full-smoke memory recall: `count: 3`, `store: jsonl`.
+  - Latest full-smoke conversation turns reported `audioDone: true` and `turnDone: true`; stop-to-first-audio `194ms`, `195ms`.
+  - Latest abort stale audio chunks/bytes: `0` / `0`; abort next turn reported `audioDone: true`, `turnDone: true`.
+  - Latest idle goodbye emitted text/audio, followed by `turn_done`, `session_end`, and late audio rejection with `409 session_ended`.
+  - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-smoke-memory-recall-build build`: `BUILD SUCCEEDED`.
+- Development remained self-test only; no user-operated Watch testing was required.
+
 ## File Responsibilities
 
 - Modify `scripts/deep-response/protocol/deep-response-protocol.mjs`
