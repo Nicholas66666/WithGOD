@@ -1425,6 +1425,61 @@ test("DeepResponse HTTP session can persist memory candidate to JSONL", async ()
   }
 });
 
+test("DeepResponse HTTP session excludes goodbye-only lines from memory candidate", async () => {
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async *streamSegmented({ audioChunks }) {
+        const collected = [];
+        for await (const chunk of audioChunks) {
+          collected.push(Buffer.from(chunk).toString("utf8"));
+        }
+        const text = collected.join("");
+        const transcript = text === "bye" ? "拜拜" : "今天压力很大";
+        const assistantText = text === "bye" ? "好的，拜拜。" : "我会记得你最近压力很大。";
+        yield { type: "transcript_final", transcript };
+        yield {
+          type: "segment",
+          segment: "first",
+          text: assistantText,
+          audioChunks: [Buffer.from(`audio-${text}`)]
+        };
+        yield { type: "timing", timing: {}, providerMeta: {} };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {});
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+
+    await postBytes(`${base}/audio?turn_id=turn-memory-useful&seq=0`, Buffer.from("useful"));
+    await postJSON(`${base}/input-stop`, { turnID: "turn-memory-useful" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "timing" && event.turnID === "turn-memory-useful");
+    });
+
+    await postBytes(`${base}/audio?turn_id=turn-memory-goodbye&seq=0`, Buffer.from("bye"));
+    await postJSON(`${base}/input-stop`, { turnID: "turn-memory-goodbye" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "memory_candidate");
+    });
+
+    const events = await fetchJSON(`${base}/events?cursor=0`);
+    const memory = events.events.find((event) => event.type === "memory_candidate");
+    assert.match(memory.summary, /今天压力很大/);
+    assert.doesNotMatch(memory.summary, /拜拜|再见|结束对话/);
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse HTTP session recalls recent persisted JSONL memory into new sessions", async () => {
   const tempDir = mkdtempSync(join(tmpdir(), "deep-response-memory-recall-"));
   const memoryPath = join(tempDir, "memory.jsonl");

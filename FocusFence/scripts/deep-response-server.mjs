@@ -1252,6 +1252,7 @@ function buildHTTPSessionMemoryCandidate(session, {
     .join("\n")
     .split("\n")
     .filter((line) => !isLookupStyleComfortLine(line))
+    .filter((line) => !isSessionClosureMemoryLine(line))
     .join("\n")
     .slice(0, 1200);
   return {
@@ -1271,12 +1272,23 @@ function sanitizeHTTPSessionMemorySummary(summary) {
     .split(/\r?\n/)
     .map((line) => line.trim())
     .filter((line) => line && !isLookupStyleComfortLine(line))
+    .filter((line) => !isSessionClosureMemoryLine(line))
     .join("\n")
     .trim();
 }
 
 function isLookupStyleComfortLine(line) {
   return /给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|是还想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)/u.test(String(line || ""));
+}
+
+function isSessionClosureMemoryLine(line) {
+  const content = String(line || "")
+    .replace(/^(?:User|AI):\s*/u, "")
+    .trim();
+  if (!content) {
+    return false;
+  }
+  return /^(好的[，,。 ]*)?(拜拜|再见|不聊了|先这样|结束(对话|会话)?|bye|goodbye)[。.!！ ]*$/iu.test(content);
 }
 
 function isGoodbyeTranscript(transcript) {
