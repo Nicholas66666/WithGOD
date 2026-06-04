@@ -290,7 +290,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
         request.timeoutInterval = 20
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("DeepLab-watchOS", forHTTPHeaderField: "X-Deep-Response-Client")
-        request.httpBody = #"{"sampleRate":16000}"#.data(using: .utf8)
+        request.httpBody = #"{"sampleRate":16000,"pipelineMode":"cascade"}"#.data(using: .utf8)
 
         let (data, response) = try await URLSession.shared.data(for: request)
         let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
@@ -604,9 +604,9 @@ final class DeepResponseRealtimeClient: ObservableObject {
             lastTurnTranscript = event.text
         } else if event.type == "assistant_text_delta" {
             if event.segment == "followup" {
-                lastTurnFollowupText = event.delta
+                lastTurnFollowupText = Self.appendText(lastTurnFollowupText, event.delta)
             } else {
-                lastTurnFirstText = event.delta
+                lastTurnFirstText = Self.appendText(lastTurnFirstText, event.delta)
                 if httpFirstTextMs == nil, let stopStartedAt = httpStopStartedAt {
                     httpFirstTextMs = Self.elapsedMs(since: stopStartedAt)
                     updateHTTPClientTimingText()
@@ -642,6 +642,13 @@ final class DeepResponseRealtimeClient: ObservableObject {
             parts.append("done \(doneMs)")
         }
         lastClientTimingText = parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    private static func appendText(_ current: String?, _ delta: String?) -> String? {
+        guard let delta, !delta.isEmpty else {
+            return current
+        }
+        return (current ?? "") + delta
     }
 
     func connect() async throws {

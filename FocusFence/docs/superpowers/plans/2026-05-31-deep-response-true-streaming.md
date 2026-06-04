@@ -4,9 +4,11 @@
 
 **Goal:** Build a continuous HTTP-streamed Deep Response path for Watch: Watch uploads microphone audio chunks over HTTP, receives server events/audio chunks over HTTP/SSE/chunked/polling, and keeps a multi-turn session alive until goodbye or idle end.
 
-**Architecture:** Keep `http-turn-v2` as the known-good fallback baseline, then evolve it into an HTTP session transport. Watch transport is HTTP-first; WebSocket is not a mainline dependency on watchOS. Server-side provider connections to Doubao ASR/TTS may still use WebSocket because those run on Node, not on Watch.
+**Architecture:** Keep `http-turn-v2` as the known-good fallback baseline, then evolve it into an HTTP session transport. Watch transport is HTTP only for this POC. Do not plan or implement any Watch socket transport path. Server-side provider connections may use each provider's required streaming protocol because those run on Node, not on Watch.
 
-**Tech Stack:** watchOS SwiftUI, `URLSession` HTTP upload/download, SSE/chunked JSONL/short polling candidates, Node.js HTTP server, Doubao ASR WebSocket, Ark LLM streaming, Doubao bidirectional TTS WebSocket, Render deployment, Node test runner.
+**Tech Stack:** watchOS SwiftUI, `URLSession` HTTP upload/download, SSE/chunked JSONL/short polling candidates, Node.js HTTP server, Doubao ASR provider, Ark LLM streaming, Doubao bidirectional TTS provider, Fire/Volcengine ECS deployment, Node test runner.
+
+**Testing policy:** This plan is self-test first. Do not use user-operated Watch tests as a normal development gate. Exhaust Node tests, provider fixtures, local HTTP harnesses, Fire/Volcengine remote smoke tests, source-level Watch checks, simulator autoruns where available, and watchOS builds before asking the user for anything. User involvement is reserved for rare final experience checks that cannot be simulated, and must be bundled into one clear checklist.
 
 ---
 
@@ -18,7 +20,7 @@
   - Watch Lab points to the Fire/Volcengine endpoint.
   - `http-turn-v2` and HTTP session mode both work on real Watch.
   - Server-side prompt flow was simplified from first/followup to one complete AI reply:
-    - ASR: one final transcript per manual turn.
+    - ASR: one final transcript per press-to-talk turn.
     - LLM: one complete short reply.
     - TTS: one synthesis stream for the complete reply.
     - Watch UI shows one `god:` reply, no `first:` / `more:` fields.
@@ -30,13 +32,13 @@
   - Watch client has local-first abort control and stale generation audio filtering.
   - Remote one-command smoke probe passes against Fire/Volcengine ECS.
 - True streaming is still not complete:
-  - Watch -> Render WebSocket has previously failed with `-1001` / `-999` and is no longer mainline.
+  - Watch socket transport is removed from the development path. It is not a fallback, not a spike, and not a blocking dependency for DeepResponse.
   - Provider-side ASR/LLM/TTS are available, but the main path still waits for ASR final before LLM and waits for a complete LLM reply before TTS starts.
   - Current TTS audio itself is chunked/streamed to Watch, but LLM->TTS is not yet a true incremental phrase pipeline.
   - Full hands-free listening/VAD loop is not implemented.
   - Goodbye and idle-end flows are not implemented.
   - Summary/memory candidate persistence is not implemented.
-  - Watch installation/launch is sometimes blocked by CoreDevice tunnel instability; do not rely on manual Watch testing until local/remote script gates pass.
+  - Watch installation/launch is sometimes blocked by CoreDevice tunnel instability; do not rely on user-operated Watch testing for normal development progress.
 
 Latest remote smoke command:
 
@@ -84,7 +86,7 @@ Main latency goal:
 
 - Stop speaking to first playable audio: target `<= 1500ms`, stretch `<= 1000ms` on scripted Fire/Volcengine fixture.
 - Barge-in local stop: target `<= 200ms`; server stale audio after abort: `0`.
-- Manual Watch test should only be requested after script/local/remote tests show the target is plausible.
+- Optional final experience checks should only be requested after script/local/remote tests show the target is plausible.
 
 ## Full Streaming Implementation Units
 
@@ -201,7 +203,7 @@ Acceptance:
 - First `assistant_phrase` appears before LLM stream is complete.
 - First `audio_chunk` appears before final assistant text is complete.
 - Abort cancels TTS queue and no stale generation audio is yielded.
-- No Watch manual testing.
+- No user-operated Watch testing.
 
 Completed evidence:
 - Created `scripts/deep-response/pipeline/phrase-chunker.mjs`.
@@ -306,7 +308,7 @@ Acceptance:
 - Remote smoke passes.
 - First audio is produced through the HTTP session path before full reply completion.
 - Abort still reports stale audio chunks/bytes `0` / `0`.
-- No Watch manual testing unless these pass.
+- No user-operated Watch testing as a gate.
 
 Completed evidence:
 - Added session-level `pipelineMode: "cascade"` for `/deep-response/sessions`.
@@ -348,32 +350,56 @@ Latest remote results:
 
 ### Milestone S4: Watch Cascade Playback Gate
 
+Status: completed for self-test gate. No user-operated Watch test was requested.
+
 Purpose:
-- Validate that real Watch can consume cascade events/audio without UI or playback regressions.
+- Validate that the DeepLab Watch client is ready to consume cascade events/audio without UI or playback regressions, using source checks, builds, simulator autoruns where possible, and HTTP smoke tests before any human experience check.
 
 Implementation:
-- Update Watch Lab only if event schema requires it.
-- Install only after build passes.
+- Update Watch Lab only when event schema or cascade mode requires it.
+- Ensure session creation requests `pipelineMode: "cascade"`.
+- Ensure streaming `assistant_text_delta` events append instead of replacing the displayed reply.
+- Install only if a final experience check becomes necessary.
 - Keep single-reply fallback available.
 
-Validation before user:
+Self-test validation:
 
 ```bash
 node --test scripts/deep-response-watch-ui.test.mjs
 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-volc-build build
+npm run deep:http-smoke:test -- --endpoint http://124.174.96.149:8797 --pcm /private/tmp/deep-response-http-speed.pcm --turns 2 --chunk-ms 1000 --upload-sleep-ms 1000 --poll-ms 50 --timeout-ms 120000 --observe-ms 3000 --max-stop-to-first-audio-ms 3000 --retries 1 --pipeline-mode cascade
 ```
 
-Manual Watch test:
-- User records one short sentence.
-- Expected:
-  - `you:` correct.
-  - `god:` appears as one reply, not first/more.
-  - First audio feels faster or at least no slower than current 3-4s Watch experience.
-  - No chunk jitter, repeated first syllable, truncation, or stale old audio.
+Optional final experience check:
+- Only request if self-tests pass and the remaining question is real wrist playback/latency.
+- Bundle all requested observations into one checklist.
 
 Acceptance:
-- One-turn Watch cascade works.
-- If Watch playback stutters while script tests are clean, fix Watch audio queue before advancing.
+- Source tests prove cascade mode and streaming delta accumulation.
+- Watch build passes.
+- Remote Fire/Volcengine cascade smoke remains under the current timing gate.
+- If real playback is later checked and stutters while script tests are clean, fix Watch audio queue before advancing product integration.
+
+Completed evidence:
+- Updated `DeepResponseRealtimeClient.ensureHTTPSession()` to request `pipelineMode: "cascade"`.
+- Updated HTTP session `assistant_text_delta` handling to append streaming deltas instead of replacing `god:` text.
+- Added source-level Watch regression tests for cascade session mode and delta accumulation.
+- Verified:
+
+```bash
+node --test scripts/deep-response-watch-ui.test.mjs
+npm run test:node
+DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-volc-build build
+npm run deep:http-smoke:test -- --endpoint http://124.174.96.149:8797 --pcm /private/tmp/deep-response-http-speed.pcm --turns 2 --chunk-ms 1000 --upload-sleep-ms 1000 --poll-ms 50 --timeout-ms 120000 --observe-ms 3000 --max-stop-to-first-audio-ms 3000 --retries 1 --pipeline-mode cascade
+```
+
+Latest results:
+- `scripts/deep-response-watch-ui.test.mjs`: `3/3` passed.
+- `npm run test:node`: `105/105` passed.
+- `DeepResponseWatchLab` generic watchOS build: `BUILD SUCCEEDED`.
+- Fire/Volcengine cascade smoke: `2/2` turns ok.
+- stop-to-first audio: `1385ms`, `1234ms`.
+- abort stale audio chunks/bytes: `0` / `0`.
 
 ### Milestone S5: Hands-Free Conversation Loop
 
@@ -392,15 +418,14 @@ Implementation:
 - Automatically return to listening after assistant playback.
 - Add goodbye intent and idle close handling.
 
-Validation before user:
+Self-test validation:
 - Script 8-turn session with context and goodbye.
 - Script idle timeout and gentle goodbye.
 - Abort test still passes.
 
-Manual Watch test:
-- User completes 3-5 turns without manually reconnecting.
-- User interrupts once while AI is speaking.
-- User says goodbye and session ends naturally.
+Optional final experience check:
+- Only after script/simulator/build validation passes.
+- User completes 3-5 turns, interrupts once, and says goodbye if we need a real wrist perception check.
 
 Acceptance:
 - Continuous conversation feels coherent.
@@ -422,8 +447,8 @@ Validation:
 - Quick Response old flow remains untouched.
 - DeepLab remains independently launchable.
 
-Manual gate:
-- Only after S1-S5 pass.
+Product gate:
+- Only after S1-S5 self-tests pass and any explicitly requested final experience check is acceptable.
 - User approves whether to integrate into old Watch app or keep separate for more Lab testing.
 
 ## Next Development Shape
@@ -450,14 +475,14 @@ The implementation must preserve these hard boundaries:
 
 - Old Quick Response flow is untouched.
 - DeepLab remains the active test package until explicit product integration approval.
-- Watch transport is HTTP-first.
-- WebSocket is only a feasibility spike and cannot block HTTP work.
+- Watch transport is HTTP only.
+- Do not reintroduce Watch socket transport work unless the product goal is explicitly changed in a future plan.
 - iPhone is not in the realtime path.
 - `http-turn-v2` remains as fallback and regression baseline.
 
 ## Final Milestone Plan
 
-The earlier A-G list is consolidated into four milestones. The rule is: do not ask for Watch testing until a milestone has exhausted script/local/Render validation.
+The earlier A-G list is consolidated into four milestones. The rule is: do not ask for user-operated Watch testing as a milestone gate. Exhaust script/local/Fire validation and automated Watch build/simulator checks first; only request a human experience check when it is uniquely useful.
 
 ### Milestone 1: Provider And Server Harness
 
@@ -465,7 +490,7 @@ Status: completed.
 
 Purpose:
 - Prove progressive provider behavior and HTTP session semantics without Watch.
-- Reduce risk before any manual testing.
+- Reduce risk before any optional final experience check.
 
 Implementation:
 - Add provider streamability harness.
@@ -478,7 +503,7 @@ Implementation:
   - `GET /deep-response/sessions/{session_id}/audio`
   - `POST /deep-response/sessions/{session_id}/abort`
   - `POST /deep-response/sessions/{session_id}/end`
-- Add local and Render script tests.
+- Add local and Fire/Volcengine script tests.
 
 Expected effect:
 - A Node script can simulate Watch.
@@ -486,18 +511,18 @@ Expected effect:
 - It can simulate abort and stale generation drop.
 - It can run multi-turn and goodbye/idle flows without a real Watch.
 
-Validation before user:
+Self-test validation:
 - `npm run test:node`
 - `npm run deep:streaming:provider:test`
 - `npm run deep:http-session:test` locally
-- `npm run deep:render:deploy`
-- `npm run deep:http-session:test -- --endpoint https://withgod-deep-response.onrender.com`
+- `npm run deep:volc:deploy`
+- `npm run deep:http-session:test -- --endpoint http://124.174.96.149:8797`
 
-Manual Watch test:
+Optional final experience check:
 - None.
 
 Gate:
-- Do not start Watch code until this milestone passes locally and on Render.
+- Do not start Watch code until this milestone passes locally and on Fire/Volcengine.
 
 ### Milestone 2: Watch HTTP Transport Lab
 
@@ -522,19 +547,14 @@ Expected effect:
 - Watch receives event/audio chunks through HTTP session endpoints.
 - Watch can play an audio response without waiting for a full JSON response.
 
-Validation before user:
+Self-test validation:
 - Swift build succeeds.
-- Local mock server or Render script verifies endpoints.
-- If Watch code changed, install only after device is connected.
+- Local mock server or Fire/Volcengine script verifies endpoints.
+- Source-level tests verify UI and transport behavior where possible.
 
-Manual Watch test gate 1:
-- User confirms chunks upload while recording.
-- User confirms event/audio pull path reaches Watch.
-- User confirms no UI crowding.
-
-Manual Watch test gate 2:
-- User confirms first playable audio in HTTP session mode.
-- User confirms HTTP v2 fallback still works.
+Optional final experience check:
+- Only if real wrist capture/playback perception cannot be answered by simulator/build/script evidence.
+- If requested, ask for chunks upload, event/audio pull, UI crowding, first audio, and fallback status in one checklist.
 
 ### Milestone 3: Continuous Conversation Runtime
 
@@ -561,7 +581,7 @@ Completed:
 
 - Server-side short-term context memory.
 - Server turn/generation lifecycle for HTTP sessions.
-- Render two-turn script probe.
+- Fire/Volcengine two-turn script probe.
 - Watch client session reuse across repeated manual mic turns.
 
 Remaining:
@@ -578,13 +598,13 @@ Expected effect:
 - User can say goodbye.
 - Idle timeout produces a gentle close.
 
-Validation before user:
+Self-test validation:
 - `deep:http-session:test` covers at least 8 script-driven turns.
 - Script tests cover user goodbye.
 - Script tests cover idle goodbye.
-- Render endpoint passes the same session tests.
+- Fire/Volcengine endpoint passes the same session tests.
 
-Manual Watch test gate 3:
+Optional final experience check only after self-tests pass:
 - User completes a short 3-5 turn conversation.
 - User verifies it does not reconnect each turn.
 - User verifies goodbye/idle ending feels natural enough for POC.
@@ -611,14 +631,13 @@ Completed:
 
 - Server `/abort` endpoint.
 - Server stale generation drop.
-- Render abort script probe.
+- Fire/Volcengine abort script probe.
 - Watch local playback stop before POST `/abort`.
 - Watch canceled generation audio filtering.
 
 Remaining:
 
-- Install latest DeepLab build when Watch is reachable.
-- Manual confirmation that old audio stops immediately on real Watch.
+- Simulator/source/build checks for local-first abort behavior.
 - Timing traces for `barge_in_to_local_stop`, `barge_in_to_server_stop`, and `stale_audio_after_abort_count`.
 - Decide whether abort should trigger immediate recording start or remain a separate interrupt button during POC.
 
@@ -627,12 +646,12 @@ Expected effect:
 - Old response never leaks into the new turn.
 - Session closes with transcript/summary/memory candidate.
 
-Validation before user:
+Self-test validation:
 - Script test proves abort and stale generation drop.
-- Render script passes abort test.
-- Watch build and install are ready.
+- Fire/Volcengine script passes abort test.
+- Watch build and simulator/source checks are ready.
 
-Manual Watch test gate 4:
+Optional final experience check only after self-tests pass:
 - User tests interrupting while AI speaks.
 - User reports whether old audio stops immediately.
 - User reports whether new turn starts cleanly.
@@ -714,33 +733,15 @@ Product gate:
 - Modify `Sources/DeepResponseWatchLab/DeepResponseProtocol.swift`
   - Add streaming event fields such as `turn_id`, `segment`, `generation_id`, `delta`, and timing keys if needed.
 
-## WebSocket Feasibility Spike
-
-Goal: keep WebSocket as a separate research path only if HTTP cannot meet first-playback or barge-in goals.
-
-Rules:
-- Do not connect ASR/LLM/TTS in this spike.
-- Test only Watch real-device WSS binary echo/audio.
-- Activate `AVAudioSession` before opening WebSocket.
-- Configure Watch audio background mode.
-- Simulator success does not count.
-- Real Watch must sustain 3-5 minutes of binary chunk send/receive.
-- Validate local-first abort and stale `generation_id` audio drop.
-- Failure must not block HTTP session streaming.
-
-Acceptance:
-- WebSocket can be reconsidered only after this spike passes on real Watch.
-- Even if it passes, HTTP remains the baseline for comparison until WebSocket beats it on first playback, abort, power, and recovery.
-
 ## Phase 3: Product Integration Decision
 
 Goal: decide how to merge DeepResponse into the real app without risking old stable behavior.
 
 Preconditions:
-- DeepLab HTTP session streaming passes Watch manual test.
-- HTTP v2 fallback passes Watch manual test.
+- DeepLab HTTP session streaming passes automated self-tests and any explicitly requested final experience check.
+- HTTP v2 fallback remains available and covered by regression checks.
 - Barge-in behaves acceptably.
-- Render deploy and env sync are documented.
+- Fire/Volcengine deploy and env sync are documented.
 
 Options:
 - Keep DeepLab as an internal debug app longer.
@@ -768,14 +769,14 @@ Acceptance:
 - New HTTP session streaming script:
   - `npm run deep:http-session:test`
 
-- Render deploy:
-  - `npm run deep:render:deploy`
+- Fire/Volcengine deploy:
+  - `npm run deep:volc:deploy`
 
 - Watch build:
-  - `xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /Users/nicho/Library/Developer/Xcode/DerivedData/Focus-cybkojzcswzxyscwwemxdhsnugsk DEEP_RESPONSE_REALTIME_ENDPOINT=https://withgod-deep-response.onrender.com build`
+  - `xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-volc-build DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 build`
 
 - Watch install:
-  - `xcrun devicectl device install app --timeout 180 --device 6B873DBC-11D7-5F93-AA64-96FB0531C28B /Users/nicho/Library/Developer/Xcode/DerivedData/Focus-cybkojzcswzxyscwwemxdhsnugsk/Build/Products/Debug-watchos/DeepLab.app`
+  - Not a default gate. Install only when an explicitly requested final experience check is necessary.
 
 ## What Can Be Verified Without User
 
@@ -783,14 +784,26 @@ Acceptance:
 - Provider credential/config checks.
 - Provider streaming benchmark from fixtures.
 - Local HTTP session streaming script.
-- Render HTTP session streaming script.
+- Fire/Volcengine HTTP session streaming script.
 - Watch app build.
-- Render deploy and `/health` / `/debug/config`.
+- Fire/Volcengine deploy and `/health` / `/debug/config`.
+- Watch source-level UI/transport checks.
+- Watch simulator autoruns where available.
 
-## What Requires User / Real Watch
+## What Should Not Require User By Default
 
-- Watch app installation when the Watch is physically reachable by the Mac.
-- Watch microphone permission and live mic capture.
+- Normal phase progression.
+- Provider validation.
+- Server deployment validation.
+- HTTP session timing and abort validation.
+- Watch build validation.
+- Watch UI source-level regression checks.
+
+## Rare Final Experience Checks
+
+Only ask the user after self-tests pass and the remaining question cannot be answered by scripts, simulator, or build output:
+
+- Real microphone permission and live mic capture.
 - Real speaker playback quality.
 - UI legibility on wrist.
 - Perceived latency and naturalness.
@@ -803,6 +816,6 @@ Acceptance:
 - Push every commit.
 - Tag before changing integration boundaries:
   - `checkpoint/YYYY-MM-DD-deeplab-streaming-provider`
-  - `checkpoint/YYYY-MM-DD-deeplab-render-streaming`
+  - `checkpoint/YYYY-MM-DD-deeplab-volc-streaming`
   - `checkpoint/YYYY-MM-DD-deeplab-watch-streaming`
 - Do not modify old stable app flow unless entering Phase 3 with explicit approval.
