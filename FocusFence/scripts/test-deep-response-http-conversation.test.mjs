@@ -33,7 +33,7 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
     "--expect-memory-recalled",
     "--forbid-identical-consecutive-replies",
     "--max-opening-stem-repeats", "2",
-    "--forbid-text-pattern", "你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|是还想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)"
+    "--forbid-text-pattern", "[:：]\\s*$|你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|是还想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)"
   ]);
 
   assert.equal(args.turns, 8);
@@ -45,7 +45,7 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
   assert.equal(args.expectMemoryRecalled, true);
   assert.equal(args.forbidIdenticalConsecutiveReplies, true);
   assert.equal(args.maxOpeningStemRepeats, 2);
-  assert.deepEqual(args.forbiddenTextPatterns, ["你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|是还想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)"]);
+  assert.deepEqual(args.forbiddenTextPatterns, ["[:：]\\s*$|你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|是还想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)"]);
 });
 
 test("summarizeTurn concatenates streaming text deltas without inserting spaces", () => {

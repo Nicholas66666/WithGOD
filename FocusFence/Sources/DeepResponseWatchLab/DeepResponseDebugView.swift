@@ -3,6 +3,7 @@ import SwiftUI
 enum DeepResponseConversationState {
     case listening
     case userSpeaking
+    case assistantThinking
     case assistantSpeaking
     case bargeIn
     case idleWaiting
@@ -218,6 +219,7 @@ struct DeepResponseDebugView: View {
             return
         }
         isWaitingForResponse = true
+        conversationState = .assistantThinking
         await client.finishHTTPSessionTurn()
         isWaitingForResponse = false
         if isContinuousMode, client.lastError == nil, !client.isHTTPSessionEnded {

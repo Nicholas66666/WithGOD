@@ -83,9 +83,16 @@ test("DeepResponse Watch continuous mode has explicit conversation state transit
   assert.match(debugViewSource, /@State private var conversationState: DeepResponseConversationState = \.listening/);
   assert.match(debugViewSource, /conversationState = \.userSpeaking/);
   assert.match(debugViewSource, /conversationState = \.idleWaiting/);
+  assert.match(debugViewSource, /conversationState = \.assistantThinking/);
   assert.match(debugViewSource, /conversationState = \.assistantSpeaking/);
   assert.match(debugViewSource, /conversationState = \.bargeIn/);
   assert.match(debugViewSource, /conversationState = \.ended/);
+});
+
+test("DeepResponse Watch marks server wait as assistantThinking before playback", () => {
+  const finishFunction = debugViewSource.match(/private func finishRecordingTurn\(reason: String\) async \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(finishFunction, /isWaitingForResponse = true[\s\S]*?conversationState = \.assistantThinking[\s\S]*?await client\.finishHTTPSessionTurn\(\)/);
+  assert.match(finishFunction, /client\.isHTTPSessionPlaybackActive[\s\S]*?conversationState = \.assistantSpeaking/);
 });
 
 test("DeepResponse Watch simulator autoruns a continuous HTTP fixture loop", () => {

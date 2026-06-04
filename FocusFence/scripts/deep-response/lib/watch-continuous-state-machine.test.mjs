@@ -22,6 +22,18 @@ test("continuous loop restarts listening after playback drains", () => {
   ]);
 });
 
+test("continuous loop enters assistantThinking after speech before playback starts", () => {
+  const result = simulateDeepResponseWatchEvents([
+    { type: "toggle_continuous", enabled: true },
+    { type: "recording_started" },
+    { type: "recording_finished", playbackActive: true }
+  ]);
+
+  assert.equal(result.state.conversationState, "assistantThinking");
+  assert.equal(result.state.isRecording, false);
+  assert.deepEqual(result.actions, ["wait_for_playback"]);
+});
+
 test("continuous loop restarts immediately when a turn has no queued playback", () => {
   const result = simulateDeepResponseWatchEvents([
     { type: "toggle_continuous", enabled: true },

@@ -79,20 +79,22 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `174/174` passed.
+- Node self-tests: `177/177` passed.
 - Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply, lookup-style-comfort, harsh repeated-comfort, mechanical tired/fatigue, incomplete-utterance, and `是还想听` gate enabled.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
 - Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
 - Fire/Volcengine partial-ASR LLM start: `llm_started_from_partial: 1` on both standard smoke turns.
-- Fire/Volcengine smoke stop-to-first-audio: `212ms`, `215ms`.
+- Fire/Volcengine smoke stop-to-first-audio: `194ms`, `193ms`.
 - Fire/Volcengine repeated reply failures: `[]`.
 - Fire/Volcengine forbidden lookup/harsh/mechanical comfort failures: `[]`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
 - Fire/Volcengine 8-turn continuous conversation gate: passed with `session_end` reason `user_goodbye`, `memoryRecalled.count: 3`, `memory_candidate.persisted: true`, `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, and late audio `409 session_ended`.
-- Fire/Volcengine 8-turn stop-to-first-audio: `1751ms`, `2105ms`, `1766ms`, `1745ms`, `1770ms`, `1686ms`, `1712ms`, `1989ms`.
+- Fire/Volcengine 8-turn stop-to-first-audio: `1755ms`, `2094ms`, `1879ms`, `1713ms`, `1879ms`, `1667ms`, `1668ms`, `1736ms`.
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
 - Latest WatchLab barge-in self-test update: continuous-mode abort now captures the old `turn_id` / `generation_id`, stops playback locally, starts barge-in recording before waiting for the `/abort` server ack, and posts the abort in the background. Full `npm run deep:selftest:full` passed after this change; no user-operated Watch test was required.
+- Latest WatchLab state self-test update: continuous-mode runtime now has an explicit `assistantThinking` state between user speech ending and playback becoming active. This separates “server/AI is thinking” from idle waiting and assistant speaking in the scriptable Watch state model and Swift source gate.
+- Latest spoken-text quality gate: VoicePipeline strips dangling quote lead-ins such as trailing `主说：`, `他说：`, `经上说：`, and `圣经说：` before emitting assistant text, phrase events, or TTS audio. Standard Fire/Volcengine smoke and 8-turn conversation scripts now also reject assistant text that ends with `:` or `：`.
 
 Latest remote deployment note:
 
@@ -121,7 +123,7 @@ Latest LLM selection benchmark:
 - The complete-reply prompt now requires comfort-intent turns to directly承接情绪 instead of opening as a scripture lookup or repeating the user's "想听安慰" request.
 - Standard `deep:selftest:full` now includes an 8-turn Fire/Volcengine continuous conversation gate with memory recall/persist, explicit user-goodbye session end, late-audio rejection, repeated-opening-stem rejection, identical-adjacent-reply rejection, and lookup/harsh/mechanical/incomplete-utterance/stale-followup text rejection.
 - Server memory recall sanitizes lookup-style, harsh, mechanical tired/fatigue, incomplete-utterance, and stale-followup comfort phrases before placing persisted summaries into LLM context.
-- VoicePipeline normalizes lookup-style, harsh repeated-comfort, mechanical tired/fatigue openings, incomplete-utterance misreads, and dangling modal particles before emitting assistant text, phrase events, or TTS audio.
+- VoicePipeline normalizes lookup-style, harsh repeated-comfort, mechanical tired/fatigue openings, incomplete-utterance misreads, dangling modal particles, and dangling quote lead-ins before emitting assistant text, phrase events, or TTS audio.
 
 ## Standard Commands
 
@@ -190,6 +192,7 @@ npm run deep:provider:benchmark -- \
 - Fire/Volcengine continuous 8-turn gate is part of the standard full self-test.
 - Watch continuous-loop state-machine self-test: auto-listen after playback drain, immediate auto-listen without queued playback, barge-in resume, and session-end stop.
 - Watch barge-in local-first self-test: continuous-mode `abort_requested` starts recording before server abort ack while preserving stale generation discard.
+- Watch assistant-thinking self-test: continuous mode enters `assistantThinking` while waiting for server response before playback starts.
 - Memory candidate generation, JSONL persistence, recall, dedupe, and remote probe gates.
 - Quick Response source guard for `Sources/PresenceWatchApp` and `Sources/PresenceApp`.
 - Client-facing DeepResponse WebSocket server path removed.

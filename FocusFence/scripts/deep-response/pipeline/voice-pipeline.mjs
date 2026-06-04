@@ -794,6 +794,9 @@ function normalizeAssistantPhraseText(text, { context = [] } = {}) {
     .replace(/^是还想听安慰的话吗[？?，。]?/u, "")
     .replace(/^我听见你真的累了。[了呢呀啊]+\s*[，。]?/u, "我听见你真的累了。")
     .replace(/^[了呢呀啊]+[，。]?/u, "")
+    .replace(/[，。；;]?\s*(?:(?:主|神|耶稣|他)说|经上说|圣经说)[：:]\s*$/u, (match) => {
+      return /^[，。；;]/u.test(match) ? match[0] : "";
+    })
     .trim();
   return rotateOverusedOpeningStem(normalized, { context });
 }

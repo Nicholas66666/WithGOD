@@ -102,7 +102,7 @@ Latest full self-test update:
 - Added conversation-level `--forbid-text-pattern` support so long continuous probes reject lookup-style, harsh repeated-comfort, and mechanical tired/fatigue replies in turn text and memory summaries, not only in the 2-turn smoke.
 - Added memory recall sanitization for lookup-style, harsh repeated-comfort, and mechanical tired/fatigue phrases before persisted summaries enter LLM context.
 - Added VoicePipeline output normalization so lookup-style, harsh repeated-comfort, and mechanical tired/fatigue openings are corrected before `assistant_text_delta`, `assistant_phrase`, and TTS audio.
-- Latest `npm run deep:selftest:full`: passed; Node `167/167`, nested Fire/Volcengine smoke stop-to-first-audio `235ms` / `236ms`, 8-turn continuous gate `forbiddenTextFailures: []`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
+- Latest `npm run deep:selftest:full`: passed; Node `177/177`, nested Fire/Volcengine smoke stop-to-first-audio `194ms` / `193ms`, 8-turn continuous gate `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
 
 ## Next Target: Full Streaming Pipeline
 
@@ -1598,6 +1598,37 @@ Latest WatchLab barge-in local-first update:
   - Fire/Volcengine 8-turn stop-to-first-audio: `1751ms`, `2105ms`, `1766ms`, `1745ms`, `1770ms`, `1686ms`, `1712ms`, `1989ms`.
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - No server deployment or user-operated Watch test was required for this WatchLab gate.
+
+Latest WatchLab assistant-thinking state update:
+- Added an explicit `assistantThinking` runtime state to the DeepResponseWatchLab continuous conversation model.
+- This state is entered after recording stops and before `client.finishHTTPSessionTurn()` returns, so the Watch Lab can distinguish:
+  - user is speaking;
+  - server/AI is processing;
+  - assistant playback is active;
+  - idle waiting / ended.
+- The scriptable state-machine model and Swift enum now share the new state via `deepResponseWatchConversationStates`.
+- Verification:
+  - RED `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs` first failed because `assistantThinking` did not exist and `finishRecordingTurn()` went straight through `idleWaiting`.
+  - `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`: `25/25` passed.
+  - `npm run test:node`: `176/176` passed.
+  - `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
+- This is a WatchLab-only state/observability change; no user-operated Watch test was required.
+
+Latest dangling quote lead-in quality gate:
+- Added a VoicePipeline normalization gate for truncated spoken phrases that would otherwise end with a dangling quote lead-in, for example `那咱靠着主歇会儿。主说：`.
+- The normalizer removes trailing `主说：`, `他说：`, `耶稣说：`, `神说：`, `经上说：`, and `圣经说：` before assistant text, phrase events, or TTS audio are emitted, while preserving the previous sentence punctuation.
+- Standard Fire/Volcengine smoke and 8-turn conversation scripts now reject assistant text that ends with `:` or `：`.
+- Verification:
+  - RED `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/test-deep-response-http-conversation.test.mjs scripts/package-scripts.test.mjs` first failed because `VoicePipeline.streamCascadeTurn()` emitted `那咱靠着主歇会儿。主说：` and package scripts lacked the `[:：]\s*$` forbidden-text gate.
+  - `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/test-deep-response-http-conversation.test.mjs scripts/package-scripts.test.mjs`: `32/32` passed.
+  - `npm run test:node`: `177/177` passed.
+  - Fire/Volcengine ECS was updated by direct SSH file sync and `systemctl restart deep-response`; service returned `active`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Fire/Volcengine smoke stop-to-first-audio: `194ms`, `193ms`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Fire/Volcengine 8-turn stop-to-first-audio: `1755ms`, `2094ms`, `1879ms`, `1713ms`, `1879ms`, `1667ms`, `1668ms`, `1736ms`.
+  - `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
+- This remains completely self-tested; no user-operated Watch test is part of this gate.
 
 - Unit and server tests:
   - `npm run test:node`

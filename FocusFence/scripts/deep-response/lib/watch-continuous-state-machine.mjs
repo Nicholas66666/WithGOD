@@ -1,6 +1,7 @@
 export const deepResponseWatchConversationStates = [
   "listening",
   "userSpeaking",
+  "assistantThinking",
   "assistantSpeaking",
   "bargeIn",
   "idleWaiting",
@@ -87,7 +88,7 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
           isWaitingForResponse: false,
           isHTTPSessionEnded: false,
           lastError: null,
-          conversationState: "assistantSpeaking"
+          conversationState: "assistantThinking"
         },
         actions
       };
