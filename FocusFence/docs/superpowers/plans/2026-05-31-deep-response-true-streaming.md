@@ -1067,6 +1067,25 @@ Latest HTTP abort-next-turn self-test gate:
   - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-abort-next-turn-build build`: `BUILD SUCCEEDED`.
 - Development remained self-test only; no user-operated Watch testing was required.
 
+Latest Watch turn completion polling gate:
+- Tightened `DeepResponseWatchLab` HTTP session polling so a turn completes only on `turn_done` or `session_end`, not on `audio_done`.
+- Rationale: `audio_done` only proves no more audio chunks for the generation; `turn_done` / `session_end` is the authoritative state boundary for continuous auto-listen, goodbye, and idle-end behavior.
+- This reduces the risk that continuous mode misses a late `session_end` and starts another recording after goodbye/idle closure.
+- Added source-level regression coverage proving:
+  - `audio_done` no longer sets `isDone = true`.
+  - `turn_done` sets `isDone = true`.
+  - `session_end` sets `isDone = true`.
+- Verification:
+  - RED test first failed because `pollHTTPSessionUntilDone()` ended on `audio_done`.
+  - `node --test scripts/deep-response-watch-ui.test.mjs --test-name-pattern "HTTP polling waits"`: `16/16` passed after implementation.
+  - `npm run test:node`: `146/146` passed.
+  - Fire/Volcengine full HTTP smoke with `--expect-abort-next-turn`, `--idle-goodbye`, `--wait-ms 800`, cascade mode, and forbidden-pattern gates: passed.
+  - Latest full-smoke stop-to-first-audio: `184ms`, `190ms`.
+  - Latest full-smoke abort next turn audio chunks/bytes: `30` / `248472`.
+  - Latest idle event order included `audio_done`, `timing`, `turn_done`, `session_end`.
+  - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-turn-done-build build`: `BUILD SUCCEEDED`.
+- Development remained self-test only; no user-operated Watch testing was required.
+
 ## File Responsibilities
 
 - Modify `scripts/deep-response/protocol/deep-response-protocol.mjs`

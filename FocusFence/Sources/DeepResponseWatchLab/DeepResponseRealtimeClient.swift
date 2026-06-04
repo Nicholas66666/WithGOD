@@ -583,7 +583,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
                 httpEventCursor = batch.nextCursor
                 for event in batch.events {
                     handleHTTPSessionEvent(event)
-                    if event.type == "audio_done" {
+                    if event.type == "turn_done" || event.type == "session_end" {
                         isDone = true
                     }
                 }

@@ -126,3 +126,10 @@ test("DeepResponse Watch continuous abort resumes recording as barge-in", () => 
   assert.doesNotMatch(abortFunction, /isContinuousMode = false/);
   assert.match(debugViewSource, /await client\.abortHTTPSessionTurn\(\)[\s\S]*?if shouldResumeListening,[\s\S]*?!client\.isHTTPSessionEnded[\s\S]*?await startRecordingTurn\(reason: "Barge-in recording"\)/);
 });
+
+test("DeepResponse Watch HTTP polling waits for turn_done or session_end, not audio_done", () => {
+  const pollFunction = realtimeClientSource.match(/private func pollHTTPSessionUntilDone\(sessionID: String\) async throws \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.doesNotMatch(pollFunction, /event\.type == "audio_done"[\s\S]*?isDone = true/);
+  assert.match(pollFunction, /event\.type == "turn_done"[\s\S]*?isDone = true/);
+  assert.match(pollFunction, /event\.type == "session_end"[\s\S]*?isDone = true/);
+});
