@@ -300,7 +300,7 @@ test("VoicePipeline streamSegmented yields streaming TTS audio before TTS comple
   assert.equal(secondAudio.value.audioChunk.toString("utf8"), "我听见你真的很累。:second");
 });
 
-test("VoicePipeline streamSegmented can speak first template from ASR partial before final transcript", async () => {
+test("VoicePipeline streamSegmented can speak AI first phrase from ASR partial before final transcript", async () => {
   let releaseFinal;
   const finalGate = new Promise((resolve) => {
     releaseFinal = resolve;
@@ -328,6 +328,13 @@ test("VoicePipeline streamSegmented can speak first template from ASR partial be
   const llm = {
     async generate({ transcript, streamFull }) {
       llmCalls.push({ transcript, streamFull });
+      if (!streamFull) {
+        return {
+          text: "听起来你今天真的有些累。",
+          firstPhrase: "听起来你今天真的有些累。",
+          timing: { llm_first_phrase_ms: 700 }
+        };
+      }
       return {
         text: "我们先停一下，听听耶稣怎样安慰劳苦的人。",
         firstPhrase: "我们先停一下，听听耶稣怎样安慰劳苦的人。",
@@ -354,7 +361,6 @@ test("VoicePipeline streamSegmented can speak first template from ASR partial be
     asr,
     llm,
     tts,
-    firstPhraseMode: "template",
     clock: fakeClock([0, 10, 20, 30])
   });
   const iterator = pipeline.streamSegmented({
@@ -365,7 +371,7 @@ test("VoicePipeline streamSegmented can speak first template from ASR partial be
     value: {
       type: "segment_text",
       segment: "first",
-      text: "我听见你真的很累。"
+      text: "听起来你今天真的有些累。"
     },
     done: false
   });
@@ -373,8 +379,10 @@ test("VoicePipeline streamSegmented can speak first template from ASR partial be
   assert.equal(firstAudio.done, false);
   assert.equal(firstAudio.value.type, "audio_chunk");
   assert.equal(firstAudio.value.segment, "first");
-  assert.equal(firstAudio.value.audioChunk.toString("utf8"), "我听见你真的很累。:audio");
-  assert.equal(llmCalls.length, 0);
+  assert.equal(firstAudio.value.audioChunk.toString("utf8"), "听起来你今天真的有些累。:audio");
+  assert.equal(llmCalls.length, 1);
+  assert.equal(llmCalls[0].streamFull, false);
+  assert.match(llmCalls[0].transcript, /今天我有点累/);
 
   releaseFinal();
   const finalTranscript = await iterator.next();
@@ -385,8 +393,9 @@ test("VoicePipeline streamSegmented can speak first template from ASR partial be
   assert.equal(followupText.done, false);
   assert.equal(followupText.value.type, "segment_text");
   assert.equal(followupText.value.segment, "followup");
-  assert.equal(llmCalls.length, 1);
-  assert.match(llmCalls[0].transcript, /今天我有点累，想听一句安慰的话。/);
+  assert.equal(llmCalls.length, 2);
+  assert.equal(llmCalls[1].streamFull, true);
+  assert.match(llmCalls[1].transcript, /今天我有点累，想听一句安慰的话。/);
 });
 
 function fakeClock(values) {

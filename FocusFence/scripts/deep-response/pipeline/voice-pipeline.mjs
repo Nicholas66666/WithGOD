@@ -190,7 +190,8 @@ export class VoicePipeline {
       signal,
       streamFull: false,
       maxTokens: 80,
-      minChars: 14
+      minChars: 8,
+      firstPhraseExtractor: findCompleteFirstPhrase
     });
   }
 
@@ -207,7 +208,7 @@ export class VoicePipeline {
       if ((event.type === "transcript_delta" || event.type === "transcript_partial") && event.transcript) {
         transcript = event.transcript;
         asrTiming = { ...asrTiming, ...(event.timing || {}) };
-        if (!firstText && this.firstPhraseMode === "template" && shouldSpeakFromPartial(transcript)) {
+        if (!firstText && shouldSpeakFromPartial(transcript)) {
           firstLLM = await this.generateFirstPhrase({ transcript, context, signal });
           firstText = firstLLM.firstPhrase || firstLLM.text || "";
           if (typeof this.tts.synthesizeStream === "function") {
@@ -349,10 +350,12 @@ function buildFirstPhraseMessages(transcript, context = []) {
     {
       role: "user",
       content: [
-        "第一句必须 8-28 个中文字符，先安静承接，不要讲道。",
+        "只输出一句完整短句，8-28 个中文字符，必须以句号、问号或感叹号结尾。",
+        "先安静承接用户此刻的感受；不要讲道，不要长篇解释。",
+        "这一句不要引用经文，不要出现书名、章节点、引号或冒号。",
         "如果用户表达不想活、自伤、伤人、撑不住或立即危险，第二句必须建议现在就联系现实中的可信任的人，或当地紧急支持。",
         "危机表达不能只做属灵安慰；先稳住安全，再用 1 句温柔陪伴。",
-        "非危机场景则用 1 句自然承接；不要输出编号、标题或 Markdown。",
+        "非危机场景只输出 1 句自然承接；不要输出编号、标题或 Markdown。",
         "",
         `用户 ASR transcript：${transcript}`
       ].join("\n")
@@ -397,6 +400,18 @@ function shouldSpeakFromPartial(transcript) {
     return false;
   }
   return text.length >= 8 || /(累|疲惫|害怕|恐惧|焦虑|孤单|孤独|羞耻|内疚|开心|感恩|平安)/u.test(text);
+}
+
+function findCompleteFirstPhrase(text, { minChars = 8 } = {}) {
+  const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+  if (!cleaned) {
+    return "";
+  }
+  const match = cleaned.match(/^.{1,36}?[。！？!?；;]/u);
+  if (!match) {
+    return "";
+  }
+  return [...match[0]].length >= minChars ? match[0] : "";
 }
 
 function buildFollowupPrompt(transcript, firstText) {
