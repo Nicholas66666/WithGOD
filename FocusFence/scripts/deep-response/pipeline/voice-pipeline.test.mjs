@@ -597,6 +597,7 @@ test("VoicePipeline streamCascadeTurn normalizes awkward meta comfort openings b
   const llm = {
     async *streamTokens() {
       yield { type: "delta", delta: "那来句贴心的。“你们要休息，要知道我是神。”" };
+      yield { type: "delta", delta: "那来靠一靠。主是你的避难所。" };
       yield { type: "delta", delta: "那缓缓神吧。“我的心哪，你当默默无声，专等候神。”" };
       yield { type: "delta", delta: "那听这句：“你们得力在乎平静安稳。”" };
       yield { type: "done", timing: { llm_first_token_ms: 100, llm_total_ms: 200 } };
@@ -626,12 +627,15 @@ test("VoicePipeline streamCascadeTurn normalizes awkward meta comfort openings b
     .map((event) => event.delta)
     .join("");
   assert.match(text, /^那我轻轻陪你一下。/);
+  assert.match(text, /那我陪你靠一靠。/);
   assert.match(text, /那缓一缓吧。/);
   assert.match(text, /我陪你慢慢缓过来。/);
-  assert.doesNotMatch(text, /来句|听这句|缓缓神/);
+  assert.doesNotMatch(text, /那来|来句|听这句|缓缓神/);
   assert.deepEqual(ttsTexts, [
     "那我轻轻陪你一下。",
     "“你们要休息，要知道我是神。”",
+    "那我陪你靠一靠。",
+    "主是你的避难所。",
     "那缓一缓吧。",
     "“我的心哪，你当默默无声，专等候神。”",
     "我陪你慢慢缓过来。",

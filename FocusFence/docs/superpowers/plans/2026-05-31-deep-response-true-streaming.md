@@ -1753,12 +1753,13 @@ Latest tighter first-audio latency gate:
 - This remains HTTP-only and self-tested; no user-operated Watch test is part of this gate.
 
 Latest natural spoken-opening quality gate:
-- Added a self-testable quality gate for meta or awkward spoken openings observed in Fire/Volcengine remote output, including `那来句贴心的。`, `那听这句：`, and `那缓缓神吧。`.
+- Added a self-testable quality gate for meta or awkward spoken openings observed in Fire/Volcengine remote output, including `那来句贴心的。`, `那来靠一靠。`, `那听这句：`, and `那缓缓神吧。`.
 - `VoicePipeline.streamCascadeTurn()` now normalizes those openings before emitting `assistant_text_delta`, `assistant_phrase`, or TTS audio:
   - `那来句...` -> `那我轻轻陪你一下。`
+  - `那来靠一靠...` -> `那我陪你靠一靠。`
   - `那听这句：` -> `我陪你慢慢缓过来。`
   - `那缓缓神吧。` -> `那缓一缓吧。`
-- Standard Fire/Volcengine smoke and 8-turn conversation gates now include `--forbid-text-pattern '来句|听这句|缓缓神'`, so remote self-tests fail if this class returns.
+- Standard Fire/Volcengine smoke and 8-turn conversation gates now include `--forbid-text-pattern '那来|来句|听这句|缓缓神'`, so remote self-tests fail if this class returns.
 - Verification:
   - RED `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/package-scripts.test.mjs scripts/test-deep-response-http-conversation.test.mjs` first failed because `VoicePipeline` emitted `那来句贴心的...` / `那听这句...` unchanged and the package scripts still used the narrower forbidden pattern.
   - `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/package-scripts.test.mjs scripts/test-deep-response-http-conversation.test.mjs`: `42/42` passed.
@@ -1768,6 +1769,24 @@ Latest natural spoken-opening quality gate:
   - Fire/Volcengine smoke stop-to-first-audio: `227ms`, `224ms`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
   - Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
   - Fire/Volcengine 8-turn stop-to-first-audio: `1775ms`, `1729ms`, `1773ms`, `1975ms`, `1905ms`, `1937ms`, `1707ms`, `1915ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This remains HTTP-only and self-tested; no user-operated Watch test is part of this gate.
+
+Latest session-history retention quality gate:
+- User correction remains hard policy: DeepResponse Watch transport is HTTP only, and validation is fully self-test by default. Watch WebSocket and user-operated Watch testing are not phase gates.
+- During `npm run deep:selftest:full`, the Fire/Volcengine 8-turn conversation gate failed with `repeatedOpeningStemFailures` because `那咱` appeared 3 times. Root cause: server-side `session.history` retained only 12 messages, so by turn 8 the pipeline could no longer see turns 1-2 even though the 8-turn quality collector still evaluated the full session.
+- `appendSessionHistory()` now retains 20 messages. The 8-turn server self-test now asserts that turn 8 receives all prior 7 turns in context (`14` messages), so opening-stem rotation can see the same history window that the quality gate evaluates.
+- The awkward spoken-opening gate was broadened to forbid `那来|来句|听这句|缓缓神`, and `VoicePipeline` normalizes `那来靠一靠...` to `那我陪你靠一靠。` before assistant text/audio emission.
+- Verification:
+  - RED `node --test --test-name-pattern 'DeepResponse HTTP session self-tests eight turns with rolling context and goodbye end' scripts/deep-response-server.test.mjs` first failed with `12 !== 14`.
+  - Targeted server test passed after increasing retention to 20 messages.
+  - `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/package-scripts.test.mjs scripts/test-deep-response-http-conversation.test.mjs`: `42/42` passed.
+  - `npm run test:node`: `189/189` passed.
+  - Fire/Volcengine ECS was updated by `scp`, remote `node --check` passed, service returned `active`, and `/health` returned `{"ok":true,"service":"deep-response","mode":"provider","providerConfigured":true}`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Fire/Volcengine smoke stop-to-first-audio: `189ms`, `175ms`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Fire/Volcengine 8-turn stop-to-first-audio: `1758ms`, `1807ms`, `1769ms`, `2073ms`, `1766ms`, `1735ms`, `1937ms`, `2033ms`.
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This remains HTTP-only and self-tested; no user-operated Watch test is part of this gate.
 

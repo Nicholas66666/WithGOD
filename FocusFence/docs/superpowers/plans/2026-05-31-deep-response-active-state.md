@@ -79,18 +79,18 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `186/186` passed.
-- Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply, lookup-style-comfort, harsh repeated-comfort, mechanical tired/fatigue, incomplete-utterance, and `是还想听` gate enabled.
+- Node self-tests: `189/189` passed.
+- Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply, lookup-style-comfort, harsh repeated-comfort, mechanical tired/fatigue, incomplete-utterance, `是还想听`, formulaic scripture lead-in, and awkward spoken-opening gates enabled.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
 - Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
 - Fire/Volcengine partial-ASR LLM start: `llm_started_from_partial: 1` on both standard smoke turns.
-- Fire/Volcengine smoke stop-to-first-audio: `201ms`, `162ms`.
+- Fire/Volcengine smoke stop-to-first-audio: `189ms`, `175ms`.
 - Fire/Volcengine repeated reply failures: `[]`.
 - Fire/Volcengine forbidden lookup/harsh/mechanical comfort failures: `[]`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
-- Fire/Volcengine 8-turn continuous conversation gate: passed with `session_end` reason `user_goodbye`, `memoryRecalled.count: 3`, `memory_candidate.persisted: true`, `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, `longReplyFailures: []`, `stopToFirstAudioFailures: []`, and late audio `409 session_ended`.
-- Fire/Volcengine 8-turn stop-to-first-audio: `1655ms`, `1775ms`, `1735ms`, `3382ms`, `1726ms`, `1730ms`, `1770ms`, `1709ms`.
+- Fire/Volcengine 8-turn continuous conversation gate: passed with `session_end` reason `user_goodbye`, `memoryRecalled.count: 3`, `memory_candidate.persisted: true`, `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, and late audio `409 session_ended`.
+- Fire/Volcengine 8-turn stop-to-first-audio: `1758ms`, `1807ms`, `1769ms`, `2073ms`, `1766ms`, `1735ms`, `1937ms`, `2033ms`.
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
 - Latest WatchLab barge-in self-test update: continuous-mode abort now captures the old `turn_id` / `generation_id`, stops playback locally, starts barge-in recording before waiting for the `/abort` server ack, and posts the abort in the background. Full `npm run deep:selftest:full` passed after this change; no user-operated Watch test was required.
 - Latest WatchLab state self-test update: continuous-mode runtime now has an explicit `assistantThinking` state between user speech ending and playback becoming active. This separates “server/AI is thinking” from idle waiting and assistant speaking in the scriptable Watch state model and Swift source gate.
@@ -100,7 +100,7 @@ Latest result:
 - Latest overlong-reply gate: VoicePipeline drops an overlong quoted scripture phrase after a short spoken lead-in instead of queueing it to Watch audio. The standard 8-turn Fire/Volcengine conversation gate now runs with `--max-assistant-reply-chars 48` and reports `longReplyFailures: []`. Full `npm run deep:selftest:full` passed after direct ECS sync; no user-operated Watch test was required.
 - Latest long-tail first-audio gate: the 8-turn Fire/Volcengine conversation probe now supports `--max-stop-to-first-audio-ms` and the standard gate now uses `2500ms` after repeated Fire/Volcengine runs stayed below roughly `2.2s`. `VoicePipeline` also rotates high-frequency comfort opening stems such as `我在` after one recent use. Full `npm run deep:selftest:full` passed; no user-operated Watch test was required.
 - Latest formulaic scripture lead-in gate: VoicePipeline strips book-name and generic lead-ins such as `《诗篇》里说`, `经上说`, `圣经说`, `主说`, `神说`, and `耶稣说` before assistant text/audio emission. Standard Fire/Volcengine smoke and 8-turn conversation gates now forbid those patterns; full `npm run deep:selftest:full` passed after direct ECS sync with `forbiddenTextFailures: []`. No user-operated Watch test was required.
-- Latest natural spoken-opening gate: VoicePipeline normalizes meta/awkward comfort openings such as `那来句贴心的`, `那听这句：`, and `那缓缓神吧` before assistant text/audio emission. Standard Fire/Volcengine smoke and 8-turn conversation gates now forbid `来句|听这句|缓缓神`; full `npm run deep:selftest:full` passed after direct ECS sync with `forbiddenTextFailures: []`. No user-operated Watch test was required.
+- Latest natural spoken-opening gate: VoicePipeline normalizes meta/awkward comfort openings such as `那来句贴心的`, `那来靠一靠`, `那听这句：`, and `那缓缓神吧` before assistant text/audio emission. Standard Fire/Volcengine smoke and 8-turn conversation gates now forbid `那来|来句|听这句|缓缓神`. A follow-up self-test exposed that server history retention at 12 messages could hide early repeated opening stems during the 8-turn gate; retention is now 20 messages, and the 8-turn server test asserts turn 8 still sees turns 1-7. Full `npm run deep:selftest:full` passed after direct ECS sync with `forbiddenTextFailures: []` and `repeatedOpeningStemFailures: []`. No user-operated Watch test was required.
 
 Latest remote deployment note:
 
@@ -127,7 +127,7 @@ Latest LLM selection benchmark:
 - Standard Fire/Volcengine 8-turn conversation gate requires assistant replies to stay within `8..48` spoken characters via `--min-assistant-reply-chars 8` and `--max-assistant-reply-chars 48`, preventing placeholder-length replies such as `那停一下吧。` from passing self-test.
 - The LLM prompt now explicitly quotes recent assistant replies when present and forbids repeating any of them, including when the user repeats the same request.
 - Standard Fire/Volcengine smoke now rejects lookup-style, harsh repeated-comfort, mechanical tired/fatigue, incomplete-utterance, and stale followup replies such as `给你找一句`, `再给你读一句`, `你还想听`, `你还是想听`, `你又想听`, `喊累`, `没说完`, `只说想听`, `是还想听`, `你还是觉得累`, `你又累`, and `你又感到疲惫`.
-- Standard Fire/Volcengine smoke and 8-turn conversation gates now reject meta/awkward spoken openings such as `来句`, `听这句`, and `缓缓神`.
+- Standard Fire/Volcengine smoke and 8-turn conversation gates now reject meta/awkward spoken openings such as `那来`, `来句`, `听这句`, and `缓缓神`.
 - The complete-reply prompt now requires comfort-intent turns to directly承接情绪 instead of opening as a scripture lookup or repeating the user's "想听安慰" request.
 - Standard `deep:selftest:full` now includes an 8-turn Fire/Volcengine continuous conversation gate with memory recall/persist, explicit user-goodbye session end, late-audio rejection, repeated-opening-stem rejection, full-session identical-reply rejection, and lookup/harsh/mechanical/incomplete-utterance/stale-followup text rejection.
 - Server memory recall sanitizes lookup-style, harsh, mechanical tired/fatigue, incomplete-utterance, and stale-followup comfort phrases before placing persisted summaries into LLM context.

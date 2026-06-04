@@ -4,7 +4,7 @@
 
 **Goal:** Move DeepLab from validated HTTP echo turn to a provider-backed HTTP turn that can be tested on Apple Watch without WebSocket.
 
-**Architecture:** Keep DeepResponse independent from Presence/Quick Response. The Watch Lab sends one PCM16 payload to the Node server over HTTPS, the Node server runs the existing VoicePipeline in provider mode, and the Watch plays returned PCM audio. WebSocket remains a separate diagnostic track because Watch WSS currently never reaches the Node `upgrade` handler.
+**Architecture:** Keep DeepResponse independent from Presence/Quick Response. The Watch Lab sends PCM16 over HTTPS/HTTP session endpoints, the Node server runs the existing VoicePipeline in provider mode, and the Watch plays returned PCM audio. This historical Phase 1 plan is superseded by the 2026-06-05 hard policy: DeepResponse Watch transport is HTTP only, and Watch WebSocket is not a diagnostic, fallback, spike, benchmark, or validation track.
 
 **Tech Stack:** watchOS SwiftUI, `URLSession.upload`, Node.js HTTP server, Render Web Service, Volcengine/Doubao ASR+TTS, Ark LLM, Node test runner.
 

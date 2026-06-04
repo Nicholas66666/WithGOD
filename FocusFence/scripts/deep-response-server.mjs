@@ -982,8 +982,8 @@ function appendSessionHistory(session, { transcript, assistantText }) {
   if (responseText) {
     session.history.push({ role: "assistant", content: responseText });
   }
-  if (session.history.length > 12) {
-    session.history = session.history.slice(-12);
+  if (session.history.length > 20) {
+    session.history = session.history.slice(-20);
   }
 }
 

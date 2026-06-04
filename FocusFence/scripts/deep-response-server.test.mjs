@@ -1267,9 +1267,9 @@ test("DeepResponse HTTP session self-tests eight turns with rolling context and 
 
     assert.equal(seenTurns.length, 8);
     assert.equal(seenContexts[0].length, 0);
-    assert.equal(seenContexts[7].length, 12);
-    assert.equal(seenContexts[7][0].content, "you-2:audio-in-2");
-    assert.equal(seenContexts[7][11].content, "god-7");
+    assert.equal(seenContexts[7].length, 14);
+    assert.equal(seenContexts[7][0].content, "you-1:audio-in-1");
+    assert.equal(seenContexts[7][13].content, "god-7");
 
     await waitFor(async () => {
       const events = await fetchJSON(`${base}/events?cursor=0`);

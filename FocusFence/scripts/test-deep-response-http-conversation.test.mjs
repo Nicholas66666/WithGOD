@@ -158,14 +158,15 @@ test("collectForbiddenConversationTextFailures flags turn text and memory summar
       { turnID: "turn-4", text: "你今天还是觉得累。《诗篇》说，他会赐下能力。" },
       { turnID: "turn-5", text: "你又感到疲惫了。《以赛亚书》里说，神会让你如鹰展翅上腾。" },
       { turnID: "turn-6", text: "那缓缓神吧。“我的心哪，你当默默无声。”" },
-      { turnID: "turn-7", text: "那听这句：“你们得力在乎平静安稳。”" }
+      { turnID: "turn-7", text: "那听这句：“你们得力在乎平静安稳。”" },
+      { turnID: "turn-8", text: "那来靠一靠。主是你的避难所。" }
     ],
     memoryCandidate: {
       summary: "User: 今天我累\nAI: 你还是想听安慰的话呀。\nAI: 你还在喊累呀。\nAI: 你又觉得累了。\nAI: 你又累了。"
     }
   }, [
     "你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)",
-    "来句|听这句|缓缓神"
+    "那来|来句|听这句|缓缓神"
   ]);
 
   assert.deepEqual(failures, [
@@ -196,14 +197,20 @@ test("collectForbiddenConversationTextFailures flags turn text and memory summar
     {
       source: "turn",
       turnID: "turn-6",
-      forbiddenPattern: "来句|听这句|缓缓神",
+      forbiddenPattern: "那来|来句|听这句|缓缓神",
       text: "那缓缓神吧。“我的心哪，你当默默无声。”"
     },
     {
       source: "turn",
       turnID: "turn-7",
-      forbiddenPattern: "来句|听这句|缓缓神",
+      forbiddenPattern: "那来|来句|听这句|缓缓神",
       text: "那听这句：“你们得力在乎平静安稳。”"
+    },
+    {
+      source: "turn",
+      turnID: "turn-8",
+      forbiddenPattern: "那来|来句|听这句|缓缓神",
+      text: "那来靠一靠。主是你的避难所。"
     },
     {
       source: "memory_candidate",
