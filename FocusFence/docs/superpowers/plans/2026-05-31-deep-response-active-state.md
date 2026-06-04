@@ -1,6 +1,6 @@
 # Deep Response Active State
 
-更新：2026-05-31 13:05 Asia/Shanghai
+更新：2026-06-04 18:50 Asia/Shanghai
 
 这个文件是 Deep Response 开发的持久上下文入口。每次上下文压缩、换会话、长时间中断后，先读本文件，再继续开发。
 
@@ -41,6 +41,8 @@ Watch 持续会话
 - Watch device id: `6B873DBC-11D7-5F93-AA64-96FB0531C28B`
 - Stable old-app baseline tag: `baseline/2026-05-30-presence-stable-deeplab-isolated`
 - DeepLab v2 client checkpoint: `checkpoint/2026-05-30-deeplab-phase2a-v2-client-build`
+- Latest DeepLab HTTP abort controls: `dad0834`
+- Latest HTTP remote smoke probe: `ea8dc1f`
 
 ## Proven Baseline
 
@@ -66,6 +68,47 @@ more tts 650ms
 ```
 
 ## Current Progress
+
+Latest status as of 2026-06-04:
+
+- Branch `codex/deep-response-lab` is pushed to GitHub through `ea8dc1f`.
+- DeepLab now reuses one HTTP session across repeated mic turns, so manual turn-by-turn recording shares server-side conversation context.
+- DeepLab has a local-first abort control:
+  - Watch stops local playback immediately.
+  - Watch cancels the poll task.
+  - Watch sends `POST /deep-response/sessions/{session_id}/abort`.
+  - Watch tracks canceled `generationID`s and drops late/stale audio client-side.
+- Added `npm run deep:http-smoke:test` as the one-command remote acceptance probe for Render and future Volcengine-hosted services.
+- Latest remote Render smoke passed:
+  - health: `200`
+  - turn 1 stop-to-first-audio: `1682ms`
+  - turn 2 stop-to-first-audio: `1993ms`
+  - abort stale audio chunks: `0`
+  - abort stale audio bytes: `0`
+- Latest Watch build passed:
+  - `xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-build build`
+- Watch install was attempted twice and failed only at CoreDevice tunnel setup:
+  - `Timed out while attempting to establish tunnel`
+  - `Network.NWError error 60 - Operation timed out`
+  - Treat this as Watch/Mac connectivity, not a code regression.
+- Do not ask for user testing until the Watch device is reachable and the latest `DeepLab.app` is installed.
+
+Current recommended validation command before any server migration/manual Watch test:
+
+```bash
+npm run deep:http-smoke:test -- \
+  --endpoint https://withgod-deep-response.onrender.com \
+  --pcm /private/tmp/deep-response-http-speed.pcm \
+  --turns 2 \
+  --chunk-ms 1000 \
+  --upload-sleep-ms 1000 \
+  --poll-ms 50 \
+  --timeout-ms 90000 \
+  --observe-ms 3000 \
+  --max-stop-to-first-audio-ms 3000
+```
+
+If sandboxed Node DNS returns `ENOTFOUND` while `curl /health` succeeds, rerun this command with non-sandbox network permission. This happened on 2026-06-04; the non-sandbox run passed.
 
 Milestone 1 server/provider harness is implemented and self-tested as of commit `62335c3`.
 
@@ -96,7 +139,27 @@ Important finding:
 
 - Provider and HTTP session path works, but first phrase quality still needs tuning. One provider harness run produced an incomplete first phrase: `耶稣说：“凡劳苦担重担的人，可以`。Do not treat first-phrase policy as done.
 
-Current implementation milestone is **Milestone 2: Watch HTTP Transport Lab**.
+Current implementation milestone is between **Milestone 3: Continuous Conversation Runtime** and **Milestone 4: Barge-In**.
+
+Completed parts of Milestone 3:
+
+- Server stores short-term session history and passes prior turns into LLM context.
+- Script-driven two-turn conversation in one session passes on Render.
+- Watch client reuses one HTTP session across repeated mic turns.
+
+Completed parts of Milestone 4:
+
+- Server abort endpoint and stale generation drop are covered by tests.
+- Remote abort probe passes on Render.
+- Watch client has local-first abort controls and stale generation client filtering.
+
+Still pending:
+
+- Latest DeepLab abort build has not been installed because Watch connectivity failed.
+- Manual Watch confirmation for abort feel is pending.
+- Automatic return-to-listening / hands-free VAD loop is not implemented.
+- Goodbye and idle-end flows are not implemented.
+- Supabase transcript/summary/memory candidate persistence is not implemented.
 
 Do not ask user to test until Watch code is built, installed, and local/Render endpoints have already been self-checked.
 

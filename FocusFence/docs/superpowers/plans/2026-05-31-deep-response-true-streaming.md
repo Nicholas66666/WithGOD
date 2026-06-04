@@ -20,12 +20,40 @@
   - Doubao TTS returns natural Chinese audio.
   - Watch plays first segment then followup segment smoothly.
 - Latest branch: `codex/deep-response-lab`.
-- Latest validation UI commit: `84419f0 Trim DeepLab v2 validation screen`.
+- Latest pushed commit: `ea8dc1f Add DeepResponse HTTP smoke probe`.
+- Current DeepLab HTTP session baseline:
+  - Watch client reuses one HTTP session across repeated mic turns.
+  - Server stores short-term session context and uses it for following turns.
+  - Watch client has local-first abort control and stale generation audio filtering.
+  - Remote one-command smoke probe passes against Render.
 - True streaming is still not complete:
   - Watch -> Render WebSocket has previously failed with `-1001` / `-999` and is no longer mainline.
-  - HTTP v2 currently uploads one complete recording and returns one JSON response, not chunked session streaming.
-  - `VoicePipeline.runSegmented` is sequential, not event-streaming.
-  - TTS provider collects audio chunks before returning to caller.
+  - Full hands-free listening/VAD loop is not implemented.
+  - Goodbye and idle-end flows are not implemented.
+  - Summary/memory candidate persistence is not implemented.
+  - Latest abort UI build is not yet installed on Watch because CoreDevice tunnel setup failed.
+
+Latest remote smoke command:
+
+```bash
+npm run deep:http-smoke:test -- \
+  --endpoint https://withgod-deep-response.onrender.com \
+  --pcm /private/tmp/deep-response-http-speed.pcm \
+  --turns 2 \
+  --chunk-ms 1000 \
+  --upload-sleep-ms 1000 \
+  --poll-ms 50 \
+  --timeout-ms 90000 \
+  --observe-ms 3000 \
+  --max-stop-to-first-audio-ms 3000
+```
+
+Latest remote smoke result:
+
+- health `200`
+- two-turn conversation in one session passed
+- stop-to-first-audio: `1682ms`, `1993ms`
+- abort stale audio chunks/bytes: `0` / `0`
 
 ## Next Development Shape
 
@@ -61,6 +89,8 @@ The implementation must preserve these hard boundaries:
 The earlier A-G list is consolidated into four milestones. The rule is: do not ask for Watch testing until a milestone has exhausted script/local/Render validation.
 
 ### Milestone 1: Provider And Server Harness
+
+Status: completed.
 
 Purpose:
 - Prove progressive provider behavior and HTTP session semantics without Watch.
@@ -100,6 +130,8 @@ Gate:
 
 ### Milestone 2: Watch HTTP Transport Lab
 
+Status: completed enough for the next phase; keep `http-turn-v2` as fallback.
+
 Purpose:
 - Prove real Watch can upload live audio chunks over HTTP and pull events/audio over the selected HTTP mode.
 - Keep provider complexity optional for first Watch validation.
@@ -135,6 +167,8 @@ Manual Watch test gate 2:
 
 ### Milestone 3: Continuous Conversation Runtime
 
+Status: partially complete.
+
 Purpose:
 - Turn single HTTP session streaming into Xiaozhi-style multi-turn conversation.
 
@@ -151,6 +185,20 @@ Implementation:
 - Add turn and generation lifecycle.
 - Add multi-turn script tests.
 - Add explicit goodbye and idle timeout flows.
+
+Completed:
+
+- Server-side short-term context memory.
+- Server turn/generation lifecycle for HTTP sessions.
+- Render two-turn script probe.
+- Watch client session reuse across repeated manual mic turns.
+
+Remaining:
+
+- Automatic return-to-listening loop on Watch.
+- VAD or silence detection to end user turn without manual tap.
+- Explicit goodbye intent test and endpoint behavior.
+- Idle timeout and gentle close.
 
 Expected effect:
 - AI speaks, then returns to listening.
@@ -172,6 +220,8 @@ Manual Watch test gate 3:
 
 ### Milestone 4: Barge-In And Product-Readiness Checkpoint
 
+Status: partially complete.
+
 Purpose:
 - Make interruption feel natural and decide whether this is ready to move beyond DeepLab.
 
@@ -185,6 +235,21 @@ Implementation:
   - `barge_in_to_server_stop`
   - `stale_audio_after_abort_count`
 - Add summary/memory candidate write path or stub, depending on integration readiness.
+
+Completed:
+
+- Server `/abort` endpoint.
+- Server stale generation drop.
+- Render abort script probe.
+- Watch local playback stop before POST `/abort`.
+- Watch canceled generation audio filtering.
+
+Remaining:
+
+- Install latest DeepLab build when Watch is reachable.
+- Manual confirmation that old audio stops immediately on real Watch.
+- Timing traces for `barge_in_to_local_stop`, `barge_in_to_server_stop`, and `stale_audio_after_abort_count`.
+- Decide whether abort should trigger immediate recording start or remain a separate interrupt button during POC.
 
 Expected effect:
 - While AI is speaking, user can start speaking and old audio stops quickly.
