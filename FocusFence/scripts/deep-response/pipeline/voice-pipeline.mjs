@@ -201,8 +201,8 @@ export class VoicePipeline {
 
     const retry = await this.llm.generate({
       transcript,
-      context,
-      messages: buildFirstPhraseRetryMessages(transcript, firstText, context),
+      context: [],
+      messages: buildFirstPhraseRetryMessages(transcript, firstText),
       signal,
       streamFull: false,
       maxTokens: 48,
@@ -210,12 +210,37 @@ export class VoicePipeline {
       temperature: 0.1,
       firstPhraseExtractor: findCompleteFirstPhrase
     });
+    const retryText = retry.firstPhrase || retry.text || "";
+    if (isValidFirstPhrase(retryText)) {
+      return withFirstPhraseRetryTiming(retry, 1);
+    }
+
+    const repair = await this.llm.generate({
+      transcript,
+      context: [],
+      messages: buildFirstPhraseRepairMessages(transcript, retryText),
+      signal,
+      streamFull: false,
+      maxTokens: 32,
+      minChars: 8,
+      temperature: 0,
+      firstPhraseExtractor: findCompleteFirstPhrase
+    });
+    const repairText = repair.firstPhrase || repair.text || "";
+    if (isValidFirstPhrase(repairText)) {
+      return withFirstPhraseRetryTiming(repair, 2);
+    }
+
+    const fallback = buildSafetyFirstPhrase(transcript);
     return {
-      ...retry,
+      text: fallback,
+      firstPhrase: fallback,
       timing: {
-        ...(retry.timing || {}),
-        llm_first_phrase_retry_count: 1
-      }
+        llm_first_phrase_retry_count: 2,
+        llm_first_phrase_fallback: 1
+      },
+      streamChunkCount: 0,
+      streamChunks: []
     };
   }
 
@@ -387,20 +412,35 @@ function buildFirstPhraseMessages(transcript, context = []) {
   ];
 }
 
-function buildFirstPhraseRetryMessages(transcript, rejectedText, context = []) {
+function buildFirstPhraseRetryMessages(transcript, rejectedText) {
   return [
-    { role: "system", content: firstPhraseSystemPrompt() },
-    ...context,
+    { role: "system", content: firstPhraseRepairSystemPrompt() },
     {
       role: "user",
       content: [
         `刚才这句不适合作为语音首句：${rejectedText}`,
-        "原因：它像经文引用、讲道、属灵建议，或不是一句自然情绪承接。",
-        "请重新输出一句完整短句，8-28 个中文字符，必须以句号、问号或感叹号结尾。",
-        "只承接用户此刻的感受；不要提圣经、经文、神、耶稣、主、章、节、引用、引号或冒号。",
+        "把它改写成一句日常口语的情绪承接，8-28 个中文字符。",
+        "禁止出现任何宗教词、经文、引用、引号、冒号、书名、章、节。",
         "不要输出解释、编号、标题或 Markdown。",
         "",
         `用户 ASR transcript：${transcript}`
+      ].join("\n")
+    }
+  ];
+}
+
+function buildFirstPhraseRepairMessages(transcript, rejectedText) {
+  return [
+    { role: "system", content: firstPhraseRepairSystemPrompt() },
+    {
+      role: "user",
+      content: [
+        "只输出一句自然中文短句，必须是日常口语安慰。",
+        "可参考这种语气：我听见你今天真的很累。",
+        "不要照抄示例，按用户真实话语改写。",
+        "禁止出现：圣经、经文、神、主、耶稣、安息、凡劳苦、担重担、引号、冒号。",
+        `上一次仍然不合格：${rejectedText}`,
+        `用户说：${transcript}`
       ].join("\n")
     }
   ];
@@ -412,6 +452,14 @@ function firstPhraseSystemPrompt() {
     "这一句只承接用户感受，不引用经文，不提圣经书名、章节、神学解释或属灵建议。",
     "不要自称神，不代表神说话，不诊断用户。",
     "输出必须是一句自然中文短句，适合被温柔读出来。"
+  ].join("\n");
+}
+
+function firstPhraseRepairSystemPrompt() {
+  return [
+    "你是语音对话首句改写器。",
+    "你只能输出一句日常中文短句，用来先承接用户感受。",
+    "绝对不要使用宗教语言、经文引用、讲道语气或建议。"
   ].join("\n");
 }
 
@@ -481,6 +529,33 @@ function isValidFirstPhrase(text) {
   return !/(圣经|经文|经上|诗篇|箴言|以赛亚|马太|约翰|罗马|第?\d+章|\d+[:：]\d+|主耶稣|耶稣说|凡劳苦|担重担|安息|神说|主说|“|”|:|：)/u.test(
     cleaned
   );
+}
+
+function withFirstPhraseRetryTiming(result, retryCount) {
+  return {
+    ...result,
+    timing: {
+      ...(result.timing || {}),
+      llm_first_phrase_retry_count: retryCount
+    }
+  };
+}
+
+function buildSafetyFirstPhrase(transcript) {
+  const text = String(transcript || "");
+  if (/(累|疲惫|撑不住|没力气|倦)/u.test(text)) {
+    return "我听见你今天真的很累。";
+  }
+  if (/(害怕|恐惧|怕|慌|焦虑|崩溃)/u.test(text)) {
+    return "我听见你现在很害怕。";
+  }
+  if (/(孤单|孤独|没人|一个人)/u.test(text)) {
+    return "我听见你觉得很孤单。";
+  }
+  if (/(羞耻|内疚|自责|失败|没用)/u.test(text)) {
+    return "我听见你在责怪自己。";
+  }
+  return "我在这里陪着你。";
 }
 
 function buildFollowupPrompt(transcript, firstText) {
