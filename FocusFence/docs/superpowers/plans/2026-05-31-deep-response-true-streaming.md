@@ -1702,6 +1702,23 @@ Latest long-tail first-audio and high-frequency opening gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This remains HTTP-only and completely self-tested; no user-operated Watch test is part of this gate.
 
+Latest formulaic scripture lead-in gate:
+- Removed another recurring “not Xiaozhi-like” quality issue from spoken output: book-name and generic scripture lead-ins such as `《诗篇》里说`, `《以赛亚书》说`, `经上说`, `圣经说`, `主说`, `神说`, and `耶稣说`.
+- VoicePipeline strips these lead-ins before emitting `assistant_text_delta`, `assistant_phrase`, or TTS audio. The quote/content can remain if it fits the spoken budget, but the repeated lookup/reading formula is not spoken.
+- Standard Fire/Volcengine smoke and 8-turn conversation gates now include `--forbid-text-pattern '《[^》]+》(?:里)?说|经上说|圣经说|主说|神说|耶稣说'`.
+- Verification:
+  - RED `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs --test-name-pattern "formulaic scripture intro"` first failed because `《诗篇》里说` was emitted unchanged.
+  - RED `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs --test-name-pattern "generic scripture lead-in"` first failed because `经上说` was emitted unchanged.
+  - `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/package-scripts.test.mjs`: `28/28` passed.
+  - `npm run test:node`: `186/186` passed.
+  - Fire/Volcengine ECS was updated by base64-over-SSH file sync and `systemctl restart deep-response`; service returned `active`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Fire/Volcengine smoke stop-to-first-audio: `201ms`, `162ms`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `stopToFirstAudioFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Fire/Volcengine 8-turn stop-to-first-audio: `1655ms`, `1775ms`, `1735ms`, `3382ms`, `1726ms`, `1730ms`, `1770ms`, `1709ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This remains HTTP-only and completely self-tested; no user-operated Watch test is part of this gate.
+
 - Unit and server tests:
   - `npm run test:node`
 
