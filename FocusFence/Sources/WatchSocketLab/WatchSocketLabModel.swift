@@ -75,6 +75,25 @@ final class WatchSocketLabModel: ObservableObject {
         }
     }
 
+    func activateLongFormAudio() {
+        do {
+            state = "audioout:start"
+            let activated = try audio.activateLongFormPlayback()
+            audioState = activated.label
+            route = activated.route
+            lastError = ""
+            state = "audioout:active"
+            appendLog("audioout_active", [
+                "run_id": runID,
+                "audio_session": activated.label,
+                "route": activated.route,
+                "output_sample_rate": activated.outputSampleRate,
+            ])
+        } catch {
+            setError("audioout_error", error)
+        }
+    }
+
     func connect() {
         Task {
             guard let url = URL(string: wssURLString) else {

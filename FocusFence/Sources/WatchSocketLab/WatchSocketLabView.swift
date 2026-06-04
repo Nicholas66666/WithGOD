@@ -37,14 +37,15 @@ struct WatchSocketLabView: View {
                     Button("Audio") { model.activateAudio() }
                 }
                 HStack {
+                    Button("AudioOut") { model.activateLongFormAudio() }
                     Button("Connect") { model.connect() }
+                }
+                HStack {
                     Button("NW") { model.probeNetworkWebSocket() }
-                }
-                HStack {
                     Button("Echo") { model.startBinaryEcho() }
-                    Button("Abort") { model.simulateAbort() }
                 }
                 HStack {
+                    Button("Abort") { model.simulateAbort() }
                     Button("Stop") { model.stop() }
                     Button("Summary") { model.markSummary() }
                 }

@@ -12,6 +12,7 @@ final class WatchSocketAudioRuntime {
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
     private var didAttachPlayer = false
+    private var inputTapInstalled = false
 
     func activateVoiceChat() async throws -> WatchSocketAudioState {
         stopEngine()
@@ -27,11 +28,9 @@ final class WatchSocketAudioRuntime {
         input.installTap(onBus: 0, bufferSize: 1_024, format: inputFormat) { _, _ in
             // Keeping a real input tap active is the purpose of this spike.
         }
+        inputTapInstalled = true
 
-        if !didAttachPlayer {
-            engine.attach(player)
-            didAttachPlayer = true
-        }
+        attachPlayerIfNeeded()
         let outputFormat = engine.outputNode.inputFormat(forBus: 0)
         engine.connect(player, to: engine.mainMixerNode, format: outputFormat)
         engine.prepare()
@@ -43,6 +42,29 @@ final class WatchSocketAudioRuntime {
             label: "playAndRecord.voiceChat.activeStream",
             route: routeDescription(session),
             inputSampleRate: inputFormat.sampleRate,
+            outputSampleRate: outputFormat.sampleRate
+        )
+    }
+
+    func activateLongFormPlayback() throws -> WatchSocketAudioState {
+        stopEngine()
+
+        let session = AVAudioSession.sharedInstance()
+        try session.setCategory(.playback, mode: .spokenAudio, policy: .longFormAudio, options: [])
+        try session.setActive(true)
+
+        attachPlayerIfNeeded()
+        let outputFormat = engine.outputNode.inputFormat(forBus: 0)
+        engine.connect(player, to: engine.mainMixerNode, format: outputFormat)
+        engine.prepare()
+        try engine.start()
+        scheduleTone(format: outputFormat)
+        player.play()
+
+        return WatchSocketAudioState(
+            label: "playback.longFormAudio.tone",
+            route: routeDescription(session),
+            inputSampleRate: 0,
             outputSampleRate: outputFormat.sampleRate
         )
     }
@@ -75,10 +97,20 @@ final class WatchSocketAudioRuntime {
     }
 
     private func stopEngine() {
-        if engine.isRunning {
+        if inputTapInstalled {
             engine.inputNode.removeTap(onBus: 0)
+            inputTapInstalled = false
+        }
+        if engine.isRunning {
             player.stop()
             engine.stop()
+        }
+    }
+
+    private func attachPlayerIfNeeded() {
+        if !didAttachPlayer {
+            engine.attach(player)
+            didAttachPlayer = true
         }
     }
 
@@ -92,6 +124,34 @@ final class WatchSocketAudioRuntime {
             return
         }
         buffer.frameLength = buffer.frameCapacity
+
+        let options: AVAudioPlayerNodeBufferOptions = [.loops]
+        player.scheduleBuffer(buffer, at: nil, options: options)
+    }
+
+    private func scheduleTone(format: AVAudioFormat) {
+        guard format.sampleRate > 0,
+              format.channelCount > 0,
+              let buffer = AVAudioPCMBuffer(
+                pcmFormat: format,
+                frameCapacity: AVAudioFrameCount(format.sampleRate / 5)
+              ) else {
+            return
+        }
+        buffer.frameLength = buffer.frameCapacity
+
+        let channels = Int(format.channelCount)
+        let frames = Int(buffer.frameLength)
+        let frequency = 220.0
+        let amplitude: Float = 0.02
+        if let data = buffer.floatChannelData {
+            for channel in 0..<channels {
+                for frame in 0..<frames {
+                    let t = Double(frame) / format.sampleRate
+                    data[channel][frame] = sin(Float(2.0 * Double.pi * frequency * t)) * amplitude
+                }
+            }
+        }
 
         let options: AVAudioPlayerNodeBufferOptions = [.loops]
         player.scheduleBuffer(buffer, at: nil, options: options)
