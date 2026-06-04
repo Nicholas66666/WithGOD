@@ -406,7 +406,7 @@ Latest results:
 
 ### Milestone S5: Hands-Free Conversation Loop
 
-Status: partially complete. Server-side goodbye/idle lifecycle, remote smoke self-tests, Watch automatic return-to-listening source/build gate, local VAD/silence endpointing source/build gate, explicit Watch conversation state source gate, local 8-turn rolling-context/goodbye self-test, and remote 8-turn session-end probe are complete. Remaining work is automated VAD threshold calibration and deeper simulated hands-free audio-loop coverage if feasible without user-operated Watch testing.
+Status: partially complete. Server-side goodbye/idle lifecycle, remote smoke self-tests, Watch automatic return-to-listening source/build gate, local VAD/silence endpointing source/build gate, VAD fixture calibration, explicit Watch conversation state source gate, local 8-turn rolling-context/goodbye self-test, and remote 8-turn session-end probe are complete. Remaining work is deeper simulated hands-free audio-loop coverage if feasible without user-operated Watch testing.
 
 Purpose:
 - Move from manual press-to-talk turns toward Xiaozhi-style continuous conversation.
@@ -453,10 +453,12 @@ Completed evidence:
 - Added explicit `DeepResponseConversationState` in DeepLab with `listening`, `userSpeaking`, `assistantSpeaking`, `bargeIn`, `idleWaiting`, and `ended` states.
 - Added local 8-turn HTTP session self-test covering rolling context, automatic goodbye-intent `session_end`, and late audio `409 session_ended`.
 - Extended the HTTP conversation probe with `--end-reason`, `--expect-session-end`, and `--expect-late-audio-409` for reusable remote session lifecycle validation.
+- Added Watch VAD calibration fixtures that parse the Swift threshold and verify digital silence / low room noise stay below threshold while quiet speech / normal speech exceed it.
 - Verified:
 
 ```bash
 node --test scripts/deep-response-server.test.mjs
+node --test scripts/deep-response/lib/watch-vad-calibration.test.mjs
 node --test scripts/test-deep-response-http-conversation.test.mjs
 node --test scripts/test-deep-response-http-smoke.test.mjs
 node --test scripts/deep-response-watch-ui.test.mjs
@@ -469,10 +471,11 @@ node scripts/test-deep-response-http-conversation.mjs --endpoint http://124.174.
 
 Latest results:
 - `scripts/deep-response-server.test.mjs`: `23/23` passed.
+- `scripts/deep-response/lib/watch-vad-calibration.test.mjs`: `3/3` passed.
 - `scripts/test-deep-response-http-conversation.test.mjs`: `3/3` passed.
 - `scripts/test-deep-response-http-smoke.test.mjs`: `2/2` passed.
 - `scripts/deep-response-watch-ui.test.mjs`: `11/11` passed.
-- `npm run test:node`: `118/118` passed.
+- `npm run test:node`: `121/121` passed.
 - `DeepResponseWatchLab` generic watchOS build: `BUILD SUCCEEDED`.
 - Fire/Volcengine deployment: remote `HEAD` at `5f3a0e3`, service `active`, health `200`.
 - Fire/Volcengine smoke: `ok: true`.
@@ -482,7 +485,6 @@ Latest results:
 - Fire/Volcengine 8-turn conversation probe: `ok: true`, elapsed `41981ms`, `session_end` reason `user_goodbye`, late audio `409 session_ended`, per-turn stop-to-first audio roughly `2494ms` to `3121ms`.
 
 Remaining:
-- Automated VAD threshold calibration with fixture audio/noise cases if source-level endpointing proves too shallow.
 - Deeper simulator-level audio-loop autorun if a reliable watchOS simulator audio path can be automated without user-operated Watch testing.
 
 ### Milestone S6: Memory/Summary And Product Integration Decision
