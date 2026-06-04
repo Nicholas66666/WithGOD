@@ -42,3 +42,11 @@ test("package exposes a single DeepResponse full self-test gate", () => {
   assert.match(command, /npm run deep:watchlab:build:volc/);
   assert.match(command, /&&/);
 });
+
+test("package does not expose Watch or DeepResponse WebSocket development entrypoints", () => {
+  const scriptNames = Object.keys(packageJSON.scripts || {});
+
+  assert(!scriptNames.includes("watch:wss:echo"));
+  assert(!scriptNames.includes("deep:echo:test"));
+  assert(!scriptNames.includes("deep:realtime:test"));
+});

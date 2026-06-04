@@ -8,6 +8,10 @@ const plan = readFileSync("docs/superpowers/plans/2026-05-31-deep-response-true-
 const presenceWatchApp = readFileSync("Sources/PresenceWatchApp/PresenceWatchApp.swift", "utf8");
 const deepLabClient = readFileSync("Sources/DeepResponseWatchLab/DeepResponseRealtimeClient.swift", "utf8");
 const quickResponseSourceRoots = ["Sources/PresenceWatchApp", "Sources/PresenceApp"];
+const forbiddenWatchWebSocketScriptFiles = [
+  "scripts/watch-wss-echo-server.mjs",
+  "scripts/watch-wss-echo-server.test.mjs"
+];
 const forbiddenQuickResponsePatterns = [
   /DeepResponse/u,
   /DeepLab/u,
@@ -40,6 +44,13 @@ test("DeepResponse integration gate scans all Quick Response app sources", () =>
   assert.deepEqual(failures, []);
 });
 
+test("DeepResponse self-test suite does not include Watch WebSocket echo spike files", () => {
+  const trackedScriptFiles = collectSourceFiles(["scripts"]);
+  const forbiddenPresent = forbiddenWatchWebSocketScriptFiles.filter((file) => trackedScriptFiles.includes(file));
+
+  assert.deepEqual(forbiddenPresent, []);
+});
+
 function collectForbiddenQuickResponseReferences(roots, patterns) {
   const failures = [];
   for (const file of collectSourceFiles(roots)) {
@@ -69,7 +80,7 @@ function collectSourceFilesInto(path, files) {
     }
     return;
   }
-  if (/\.(swift|plist)$/u.test(path)) {
+  if (/\.(swift|plist|mjs)$/u.test(path)) {
     files.push(path);
   }
 }

@@ -11,6 +11,8 @@ This gate exists to prevent the DeepResponse Lab work from drifting into the sta
 - DeepLab is the only user-facing surface for this POC until approval changes.
 - Watch transport remains HTTP-only.
 - No WebSocket feasibility or fallback work is part of the integration path.
+- Standard package scripts must not expose Watch WSS echo or DeepResponse WebSocket development entrypoints.
+- The standard Node self-test suite must not include the old Watch WSS echo spike files.
 - Product-experience spot check is optional and user-requested.
 
 ## Required Before Main App Entry
@@ -29,6 +31,7 @@ This gate exists to prevent the DeepResponse Lab work from drifting into the sta
 - Keep improving DeepResponse in the independent Lab target.
 - Keep server/provider/memory work behind HTTP session endpoints.
 - Keep using self-tests, source tests, watchOS builds, and Fire/Volcengine smoke as phase gates.
+- Keep Watch-side transport validation on HTTP upload, long-poll events, and HTTP audio pull.
 - Draft a later integration plan with exact feature flag name, rollback tag, and entry point only after explicit approval.
 
 ## Not Allowed Without Approval
@@ -37,4 +40,5 @@ This gate exists to prevent the DeepResponse Lab work from drifting into the sta
 - Add DeepResponse as a visible main Watch app entry.
 - Change Quick Response recording, upload, response, or playback flow.
 - Introduce Watch WebSocket transport or fallback.
+- Reintroduce Watch WSS echo spike scripts into standard development or self-test entrypoints.
 - Make iPhone part of the realtime chain.

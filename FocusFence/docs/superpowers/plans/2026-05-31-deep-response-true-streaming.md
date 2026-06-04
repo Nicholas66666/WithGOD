@@ -1260,6 +1260,31 @@ Latest standard full self-test script:
   - Existing watchOS deprecation warnings for AVAudioSession record permission remain warnings only.
 - Development remained self-test only; no user-operated Watch testing was required.
 
+Latest HTTP-only development-surface cleanup:
+- Removed stale package-script entrypoints for the old Watch/DeepResponse WebSocket development path:
+  - `watch:wss:echo`
+  - `deep:echo:test`
+  - `deep:realtime:test`
+- Removed the old Watch WSS echo spike script and test from the standard self-test surface:
+  - `scripts/watch-wss-echo-server.mjs`
+  - `scripts/watch-wss-echo-server.test.mjs`
+- Strengthened `scripts/package-scripts.test.mjs` so standard npm scripts cannot re-expose Watch WSS echo or DeepResponse WebSocket development entrypoints.
+- Strengthened `scripts/deep-response-integration-gate.test.mjs` so the standard Node self-test suite cannot silently reintroduce Watch WSS echo spike files.
+- Updated `docs/superpowers/plans/2026-06-04-deep-response-integration-gate.md` with the same HTTP-only development-surface rule.
+- This cleanup does not remove server-internal provider WebSocket support used by Doubao ASR/TTS. The forbidden scope is Watch-side transport work and standard DeepResponse development entrypoints that would pull the project back toward Watch WebSocket validation.
+- Verification:
+  - RED `node --test scripts/package-scripts.test.mjs` first failed because `watch:wss:echo`, `deep:echo:test`, and `deep:realtime:test` were still exposed.
+  - RED `node --test scripts/deep-response-integration-gate.test.mjs` first failed because `scripts/watch-wss-echo-server.mjs` and `scripts/watch-wss-echo-server.test.mjs` still existed.
+  - `node --test scripts/deep-response-integration-gate.test.mjs scripts/package-scripts.test.mjs`: `8/8` passed.
+  - `npm run test:node`: `152/152` passed.
+  - `npm run deep:selftest:full`: passed.
+  - Nested Fire/Volcengine smoke memory recall: `count: 3`, `store: jsonl`.
+  - Nested Fire/Volcengine smoke stop-to-first-audio: `232ms`, `222ms`.
+  - Nested Fire/Volcengine smoke abort stale audio chunks/bytes: `0` / `0`.
+  - Nested Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
+  - Nested `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
+- Development remained self-test only; no user-operated Watch testing was required.
+
 ## File Responsibilities
 
 - Modify `scripts/deep-response/protocol/deep-response-protocol.mjs`
