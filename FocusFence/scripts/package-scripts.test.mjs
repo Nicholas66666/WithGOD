@@ -49,6 +49,7 @@ test("package exposes standard Fire Volcengine DeepResponse continuous conversat
   assert.match(command, /--pcm \/private\/tmp\/deep-response-http-speed\.pcm/);
   assert.match(command, /--turns 8/);
   assert.match(command, /--pipeline-mode cascade/);
+  assert.match(command, /--upload-sleep-ms 1000/);
   assert.match(command, /--wait-ms 800/);
   assert.match(command, /--max-opening-stem-repeats 2/);
   assert.match(command, /--end-reason user_goodbye/);
@@ -59,7 +60,7 @@ test("package exposes standard Fire Volcengine DeepResponse continuous conversat
   assert.match(command, /--forbid-identical-consecutive-replies/);
   assert.match(command, /--max-assistant-reply-chars 48/);
   assert.match(command, /--min-assistant-reply-chars 8/);
-  assert.match(command, /--max-stop-to-first-audio-ms 2500/);
+  assert.match(command, /--max-stop-to-first-audio-ms 1000/);
   assert.match(command, /--forbid-text-pattern '\[:：\]\\s\*\$\|给你\(找\|读\)一句\|再给你\(找\|读\)一句\|再找一句\|你还想听\|你还是想听\|你又想听\|喊累\|没说完\|只说\.\*想听\|是还想听\|你\(\?:今天\)\?还是\(\?:觉得\|有点\)\?累\|你又累\|你又\(\?:觉得\|感到\)\(\?:累\|疲惫\)'/);
   assert.match(command, /--forbid-text-pattern '《\[\^》\]\+》\(\?:里\)\?说\|经上说\|圣经说\|主说\|神说\|耶稣说'/);
   assert.match(command, /--forbid-text-pattern '那来\|来句\|听这句\|缓缓神'/);

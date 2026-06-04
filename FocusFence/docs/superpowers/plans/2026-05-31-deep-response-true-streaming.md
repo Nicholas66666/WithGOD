@@ -1790,6 +1790,21 @@ Latest session-history retention quality gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This remains HTTP-only and self-tested; no user-operated Watch test is part of this gate.
 
+Latest realtime-upload 8-turn latency gate:
+- Standard Fire/Volcengine 8-turn continuous conversation now simulates real Watch microphone streaming by pacing uploads with `--upload-sleep-ms 1000` instead of burst uploading with `--upload-sleep-ms 0`.
+- The 8-turn gate now requires `--max-stop-to-first-audio-ms 1000`, replacing the previous `2500ms` long-tail gate. This makes the canonical full self-test prove that ASR partials, LLM streaming, phrase chunking, and TTS have already progressed while the user is speaking.
+- Verification:
+  - RED `node --test scripts/package-scripts.test.mjs` first failed because `deep:volc:conversation:full` still used `--upload-sleep-ms 0` and `--max-stop-to-first-audio-ms 2500`.
+  - `node --test scripts/package-scripts.test.mjs`: `5/5` passed.
+  - `npm run test:node`: `189/189` passed.
+  - `npm run deep:volc:conversation:full`: passed with realtime upload pacing; 8-turn stop-to-first-audio `220ms`, `218ms`, `209ms`, `189ms`, `222ms`, `213ms`, `227ms`, `210ms`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `209ms`, `200ms`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `212ms`, `205ms`, `211ms`, `201ms`, `198ms`, `202ms`, `194ms`, `199ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This remains HTTP-only and self-tested; no user-operated Watch test is part of this gate.
+
 - Unit and server tests:
   - `npm run test:node`
 
