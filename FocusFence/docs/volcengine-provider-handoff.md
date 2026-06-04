@@ -1,6 +1,6 @@
 # Volcengine Provider Handoff
 
-Last verified: 2026-05-29.
+Last verified: 2026-06-05.
 
 ## Status
 
@@ -31,8 +31,8 @@ Use a staged ASR -> LLM -> TTS cascade, not an end-to-end realtime speech model.
 - ASR resource ID: `volc.bigasr.sauc.duration`.
 - LLM: Ark OpenAI-compatible chat completions.
 - LLM base URL: `https://ark.cn-beijing.volces.com/api/v3`.
-- LLM primary model: `doubao-seed-2-0-lite-260215`.
-- LLM fallback model: `doubao-seed-2-0-pro-260215`.
+- LLM primary model: `doubao-seed-character-251128`.
+- LLM fallback model: none configured by default. The earlier `doubao-seed-2-0-pro-260215` fallback failed realtime latency gates and should not be used as the default fallback.
 - TTS: Doubao big TTS resource `volc.service_type.10029`.
 - TTS WebSocket endpoint: `wss://openspeech.bytedance.com/api/v3/tts/bidirection`.
 - Initial TTS voice: `zh_male_shaonianzixin_moon_bigtts`.
@@ -64,8 +64,8 @@ The POC should use these configured non-secret defaults:
 
 ```bash
 ARK_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
-ARK_MODEL=doubao-seed-2-0-lite-260215
-ARK_FALLBACK_MODEL=doubao-seed-2-0-pro-260215
+ARK_MODEL=doubao-seed-character-251128
+ARK_FALLBACK_MODEL=
 
 DOUBAO_ASR_WS_URL=wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_async
 DOUBAO_ASR_RESOURCE_ID=volc.bigasr.sauc.duration

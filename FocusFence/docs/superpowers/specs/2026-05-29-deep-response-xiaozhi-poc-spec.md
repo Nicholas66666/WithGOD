@@ -208,8 +208,8 @@ LLM：
 - Provider：Ark OpenAI-compatible chat completions。
 - Base URL：`https://ark.cn-beijing.volces.com/api/v3`。
 - Streaming：`stream: true`。
-- Primary：`doubao-seed-2-0-lite-260215`。
-- Fallback：`doubao-seed-2-0-pro-260215`。
+- Primary：`doubao-seed-character-251128`。
+- Fallback：默认留空；`doubao-seed-2-0-pro-260215` 在 2026-05-31 DeepResponse LLM benchmark 中未通过 realtime latency gate，不再作为默认 fallback。
 
 TTS：
 
@@ -251,8 +251,8 @@ Provider defaults:
 
 ```bash
 ARK_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
-ARK_MODEL=doubao-seed-2-0-lite-260215
-ARK_FALLBACK_MODEL=doubao-seed-2-0-pro-260215
+ARK_MODEL=doubao-seed-character-251128
+ARK_FALLBACK_MODEL=
 
 DOUBAO_ASR_WS_URL=wss://openspeech.bytedance.com/api/v3/sauc/bigmodel_async
 DOUBAO_ASR_RESOURCE_ID=volc.bigasr.sauc.duration

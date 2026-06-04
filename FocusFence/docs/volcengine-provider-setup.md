@@ -1,14 +1,14 @@
 # Volcengine Provider Setup
 
-Last checked: 2026-05-29.
+Last checked: 2026-06-05.
 
 ## Target POC Stack
 
 Use one Volcengine account and keep the first implementation deterministic:
 
 - ASR: Doubao streaming ASR hourly SKU currently enabled on this account, `volc.bigasr.sauc.duration`.
-- LLM: Ark Doubao Seed 2.0 Lite, `doubao-seed-2-0-lite-260215`.
-- LLM fallback: Ark Doubao Seed 2.0 Pro, `doubao-seed-2-0-pro-260215`.
+- LLM: Ark character model selected by DeepResponse benchmark, `doubao-seed-character-251128`.
+- LLM fallback: none configured by default. The earlier Seed 2.0 Pro fallback failed realtime latency gates.
 - TTS: Doubao big TTS currently enabled on this account, `volc.service_type.10029`.
 
 Do not start with the end-to-end realtime speech model. The current project needs an observable ASR -> LLM -> TTS cascade so each stage can be measured and swapped independently.
@@ -80,8 +80,8 @@ Open in the Ark console:
 
 Select and enable in Ark `开通管理`:
 
-- Primary: `doubao-seed-2-0-lite-260215`
-- Fallback / quality comparison: `doubao-seed-2-0-pro-260215`
+- Primary: `doubao-seed-character-251128`
+- Fallback: leave unset until a second model passes the DeepResponse LLM benchmark gates.
 
 Use:
 
@@ -89,7 +89,7 @@ Use:
 - Auth: `Authorization: Bearer $ARK_API_KEY`
 - Streaming: `stream: true`
 
-For the Watch response path, default to Lite because first-token latency and cost matter more than deep reasoning. Keep Pro only for later quality comparisons or full-detail analysis.
+For the Watch response path, default to the benchmark-selected character model because first-token and first-phrase latency matter more than deep reasoning. The earlier Seed 2.0 Lite/Pro candidates were rejected by `docs/deep-response-llm-benchmark-results.md` for realtime latency.
 
 ### TTS
 
@@ -147,9 +147,9 @@ Confirm the speaker appears as enabled in the console before using it. If unavai
 3. Open `API Key 管理`.
 4. Create an API Key and copy it into `ARK_API_KEY`.
 5. Open `开通管理`.
-6. Search or filter for Doubao Seed 2.0.
-7. Enable `doubao-seed-2-0-lite-260215`.
-8. Enable `doubao-seed-2-0-pro-260215` only as fallback/comparison.
+6. Search or filter for `doubao-seed-character-251128`.
+7. Enable `doubao-seed-character-251128`.
+8. Leave `ARK_FALLBACK_MODEL` unset unless a later benchmark selects a fallback.
 
 ### 2. Doubao Streaming ASR
 
@@ -216,8 +216,8 @@ Do not paste real keys into committed files.
 ```bash
 ARK_API_KEY=ark_YOUR_API_KEY
 ARK_BASE_URL=https://ark.cn-beijing.volces.com/api/v3
-ARK_MODEL=doubao-seed-2-0-lite-260215
-ARK_FALLBACK_MODEL=doubao-seed-2-0-pro-260215
+ARK_MODEL=doubao-seed-character-251128
+ARK_FALLBACK_MODEL=
 
 DOUBAO_SPEECH_APP_ID=YOUR_DOUBAO_SPEECH_APP_ID
 DOUBAO_SPEECH_ACCESS_TOKEN=YOUR_DOUBAO_SPEECH_ACCESS_TOKEN

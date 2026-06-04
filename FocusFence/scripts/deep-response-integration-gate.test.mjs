@@ -7,6 +7,11 @@ const gate = readFileSync("docs/superpowers/plans/2026-06-04-deep-response-integ
 const productDecision = readFileSync("docs/superpowers/plans/2026-06-05-deep-response-product-integration-decision.md", "utf8");
 const plan = readFileSync("docs/superpowers/plans/2026-05-31-deep-response-true-streaming.md", "utf8");
 const activeState = readFileSync("docs/superpowers/plans/2026-05-31-deep-response-active-state.md", "utf8");
+const defaultEnv = readFileSync("scripts/deep-response/lib/env.mjs", "utf8");
+const envExample = readFileSync(".env.example", "utf8");
+const supabaseEnvExample = readFileSync("supabase/.env.example", "utf8");
+const providerHandoff = readFileSync("docs/volcengine-provider-handoff.md", "utf8");
+const providerSetup = readFileSync("docs/volcengine-provider-setup.md", "utf8");
 const presenceWatchApp = readFileSync("Sources/PresenceWatchApp/PresenceWatchApp.swift", "utf8");
 const deepLabClient = readFileSync("Sources/DeepResponseWatchLab/DeepResponseRealtimeClient.swift", "utf8");
 const deepResponseServer = readFileSync("scripts/deep-response-server.mjs", "utf8");
@@ -69,6 +74,16 @@ test("DeepResponse active-state handoff matches current HTTP-only self-test poli
   assert.match(activeState, /DeepResponseWatchLab/u);
   assert.match(activeState, /Quick Response/u);
   assert.doesNotMatch(activeState, /WebSocket Spike Rules|feasibility spike|只允许做隔离 feasibility spike/u);
+});
+
+test("DeepResponse defaults use benchmark-selected Ark model without rejected fallback", () => {
+  for (const source of [defaultEnv, envExample, supabaseEnvExample, providerHandoff, providerSetup, activeState]) {
+    assert.match(source, /doubao-seed-character-251128/u);
+    assert.doesNotMatch(source, /ARK_MODEL=doubao-seed-2-0-lite-260215/u);
+    assert.doesNotMatch(source, /ARK_FALLBACK_MODEL=doubao-seed-2-0-pro-260215/u);
+    assert.doesNotMatch(source, /LLM primary model: `doubao-seed-2-0-lite-260215`/u);
+    assert.doesNotMatch(source, /LLM fallback model: `doubao-seed-2-0-pro-260215`/u);
+  }
 });
 
 test("DeepResponse integration gate scans all Quick Response app sources", () => {

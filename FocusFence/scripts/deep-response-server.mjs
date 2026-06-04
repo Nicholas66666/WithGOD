@@ -68,6 +68,7 @@ export async function startDeepResponseServer({
         audioReplayIntervalMs,
         firstPhraseMode: env.DEEP_RESPONSE_FIRST_PHRASE_MODE || "llm",
         arkModel: env.ARK_MODEL || "",
+        arkFallbackModel: env.ARK_FALLBACK_MODEL || "",
         asrModelName: env.DOUBAO_ASR_MODEL_NAME || "",
         asrEndWindowSizeMs: env.DOUBAO_ASR_END_WINDOW_SIZE_MS || "",
         ttsSpeakerID: env.DOUBAO_TTS_SPEAKER_ID || ""
