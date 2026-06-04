@@ -398,6 +398,67 @@ test("VoicePipeline streamCascadeTurn emits first phrase audio before LLM stream
   assert.deepEqual(ttsTexts, ["我听见你真的很累。", "我们先慢一点。"]);
 });
 
+test("VoicePipeline streamCascadeTurn keeps reading LLM while first phrase TTS is active", async () => {
+  let releaseFirstTTSDone;
+  const firstTTSDoneGate = new Promise((resolve) => {
+    releaseFirstTTSDone = resolve;
+  });
+  const asr = {
+    async *transcribeStream() {
+      yield { type: "transcript_final", transcript: "我今天很累。" };
+    }
+  };
+  const llm = {
+    async *streamTokens() {
+      yield { type: "delta", delta: "我听见你很累。" };
+      yield { type: "delta", delta: "我们先慢慢呼吸。" };
+      yield { type: "done", timing: { llm_total_ms: 300 } };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      yield { type: "audio_chunk", audioChunk: Buffer.from(`${text}:first`), sampleRate: 24000 };
+      if (text === "我听见你很累。") {
+        await firstTTSDoneGate;
+      }
+      yield { type: "done", timing: { tts_first_audio_ms: 80 } };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20, 30]) });
+  const iterator = pipeline.streamCascadeTurn({
+    audioChunks: [Buffer.from("voice")],
+    turnID: "turn-1",
+    generationID: "gen-1"
+  })[Symbol.asyncIterator]();
+
+  assert.equal((await iterator.next()).value.type, "transcript_final");
+  assert.equal((await iterator.next()).value.delta, "我听见你很累。");
+  assert.equal((await iterator.next()).value.type, "assistant_phrase");
+
+  const eventsWhileFirstTTSIsOpen = [];
+  for (let index = 0; index < 3; index += 1) {
+    const next = await Promise.race([
+      iterator.next(),
+      delay(10).then(() => ({ value: { type: "timeout" }, done: false }))
+    ]);
+    eventsWhileFirstTTSIsOpen.push(next.value);
+    if (next.value.type === "assistant_text_delta" && next.value.delta === "我们先慢慢呼吸。") {
+      break;
+    }
+  }
+  assert(eventsWhileFirstTTSIsOpen.some(
+    (event) => event.type === "assistant_text_delta" && event.delta === "我们先慢慢呼吸。"
+  ));
+
+  releaseFirstTTSDone();
+  const remainingEvents = [];
+  for await (const event of iterator) {
+    remainingEvents.push(event);
+  }
+  assert(remainingEvents.some((event) => event.type === "audio_chunk" && event.phraseIndex === 1));
+});
+
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

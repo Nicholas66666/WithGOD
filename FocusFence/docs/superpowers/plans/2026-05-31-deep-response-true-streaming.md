@@ -36,8 +36,9 @@
   - DeepResponseWatchLab no longer exposes Watch-side WebSocket transport code; source tests guard against reintroducing `URLSessionWebSocketTask` in the Watch Lab target.
 - True streaming is still not complete:
   - Watch socket transport is removed from the development path. It is not a fallback, not a spike, and not a blocking dependency for DeepResponse.
-  - Provider-side ASR/LLM/TTS are available, but the main path still waits for ASR final before LLM and waits for a complete LLM reply before TTS starts.
-  - Current TTS audio itself is chunked/streamed to Watch, but LLM->TTS is not yet a true incremental phrase pipeline.
+  - Provider-side ASR/LLM/TTS are available, and local cascade now streams LLM tokens into phrase chunks while TTS runs concurrently in phrase order.
+  - The main remaining streaming bottleneck is that LLM still waits for ASR final before starting; partial-ASR utterance-boundary triggering is not implemented.
+  - Current TTS audio itself is chunked/streamed to Watch, and the local LLM->phrase->TTS queue is no longer blocked by waiting for a complete LLM reply.
   - Full hands-free listening loop has a source/build gate, including local VAD/silence endpointing, but still needs stronger simulator/script state-machine coverage before final product readiness.
   - Goodbye and idle-end flows are implemented on the server and covered by smoke tests.
   - Summary/memory candidate persistence is not implemented.
@@ -83,7 +84,7 @@ Watch uploads mic chunks over HTTP while user speaks
 Important distinction:
 
 - Current deployed path: streaming transport and chunked TTS playback, but LLM waits for ASR final and TTS waits for complete LLM text.
-- Next path: incremental ASR -> incremental LLM -> phrase chunker -> incremental TTS queue.
+- Next path: incremental ASR utterance boundary -> incremental LLM -> phrase chunker -> incremental TTS queue.
 
 Main latency goal:
 
@@ -205,6 +206,7 @@ node --test scripts/deep-response-server.test.mjs
 Acceptance:
 - First `assistant_phrase` appears before LLM stream is complete.
 - First `audio_chunk` appears before final assistant text is complete.
+- LLM token reading continues while first phrase TTS synthesis is still active; TTS does not block the LLM stream.
 - Abort cancels TTS queue and no stale generation audio is yielded.
 - No user-operated Watch testing.
 
@@ -212,6 +214,8 @@ Completed evidence:
 - Created `scripts/deep-response/pipeline/phrase-chunker.mjs`.
 - Created `scripts/deep-response/pipeline/tts-queue.mjs`.
 - Added `VoicePipeline.streamCascadeTurn()` for mock ASR/LLM/TTS cascade.
+- Reworked `VoicePipeline.streamCascadeTurn()` to run LLM token reading and phrase TTS concurrently through internal async queues, while preserving ordered phrase synthesis.
+- Added regression coverage proving the second LLM text delta is emitted while the first phrase TTS stream is still open.
 - Verified:
 
 ```bash
@@ -220,8 +224,10 @@ node --test scripts/deep-response-watch-ui.test.mjs scripts/test-deep-response-s
 ```
 
 Latest local result:
-- `30/30` S1 required tests passed.
-- `34/34` related DeepResponse regression tests passed.
+- `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs`: `7/7` passed.
+- `node --test scripts/deep-response-server.test.mjs`: `23/23` passed.
+- `node --test scripts/test-deep-response-http-smoke.test.mjs scripts/test-deep-response-http-conversation.test.mjs scripts/test-deep-response-cascade-provider.test.mjs`: `8/8` passed.
+- `npm run test:node`: `123/123` passed.
 
 ### Milestone S2: Real Provider Cascade Harness
 

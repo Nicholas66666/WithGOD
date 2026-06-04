@@ -158,66 +158,126 @@ export class VoicePipeline {
     }
 
     const phraseChunker = createPhraseChunker({ maxChars: phraseMaxChars });
+    const outputQueue = createAsyncQueue();
+    const phraseQueue = createAsyncQueue();
     let llmTiming = {};
     let assistantText = "";
+    let aborted = false;
 
-    for await (const event of this.llm.streamTokens({
-      transcript: asrResult.transcript,
-      context,
-      messages: buildCompleteReplyMessages(asrResult.transcript, context),
-      signal
-    })) {
-      if (signal?.aborted) {
-        yield { type: "turn_aborted", turnID, generationID };
-        return;
+    const llmTask = (async () => {
+      try {
+        for await (const event of this.llm.streamTokens({
+          transcript: asrResult.transcript,
+          context,
+          messages: buildCompleteReplyMessages(asrResult.transcript, context),
+          signal
+        })) {
+          if (signal?.aborted) {
+            aborted = true;
+            outputQueue.push({ type: "turn_aborted", turnID, generationID });
+            return;
+          }
+
+          if (event.type === "done") {
+            llmTiming = event.timing || llmTiming;
+            continue;
+          }
+
+          const delta = event.delta || event.text || "";
+          if (!delta) {
+            continue;
+          }
+
+          assistantText += delta;
+          outputQueue.push({
+            type: "assistant_text_delta",
+            turnID,
+            generationID,
+            delta
+          });
+
+          for (const phrase of phraseChunker.push(delta)) {
+            outputQueue.push({
+              type: "assistant_phrase",
+              turnID,
+              generationID,
+              phraseIndex: phrase.index,
+              text: phrase.text,
+              reason: phrase.reason
+            });
+            phraseQueue.push({ index: phrase.index, text: phrase.text });
+          }
+        }
+
+        for (const phrase of phraseChunker.flush()) {
+          outputQueue.push({
+            type: "assistant_phrase",
+            turnID,
+            generationID,
+            phraseIndex: phrase.index,
+            text: phrase.text,
+            reason: phrase.reason
+          });
+          phraseQueue.push({ index: phrase.index, text: phrase.text });
+        }
+      } finally {
+        phraseQueue.close();
       }
+    })();
 
-      if (event.type === "done") {
-        llmTiming = event.timing || llmTiming;
-        continue;
-      }
-
-      const delta = event.delta || event.text || "";
-      if (!delta) {
-        continue;
-      }
-
-      assistantText += delta;
-      yield {
-        type: "assistant_text_delta",
+    const ttsTask = (async () => {
+      for await (const event of streamTTSQueue(this.tts, {
         turnID,
         generationID,
-        delta
-      };
-
-      for (const phrase of phraseChunker.push(delta)) {
-        yield* this.streamCascadePhrase({ phrase, turnID, generationID, signal });
+        phrases: phraseQueue,
+        signal
+      })) {
+        if (event.type === "audio_chunk" || event.type === "tts_queue_aborted") {
+          outputQueue.push(event);
+        }
+        if (event.type === "tts_queue_aborted") {
+          aborted = true;
+          return;
+        }
       }
+    })();
+
+    const finalTask = (async () => {
+      try {
+        await llmTask;
+        await ttsTask;
+        if (!aborted && !signal?.aborted) {
+          const timing = {
+            ...asrResult.timing,
+            ...llmTiming,
+            voice_pipeline_total_ms: Math.round(this.clock() - startedAt)
+          };
+
+          outputQueue.push({
+            type: "timing",
+            turnID,
+            generationID,
+            timing
+          });
+          outputQueue.push({
+            type: "turn_done",
+            turnID,
+            generationID,
+            transcript: asrResult.transcript,
+            assistantText
+          });
+        }
+        outputQueue.close();
+      } catch (error) {
+        phraseQueue.close();
+        outputQueue.fail(error);
+      }
+    })();
+
+    for await (const event of outputQueue) {
+      yield event;
     }
-
-    for (const phrase of phraseChunker.flush()) {
-      yield* this.streamCascadePhrase({ phrase, turnID, generationID, signal });
-    }
-
-    const timing = {
-      ...asrResult.timing,
-      ...llmTiming,
-      voice_pipeline_total_ms: Math.round(this.clock() - startedAt)
-    };
-
-    yield {
-      type: "timing",
-      turnID,
-      generationID,
-      timing
-    };
-    yield {
-      type: "turn_done",
-      turnID,
-      generationID,
-      transcript: asrResult.transcript,
-      assistantText
-    };
+    await finalTask;
   }
 
   async streamCascadeASR({ audioChunks, signal } = {}) {
@@ -678,6 +738,70 @@ function removeRepeatedPrefix(text, prefix) {
 
 function prefixTiming(timing = {}, prefix) {
   return Object.fromEntries(Object.entries(timing).map(([key, value]) => [`${prefix}${key}`, value]));
+}
+
+function createAsyncQueue() {
+  const values = [];
+  const waiters = [];
+  let closed = false;
+  let failure = null;
+
+  function settleWaiter() {
+    const waiter = waiters.shift();
+    if (!waiter) {
+      return;
+    }
+    if (failure) {
+      waiter.reject(failure);
+    } else if (values.length > 0) {
+      waiter.resolve({ value: values.shift(), done: false });
+    } else {
+      waiter.resolve({ value: undefined, done: true });
+    }
+  }
+
+  return {
+    push(value) {
+      if (closed || failure) {
+        return;
+      }
+      values.push(value);
+      settleWaiter();
+    },
+    close() {
+      if (closed) {
+        return;
+      }
+      closed = true;
+      while (waiters.length > 0 && values.length === 0) {
+        settleWaiter();
+      }
+    },
+    fail(error) {
+      failure = error;
+      while (waiters.length > 0) {
+        settleWaiter();
+      }
+    },
+    [Symbol.asyncIterator]() {
+      return {
+        next() {
+          if (failure) {
+            return Promise.reject(failure);
+          }
+          if (values.length > 0) {
+            return Promise.resolve({ value: values.shift(), done: false });
+          }
+          if (closed) {
+            return Promise.resolve({ value: undefined, done: true });
+          }
+          return new Promise((resolve, reject) => {
+            waiters.push({ resolve, reject });
+          });
+        }
+      };
+    }
+  };
 }
 
 async function* toAsyncIterable(chunks) {
