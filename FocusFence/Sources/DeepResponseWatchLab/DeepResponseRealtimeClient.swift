@@ -78,6 +78,27 @@ final class DeepResponseRealtimeClient: ObservableObject {
         }
     }
 
+    func resetDebugViewState() {
+        lastError = nil
+        lastErrorCode = nil
+        connectionStage = "idle"
+        receivedAudioBytes = 0
+        receivedAudioChunks = 0
+        uploadedAudioChunks = 0
+        uploadedAudioBytes = 0
+        uploadedEncodedBytes = 0
+        lastTurnTranscript = nil
+        lastTurnText = nil
+        lastTurnFirstText = nil
+        lastTurnFollowupText = nil
+        lastTurnTotalMs = nil
+        lastTurnTiming = nil
+        lastClientTimingText = nil
+        lastAbortTimingText = nil
+        lastSessionEndText = nil
+        lastMemoryStatusText = nil
+    }
+
     func checkHealth() async {
         do {
             connectionStage = "health:start"

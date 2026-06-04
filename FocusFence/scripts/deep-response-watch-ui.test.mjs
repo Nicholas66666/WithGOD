@@ -176,6 +176,24 @@ test("DeepResponse Watch resets reusable debug state when the view appears", () 
   assert.match(appearBlock, /conversationState = \.listening/);
 });
 
+test("DeepResponse Watch clears stale client diagnostics when the view appears", () => {
+  const appearBlock = debugViewSource.match(/\.onAppear \{[\s\S]*?\n        \}/)?.[0] || "";
+  assert.match(appearBlock, /client\.resetDebugViewState\(\)/);
+
+  const resetFunction = realtimeClientSource.match(/func resetDebugViewState\(\) \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(resetFunction, /lastError = nil/);
+  assert.match(resetFunction, /lastErrorCode = nil/);
+  assert.match(resetFunction, /connectionStage = "idle"/);
+  assert.match(resetFunction, /receivedAudioBytes = 0/);
+  assert.match(resetFunction, /uploadedAudioChunks = 0/);
+  assert.match(resetFunction, /lastTurnTranscript = nil/);
+  assert.match(resetFunction, /lastTurnText = nil/);
+  assert.match(resetFunction, /lastClientTimingText = nil/);
+  assert.match(resetFunction, /lastAbortTimingText = nil/);
+  assert.match(resetFunction, /lastSessionEndText = nil/);
+  assert.match(resetFunction, /lastMemoryStatusText = nil/);
+});
+
 test("DeepResponse Watch marks server wait as assistantThinking before playback", () => {
   const finishFunction = debugViewSource.match(/private func finishRecordingTurn\(reason: String\) async \{[\s\S]*?\n    \}/)?.[0] || "";
   assert.match(finishFunction, /isWaitingForResponse = true[\s\S]*?conversationState = \.assistantThinking[\s\S]*?await client\.finishHTTPSessionTurn\(\)/);
