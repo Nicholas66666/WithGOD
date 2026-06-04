@@ -51,6 +51,9 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private var httpUploadFailureCount = 0
     private var isDrainingHTTPUploads = false
     private var httpStopStartedAt: Date?
+    private var httpUploadDrainMs: Int?
+    private var httpInputStopResponseMs: Int?
+    private var httpFirstTextMs: Int?
     private var httpFirstAudioMs: Int?
     private let httpUploadBatchBytes = 32_000
     private var httpSessionPollTask: Task<Void, Error>?
@@ -268,6 +271,9 @@ final class DeepResponseRealtimeClient: ObservableObject {
         httpUploadFailureCount = 0
         isDrainingHTTPUploads = false
         httpStopStartedAt = nil
+        httpUploadDrainMs = nil
+        httpInputStopResponseMs = nil
+        httpFirstTextMs = nil
         httpFirstAudioMs = nil
         httpSessionPollTask?.cancel()
         httpSessionPollTask = Task { [weak self] in
@@ -399,7 +405,8 @@ final class DeepResponseRealtimeClient: ObservableObject {
             flushHTTPSessionAudio()
             await waitForPendingHTTPSessionUploads()
             let uploadMs = Self.elapsedMs(since: stopStartedAt)
-            lastClientTimingText = "upl \(uploadMs)"
+            httpUploadDrainMs = uploadMs
+            updateHTTPClientTimingText()
             guard httpUploadFailureCount == 0 else {
                 lastError = "Upload failed \(httpUploadFailureCount)"
                 connectionStage = "http_session:upload_failed"
@@ -422,10 +429,11 @@ final class DeepResponseRealtimeClient: ObservableObject {
             let stopped = try JSONDecoder().decode(DeepResponseHTTPSessionInputStopResponse.self, from: data)
             httpGenerationID = stopped.generationID
             let inputStopMs = Self.elapsedMs(since: stopStartedAt)
-            lastClientTimingText = "upl \(uploadMs) · stop \(inputStopMs)"
+            httpInputStopResponseMs = inputStopMs
+            updateHTTPClientTimingText()
             try await httpSessionPollTask?.value
             let doneMs = Self.elapsedMs(since: stopStartedAt)
-            lastClientTimingText = "upl \(uploadMs) · first \(httpFirstAudioMs ?? 0) · done \(doneMs)"
+            updateHTTPClientTimingText(doneMs: doneMs)
             connectionStage = "http_session:done"
         } catch {
             setError("Session: \(Self.describe(error))", error: error)
@@ -459,7 +467,11 @@ final class DeepResponseRealtimeClient: ObservableObject {
         var isDone = false
         while !isDone && Date().timeIntervalSince(startedAt) < 120 {
             let eventsURL = try Self.httpSessionURL(path: "/deep-response/sessions/\(sessionID)/events?cursor=\(httpEventCursor)")
-            let (eventData, eventResponse) = try await URLSession.shared.data(from: eventsURL)
+            let audioURL = try Self.httpSessionURL(path: "/deep-response/sessions/\(sessionID)/audio?cursor=\(httpOutputAudioCursor)")
+            async let eventResult = URLSession.shared.data(from: eventsURL)
+            async let audioResult = URLSession.shared.data(from: audioURL)
+
+            let (eventData, eventResponse) = try await eventResult
             if (eventResponse as? HTTPURLResponse)?.statusCode == 200 {
                 let batch = try JSONDecoder().decode(DeepResponseHTTPSessionEventsResponse.self, from: eventData)
                 httpEventCursor = batch.nextCursor
@@ -471,8 +483,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
                 }
             }
 
-            let audioURL = try Self.httpSessionURL(path: "/deep-response/sessions/\(sessionID)/audio?cursor=\(httpOutputAudioCursor)")
-            let (audioData, audioResponse) = try await URLSession.shared.data(from: audioURL)
+            let (audioData, audioResponse) = try await audioResult
             if (audioResponse as? HTTPURLResponse)?.statusCode == 200 {
                 let batch = try JSONDecoder().decode(DeepResponseHTTPSessionAudioResponse.self, from: audioData)
                 httpOutputAudioCursor = batch.nextCursor
@@ -490,8 +501,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
                 if !playbackAudio.isEmpty {
                     if httpFirstAudioMs == nil, let stopStartedAt = httpStopStartedAt {
                         httpFirstAudioMs = Self.elapsedMs(since: stopStartedAt)
-                        let uploadText = lastClientTimingText ?? "upl ?"
-                        lastClientTimingText = "\(uploadText) · first \(httpFirstAudioMs ?? 0)"
+                        updateHTTPClientTimingText()
                     }
                     player.enqueuePCM16(playbackAudio, sampleRate: playbackSampleRate ?? 24_000)
                 }
@@ -516,6 +526,10 @@ final class DeepResponseRealtimeClient: ObservableObject {
                 lastTurnFollowupText = event.delta
             } else {
                 lastTurnFirstText = event.delta
+                if httpFirstTextMs == nil, let stopStartedAt = httpStopStartedAt {
+                    httpFirstTextMs = Self.elapsedMs(since: stopStartedAt)
+                    updateHTTPClientTimingText()
+                }
             }
             lastTurnText = [lastTurnFirstText, lastTurnFollowupText]
                 .compactMap { $0 }
@@ -527,6 +541,26 @@ final class DeepResponseRealtimeClient: ObservableObject {
         } else if event.type == "error" {
             lastError = event.message ?? "HTTP session error"
         }
+    }
+
+    private func updateHTTPClientTimingText(doneMs: Int? = nil) {
+        var parts: [String] = []
+        if let httpUploadDrainMs {
+            parts.append("upl \(httpUploadDrainMs)")
+        }
+        if let httpInputStopResponseMs {
+            parts.append("stop \(httpInputStopResponseMs)")
+        }
+        if let httpFirstTextMs {
+            parts.append("txt \(httpFirstTextMs)")
+        }
+        if let httpFirstAudioMs {
+            parts.append("first \(httpFirstAudioMs)")
+        }
+        if let doneMs {
+            parts.append("done \(doneMs)")
+        }
+        lastClientTimingText = parts.isEmpty ? nil : parts.joined(separator: " · ")
     }
 
     func connect() async throws {
