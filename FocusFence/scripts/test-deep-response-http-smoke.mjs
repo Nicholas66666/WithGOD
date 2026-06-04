@@ -356,6 +356,10 @@ function normalizeReplyText(text) {
     .trim();
 }
 
+function hasClosureMemoryText(text) {
+  return /我先安静到这里|愿你平安|拜拜|再见|结束对话|bye|goodbye/iu.test(String(text || ""));
+}
+
 export async function runHTTPIdleProbe({
   endpoint,
   idleTimeoutMs = 150,
@@ -412,7 +416,8 @@ export async function runHTTPIdleProbe({
     .join("");
   const sawIdleGoodbyeDone = events.some((event) => event.type === "audio_done" && event.reason === "idle_goodbye_complete");
   const idleGoodbyeOK = !idleGoodbye || (idleGoodbyeText.length > 0 && sawIdleGoodbyeDone && audioChunks.length > 0);
-  const memoryOK = !expectMemoryPersisted || memoryCandidate?.persisted === true;
+  const memoryClosureClean = !memoryCandidate || !hasClosureMemoryText(memoryCandidate.summary);
+  const memoryOK = !expectMemoryPersisted || (memoryCandidate?.persisted === true && memoryClosureClean);
   return {
     ok: sawIdleEnd && rejected.status === 409 && rejectedBody?.error === "session_ended" && idleGoodbyeOK && memoryOK,
     sessionID: created.sessionID,
@@ -433,10 +438,13 @@ export async function runHTTPIdleProbe({
       persisted: memoryCandidate.persisted,
       store: memoryCandidate.store,
       reason: memoryCandidate.reason,
-      turnCount: memoryCandidate.turnCount
+      turnCount: memoryCandidate.turnCount,
+      summary: memoryCandidate.summary || "",
+      closureClean: memoryClosureClean
     } : null,
     expectations: {
-      memoryPersisted: expectMemoryPersisted
+      memoryPersisted: expectMemoryPersisted,
+      memoryClosureClean: idleGoodbye && expectMemoryPersisted
     }
   };
 }

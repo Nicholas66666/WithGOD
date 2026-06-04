@@ -242,6 +242,8 @@ test("runHTTPIdleProbe can require gentle idle goodbye audio before session end"
     assert.equal(summary.memoryCandidate.persisted, true);
     assert.equal(summary.memoryCandidate.store, "jsonl");
     assert.equal(summary.memoryCandidate.reason, "idle_timeout");
+    assert.equal(typeof summary.memoryCandidate.summary, "string");
+    assert.doesNotMatch(summary.memoryCandidate.summary, /我先安静到这里|愿你平安|拜拜/u);
     assert.equal(existsSync(memoryPath), true);
   } finally {
     await server.close();

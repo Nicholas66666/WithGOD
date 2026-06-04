@@ -1923,6 +1923,22 @@ Latest Watch active-recorder session-end gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This is a WatchLab/state-model self-test update; no server deployment or user-operated Watch test was required.
 
+Latest remote idle-memory summary gate:
+- Strengthened the standard Fire/Volcengine HTTP smoke harness so idle timeout memory validation checks the persisted summary itself, not only the existence of `memory_candidate`.
+- `runHTTPIdleProbe()` now returns `memoryCandidate.summary` and `memoryCandidate.closureClean`.
+- When `--idle-goodbye` and `--expect-idle-memory-persisted` are used, the smoke probe now fails if the idle goodbye / closure text appears in the memory summary.
+- Verification:
+  - RED `node --test --test-name-pattern "gentle idle goodbye" scripts/test-deep-response-http-smoke.test.mjs` first failed because `summary.memoryCandidate.summary` was not exposed.
+  - Targeted smoke harness test passed after the fix: `1/1`.
+  - `node --test scripts/test-deep-response-http-smoke.test.mjs`: `8/8` passed.
+  - `npm run test:node`: `199/199` passed.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `220ms`, `207ms`; idle `memoryCandidate.summary: ""`, `closureClean: true`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `215ms`, `226ms`, `210ms`, `211ms`, `207ms`, `209ms`, `230ms`, `208ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This remains HTTP-only and completely self-tested; no user-operated Watch test is part of this gate.
+
 - Unit and server tests:
   - `npm run test:node`
 
