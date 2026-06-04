@@ -24,6 +24,7 @@ export function parseHTTPConversationArgs(argv) {
     expectMemoryRecalled: false,
     forbidIdenticalConsecutiveReplies: false,
     maxOpeningStemRepeats: 0,
+    maxAssistantReplyChars: 0,
     forbiddenTextPatterns: [],
     verbose: false
   };
@@ -75,6 +76,9 @@ export function parseHTTPConversationArgs(argv) {
       args.forbidIdenticalConsecutiveReplies = true;
     } else if (arg === "--max-opening-stem-repeats") {
       args.maxOpeningStemRepeats = Number(argv[index + 1] || 0);
+      index += 1;
+    } else if (arg === "--max-assistant-reply-chars") {
+      args.maxAssistantReplyChars = Number(argv[index + 1] || 0);
       index += 1;
     } else if (arg === "--forbid-text-pattern") {
       args.forbiddenTextPatterns.push(argv[index + 1] || "");
@@ -246,6 +250,12 @@ export async function runHTTPConversationProbe(args) {
   if (repeatedReplyFailures.length > 0) {
     throw new Error(`Repeated conversation reply failures: ${JSON.stringify(repeatedReplyFailures, null, 2)}`);
   }
+  const longReplyFailures = collectLongConversationReplyFailures(turns, {
+    maxChars: args.maxAssistantReplyChars
+  });
+  if (longReplyFailures.length > 0) {
+    throw new Error(`Long conversation reply failures: ${JSON.stringify(longReplyFailures, null, 2)}`);
+  }
 
   let lateAudioRejected = null;
   if (args.expectLateAudio409) {
@@ -280,6 +290,7 @@ export async function runHTTPConversationProbe(args) {
     forbiddenTextFailures,
     repeatedOpeningStemFailures,
     repeatedReplyFailures,
+    longReplyFailures,
     lateAudioRejected,
     elapsedMs: Math.round(performance.now() - startedAt),
     turns
@@ -448,8 +459,33 @@ export function collectRepeatedConversationReplyFailures(turns = []) {
   return failures;
 }
 
+export function collectLongConversationReplyFailures(turns = [], { maxChars = 0 } = {}) {
+  const limit = Number(maxChars || 0);
+  if (!Number.isFinite(limit) || limit <= 0) {
+    return [];
+  }
+  const failures = [];
+  for (const turn of turns || []) {
+    const text = String(turn?.text || "").trim();
+    const charCount = countConversationReplyChars(text);
+    if (charCount > limit) {
+      failures.push({
+        turnID: turn?.turnID || "",
+        maxChars: limit,
+        charCount,
+        text
+      });
+    }
+  }
+  return failures;
+}
+
 function normalizeConversationReplyText(text) {
   return String(text || "").replace(/\s+/g, "").trim();
+}
+
+function countConversationReplyChars(text) {
+  return [...String(text || "").replace(/\s+/g, "")].length;
 }
 
 function extractOpeningStem(text) {
@@ -542,6 +578,8 @@ Options:
                         Require session creation to recall persisted memory into context.
   --forbid-identical-consecutive-replies
                         Fail if any assistant replies in the same session are identical.
+  --max-assistant-reply-chars <n>
+                        Fail if any assistant reply exceeds this spoken character budget.
   --forbid-text-pattern <regex>
                         Fail if any turn text or memory summary matches the regex. Repeatable.
   --verbose             Print turn event batches.

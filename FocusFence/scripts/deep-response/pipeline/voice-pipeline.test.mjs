@@ -1013,6 +1013,53 @@ test("VoicePipeline streamCascadeTurn stops queuing TTS after short spoken reply
   assert.equal(timing.timing.reply_truncated_for_length, 1);
 });
 
+test("VoicePipeline streamCascadeTurn shortens an overlong first phrase before speech", async () => {
+  const spokenTexts = [];
+  const asr = {
+    async *transcribeStream() {
+      yield { type: "transcript_partial", transcript: "今天我有点累，想听一句安慰的话。" };
+      yield { type: "transcript_final", transcript: "今天我有点累，想听一句安慰的话。" };
+    }
+  };
+  const llm = {
+    async *streamTokens() {
+      yield {
+        delta: "主会看顾你的。“我的神必照他荣耀的丰富，在基督耶稣里使你一切所需用的都充足。”"
+      };
+      yield { type: "done", timing: { llm_total_ms: 900 } };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      spokenTexts.push(text);
+      yield { type: "audio_chunk", audioChunk: Buffer.from(text), sampleRate: 24000 };
+      yield { type: "done", timing: { tts_first_audio_ms: 10 } };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 1, 2, 3]) });
+  const events = [];
+  for await (const event of pipeline.streamCascadeTurn({
+    audioChunks: [Buffer.from("voice")],
+    maxSpokenReplyChars: 48
+  })) {
+    events.push(event);
+  }
+
+  const deltas = events
+    .filter((event) => event.type === "assistant_text_delta")
+    .map((event) => event.delta);
+  const phrases = events
+    .filter((event) => event.type === "assistant_phrase")
+    .map((event) => event.text);
+  const timing = events.find((event) => event.type === "timing");
+
+  assert.deepEqual(deltas, ["主会看顾你的。"]);
+  assert.deepEqual(phrases, ["主会看顾你的。"]);
+  assert.deepEqual(spokenTexts, ["主会看顾你的。"]);
+  assert.equal(timing.timing.reply_truncated_for_length, 1);
+});
+
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

@@ -102,7 +102,7 @@ Latest full self-test update:
 - Added conversation-level `--forbid-text-pattern` support so long continuous probes reject lookup-style, harsh repeated-comfort, and mechanical tired/fatigue replies in turn text and memory summaries, not only in the 2-turn smoke.
 - Added memory recall sanitization for lookup-style, harsh repeated-comfort, and mechanical tired/fatigue phrases before persisted summaries enter LLM context.
 - Added VoicePipeline output normalization so lookup-style, harsh repeated-comfort, and mechanical tired/fatigue openings are corrected before `assistant_text_delta`, `assistant_phrase`, and TTS audio.
-- Latest `npm run deep:selftest:full`: passed; Node `180/180`, nested Fire/Volcengine smoke stop-to-first-audio `239ms` / `221ms`, 8-turn continuous gate `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
+- Latest `npm run deep:selftest:full`: passed; Node `182/182`, nested Fire/Volcengine smoke stop-to-first-audio `143ms` / `174ms`, 8-turn continuous gate `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, `longReplyFailures: []`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
 
 ## Next Target: Full Streaming Pipeline
 
@@ -1663,6 +1663,25 @@ Latest full-session repeated reply gate:
   - Fire/Volcengine 8-turn stop-to-first-audio: `1728ms`, `1803ms`, `5119ms`, `1924ms`, `1721ms`, `1947ms`, `1921ms`, `1809ms`.
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - Observed follow-up risk: one 8-turn run had a single long-tail first-audio outlier at `5119ms` and some replies still carried overly long scripture quotes. Treat latency-tail and quote-length hardening as the next self-testable quality targets.
+
+Latest overlong scripture/reply length gate:
+- Strengthened the spoken reply budget without adding any Watch-side manual test dependency.
+- VoicePipeline now drops an overlong quoted scripture phrase after a short spoken lead-in instead of emitting that quote as a second spoken phrase.
+- The 8-turn Fire/Volcengine conversation probe now accepts `--max-assistant-reply-chars 48` and fails with `longReplyFailures` if any assistant reply exceeds the spoken-text budget after whitespace normalization.
+- The standard `deep:volc:conversation:full` package script includes this max-reply gate, so it is part of `npm run deep:selftest:full`.
+- Verification:
+  - RED `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs` first failed because the pipeline emitted the long quote as a second phrase.
+  - RED `node --test scripts/test-deep-response-http-conversation.test.mjs` first failed because the conversation script did not export or enforce `collectLongConversationReplyFailures`.
+  - `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/test-deep-response-http-conversation.test.mjs`: `30/30` passed.
+  - `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/test-deep-response-http-conversation.test.mjs scripts/package-scripts.test.mjs`: `35/35` passed.
+  - `npm run test:node`: `182/182` passed.
+  - Fire/Volcengine ECS was updated by base64-over-SSH file sync and `systemctl restart deep-response`; service returned `active`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Fire/Volcengine smoke stop-to-first-audio: `143ms`, `174ms`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Fire/Volcengine 8-turn stop-to-first-audio: `1953ms`, `1990ms`, `1812ms`, `2322ms`, `2334ms`, `2004ms`, `1876ms`, `1908ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This remains HTTP-only and completely self-tested; no user-operated Watch test is part of this gate.
 
 - Unit and server tests:
   - `npm run test:node`

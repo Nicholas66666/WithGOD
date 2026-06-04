@@ -6,6 +6,7 @@ import {
   collectForbiddenConversationTextFailures,
   collectRepeatedOpeningStemFailures,
   collectRepeatedConversationReplyFailures,
+  collectLongConversationReplyFailures,
   parseHTTPConversationArgs,
   summarizeTurn
 } from "./test-deep-response-http-conversation.mjs";
@@ -33,6 +34,7 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
     "--expect-memory-recalled",
     "--forbid-identical-consecutive-replies",
     "--max-opening-stem-repeats", "2",
+    "--max-assistant-reply-chars", "48",
     "--forbid-text-pattern", "[:：]\\s*$|你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|是还想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)"
   ]);
 
@@ -45,6 +47,7 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
   assert.equal(args.expectMemoryRecalled, true);
   assert.equal(args.forbidIdenticalConsecutiveReplies, true);
   assert.equal(args.maxOpeningStemRepeats, 2);
+  assert.equal(args.maxAssistantReplyChars, 48);
   assert.deepEqual(args.forbiddenTextPatterns, ["[:：]\\s*$|你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|是还想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)"]);
 });
 
@@ -224,6 +227,22 @@ test("collectRepeatedConversationReplyFailures flags identical replies anywhere 
       turnID: "turn-3",
       previousTurnID: "turn-1",
       repeatedText: "你还没说完呢，是不是累得慌？“主赐能力给软弱的人。”"
+    }
+  ]);
+});
+
+test("collectLongConversationReplyFailures flags overlong assistant replies", () => {
+  const failures = collectLongConversationReplyFailures([
+    { turnID: "turn-1", text: "主会看顾你的。“我的神必照他荣耀的丰富，在基督耶稣里使你一切所需用的都充足，也继续扶着你往前走。”" },
+    { turnID: "turn-2", text: "我陪你慢下来。“我的恩典够你用的。”" }
+  ], { maxChars: 48 });
+
+  assert.deepEqual(failures, [
+    {
+      turnID: "turn-1",
+      maxChars: 48,
+      charCount: 49,
+      text: "主会看顾你的。“我的神必照他荣耀的丰富，在基督耶稣里使你一切所需用的都充足，也继续扶着你往前走。”"
     }
   ]);
 });

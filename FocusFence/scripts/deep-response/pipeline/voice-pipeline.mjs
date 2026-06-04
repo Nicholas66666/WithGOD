@@ -204,6 +204,10 @@ export class VoicePipeline {
               if (!phraseText) {
                 continue;
               }
+              if (shouldDropLongQuotedPhrase(spokenReplyChars, phraseText)) {
+                replyTruncatedForLength = true;
+                return;
+              }
               if (wouldExceedSpokenReplyLimit(spokenReplyChars, phraseText, maxSpokenReplyChars)) {
                 replyTruncatedForLength = true;
                 return;
@@ -232,6 +236,10 @@ export class VoicePipeline {
             const phraseText = normalizeAssistantPhraseText(phrase.text, { context });
             if (!phraseText) {
               continue;
+            }
+            if (shouldDropLongQuotedPhrase(spokenReplyChars, phraseText)) {
+              replyTruncatedForLength = true;
+              break;
             }
             if (wouldExceedSpokenReplyLimit(spokenReplyChars, phraseText, maxSpokenReplyChars)) {
               replyTruncatedForLength = true;
@@ -805,6 +813,17 @@ function wouldExceedSpokenReplyLimit(currentChars, nextText, maxChars) {
     return false;
   }
   return currentChars > 0 && currentChars + countSpokenChars(nextText) > limit;
+}
+
+function shouldDropLongQuotedPhrase(currentChars, text, { maxQuotedChars = 24 } = {}) {
+  if (currentChars <= 0) {
+    return false;
+  }
+  const cleaned = String(text || "").trim();
+  if (!/^[“"']/.test(cleaned)) {
+    return false;
+  }
+  return countSpokenChars(cleaned) > maxQuotedChars;
 }
 
 function countSpokenChars(text) {
