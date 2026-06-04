@@ -54,19 +54,11 @@ struct DeepResponseDebugView: View {
                         .minimumScaleFactor(0.65)
                         .multilineTextAlignment(.center)
                 }
-                if let first = client.lastTurnFirstText {
-                    Text("first: \(first)")
+                if let reply = client.lastTurnText, !reply.isEmpty {
+                    Text("god: \(reply)")
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(.primary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.65)
-                        .multilineTextAlignment(.center)
-                }
-                if let followup = client.lastTurnFollowupText {
-                    Text("more: \(followup)")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .lineLimit(3)
                         .minimumScaleFactor(0.65)
                         .multilineTextAlignment(.center)
                 }
@@ -77,14 +69,6 @@ struct DeepResponseDebugView: View {
                 }
                 if let timing = client.lastTurnTiming {
                     Text("asr \(timing.transcriptFinalMs ?? 0) · llm \(timing.llmFirstPhraseMs ?? 0) · tts \(timing.ttsFirstAudioMs ?? timing.firstTTSFirstAudioMs ?? 0)")
-                        .font(.caption2.monospacedDigit())
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.55)
-                }
-                if let timing = client.lastTurnTiming,
-                   timing.followupLLMFirstPhraseMs != nil || timing.followupTTSFirstAudioMs != nil {
-                    Text("more llm \(timing.followupLLMFirstPhraseMs ?? 0) · tts \(timing.followupTTSFirstAudioMs ?? 0)")
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
