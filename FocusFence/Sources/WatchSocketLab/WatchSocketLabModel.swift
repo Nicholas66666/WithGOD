@@ -7,6 +7,7 @@ final class WatchSocketLabModel: ObservableObject {
     @Published private(set) var audioState = "inactive"
     @Published private(set) var route = "-"
     @Published private(set) var connectMs: Int?
+    @Published private(set) var healthStatus = "-"
     @Published private(set) var firstBinaryRTTMs: Int?
     @Published private(set) var framesSent = 0
     @Published private(set) var framesReceived = 0
@@ -51,11 +52,14 @@ final class WatchSocketLabModel: ObservableObject {
                 let activated = try await audio.activateVoiceChat()
                 audioState = activated.label
                 route = activated.route
+                lastError = ""
                 state = "audio:active"
                 appendLog("audio_active", [
                     "run_id": runID,
                     "audio_session": activated.label,
                     "route": activated.route,
+                    "input_sample_rate": activated.inputSampleRate,
+                    "output_sample_rate": activated.outputSampleRate,
                 ])
             } catch {
                 setError("audio_error", error)
@@ -88,6 +92,48 @@ final class WatchSocketLabModel: ObservableObject {
                 client.startReceiving()
             } catch {
                 setError("connect_error", error)
+            }
+        }
+    }
+
+    func checkHealth() {
+        Task {
+            guard var components = URLComponents(string: wssURLString) else {
+                lastError = "Bad WSS URL"
+                appendLog("health_error", ["run_id": runID, "error": "bad_url"])
+                return
+            }
+            components.scheme = "https"
+            components.path = "/health"
+            guard let url = components.url else {
+                lastError = "Bad health URL"
+                appendLog("health_error", ["run_id": runID, "error": "bad_health_url"])
+                return
+            }
+
+            do {
+                state = "health:start"
+                healthStatus = "checking"
+                let started = Date()
+                let (data, response) = try await URLSession.shared.data(from: url)
+                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+                let elapsedMs = Int(Date().timeIntervalSince(started) * 1_000)
+                let body = String(data: data.prefix(120), encoding: .utf8) ?? ""
+                healthStatus = "\(statusCode) \(elapsedMs)ms"
+                state = statusCode == 200 ? "health:ok" : "health:error"
+                if statusCode == 200 {
+                    lastError = ""
+                }
+                appendLog("health_result", [
+                    "run_id": runID,
+                    "status": statusCode,
+                    "elapsed_ms": elapsedMs,
+                    "body": body,
+                    "url": url.absoluteString,
+                ])
+            } catch {
+                healthStatus = "fail"
+                setError("health_error", error)
             }
         }
     }
@@ -223,6 +269,7 @@ final class WatchSocketLabModel: ObservableObject {
             "audio_session": audioState,
             "background_modes": ["audio"],
             "connect_ms": connectMs ?? -1,
+            "health_status": healthStatus,
             "first_binary_rtt_ms": firstBinaryRTTMs ?? -1,
             "duration_s": durationSeconds,
             "frames_sent": framesSent,

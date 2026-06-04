@@ -16,6 +16,7 @@ struct WatchSocketLabView: View {
                 metric("State", model.state)
                 metric("Audio", model.audioState)
                 metric("Route", model.route)
+                metric("Health", model.healthStatus)
                 metric("Connect", model.connectMs.map { "\($0) ms" } ?? "-")
                 metric("First RTT", model.firstBinaryRTTMs.map { "\($0) ms" } ?? "-")
                 metric("Sent", "\(model.framesSent)")
@@ -30,15 +31,18 @@ struct WatchSocketLabView: View {
                 }
 
                 HStack {
+                    Button("Health") { model.checkHealth() }
                     Button("Audio") { model.activateAudio() }
+                }
+                HStack {
                     Button("Connect") { model.connect() }
-                }
-                HStack {
                     Button("Echo") { model.startBinaryEcho() }
-                    Button("Abort") { model.simulateAbort() }
                 }
                 HStack {
+                    Button("Abort") { model.simulateAbort() }
                     Button("Stop") { model.stop() }
+                }
+                HStack {
                     Button("Summary") { model.markSummary() }
                 }
 
