@@ -12,6 +12,24 @@ export class DoubaoASRProvider {
   }
 
   async transcribe(audioChunks, { signal } = {}) {
+    let final = {
+      transcript: "",
+      timing: {},
+      connectID: ""
+    };
+    for await (const event of this.transcribeStream(audioChunks, { signal })) {
+      if (event.type === "transcript_final") {
+        final = {
+          transcript: event.transcript || "",
+          timing: event.timing || {},
+          connectID: event.connectID || ""
+        };
+      }
+    }
+    return final;
+  }
+
+  async *transcribeStream(audioChunks, { signal } = {}) {
     const startedAt = this.clock();
     const timing = {};
     const connectID = crypto.randomUUID();
@@ -26,16 +44,28 @@ export class DoubaoASRProvider {
     let transcript = "";
     let firstDelta = false;
     let endSent = false;
-    const done = new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => reject(new Error("doubao_asr_timeout")), this.timeoutMs);
-      const finish = (fn, value) => {
-        clearTimeout(timeout);
-        fn(value);
-      };
+    const queue = new AsyncEventQueue();
+    const timeout = setTimeout(() => queue.throw(new Error("doubao_asr_timeout")), this.timeoutMs);
+    const finish = () => {
+      clearTimeout(timeout);
+      queue.push({
+        type: "transcript_final",
+        transcript,
+        timing: { ...timing },
+        connectID
+      });
+      queue.end();
+    };
+    const fail = (error) => {
+      clearTimeout(timeout);
+      queue.throw(error);
+    };
+
+    try {
       client.onBinary = (payload) => {
         const parsed = parseVolcResponse(payload);
         if (parsed.error) {
-          finish(reject, new Error(parsed.error));
+          fail(new Error(parsed.error));
           return;
         }
         const text = extractTranscriptText(parsed.data);
@@ -45,22 +75,38 @@ export class DoubaoASRProvider {
             firstDelta = true;
             timing.first_transcript_delta_ms = elapsed(this.clock, startedAt);
           }
+          queue.push({
+            type: "transcript_delta",
+            transcript,
+            timing: { ...timing },
+            connectID
+          });
         }
         if (endSent && (parsed.isFinal || parsed.data?.result || parsed.data?.payload_msg?.result)) {
           timing.transcript_final_ms = elapsed(this.clock, startedAt);
-          finish(resolve);
+          finish();
         }
       };
       client.onText = (text) => {
         try {
           const data = JSON.parse(text);
           const next = extractTranscriptText(data);
-          if (next) {
+          if (next && next !== transcript) {
             transcript = next;
+            if (!firstDelta) {
+              firstDelta = true;
+              timing.first_transcript_delta_ms = elapsed(this.clock, startedAt);
+            }
+            queue.push({
+              type: "transcript_delta",
+              transcript,
+              timing: { ...timing },
+              connectID
+            });
           }
           if (endSent && (data.result || data.payload_msg?.result)) {
             timing.transcript_final_ms = elapsed(this.clock, startedAt);
-            finish(resolve);
+            finish();
           }
         } catch {
           // Binary protocol is the expected path.
@@ -68,38 +114,41 @@ export class DoubaoASRProvider {
       };
       client.onClose = ({ code, reason }) => {
         if (!timing.transcript_final_ms) {
-          finish(reject, new Error(`doubao_asr_closed ${code} ${reason}`.trim()));
+          fail(new Error(`doubao_asr_closed ${code} ${reason}`.trim()));
         }
       };
-      client.onError = (error) => finish(reject, error);
-    });
+      client.onError = (error) => fail(error);
 
-    client.sendBinary(buildDoubaoASRInitRequest({
-      appID: this.env.DOUBAO_SPEECH_APP_ID,
-      accessToken: this.env.DOUBAO_SPEECH_ACCESS_TOKEN,
-      reqID: crypto.randomUUID(),
-      modelName: this.env.DOUBAO_ASR_MODEL_NAME,
-      endWindowSizeMs: numberFromEnv(this.env, "DOUBAO_ASR_END_WINDOW_SIZE_MS", 800),
-      sampleRate: numberFromEnv(this.env, "DOUBAO_ASR_SAMPLE_RATE", 16000)
-    }));
-    timing.asr_init_ms = elapsed(this.clock, startedAt);
+      client.sendBinary(buildDoubaoASRInitRequest({
+        appID: this.env.DOUBAO_SPEECH_APP_ID,
+        accessToken: this.env.DOUBAO_SPEECH_ACCESS_TOKEN,
+        reqID: crypto.randomUUID(),
+        modelName: this.env.DOUBAO_ASR_MODEL_NAME,
+        endWindowSizeMs: numberFromEnv(this.env, "DOUBAO_ASR_END_WINDOW_SIZE_MS", 800),
+        sampleRate: numberFromEnv(this.env, "DOUBAO_ASR_SAMPLE_RATE", 16000)
+      }));
+      timing.asr_init_ms = elapsed(this.clock, startedAt);
 
-    for await (const chunk of toAsyncIterable(audioChunks)) {
-      if (signal?.aborted) {
-        throw new Error("deep_response_aborted");
-      }
-      client.sendBinary(buildDoubaoASRAudioRequest(chunk));
-    }
-    endSent = true;
-    client.sendBinary(buildDoubaoASREndRequest());
+      (async () => {
+        try {
+          for await (const chunk of toAsyncIterable(audioChunks)) {
+            if (signal?.aborted) {
+              throw new Error("deep_response_aborted");
+            }
+            client.sendBinary(buildDoubaoASRAudioRequest(chunk));
+          }
+          endSent = true;
+          client.sendBinary(buildDoubaoASREndRequest());
+        } catch (error) {
+          fail(error);
+        }
+      })();
 
-    try {
-      await done;
+      yield* queue;
     } finally {
+      clearTimeout(timeout);
       client.close();
     }
-
-    return { transcript, timing, connectID };
   }
 }
 
@@ -216,6 +265,61 @@ export function extractTranscriptText(data) {
     data.payload_msg?.utterances?.at?.(-1)?.text
   ];
   return candidates.find((value) => typeof value === "string" && value.trim())?.trim() || "";
+}
+
+class AsyncEventQueue {
+  constructor() {
+    this.items = [];
+    this.waiters = [];
+    this.closed = false;
+    this.error = null;
+  }
+
+  push(item) {
+    if (this.closed) {
+      return;
+    }
+    const waiter = this.waiters.shift();
+    if (waiter) {
+      waiter.resolve({ value: item, done: false });
+    } else {
+      this.items.push(item);
+    }
+  }
+
+  end() {
+    this.closed = true;
+    while (this.waiters.length > 0) {
+      this.waiters.shift().resolve({ value: undefined, done: true });
+    }
+  }
+
+  throw(error) {
+    this.error = error;
+    this.closed = true;
+    while (this.waiters.length > 0) {
+      this.waiters.shift().reject(error);
+    }
+  }
+
+  [Symbol.asyncIterator]() {
+    return this;
+  }
+
+  next() {
+    if (this.items.length > 0) {
+      return Promise.resolve({ value: this.items.shift(), done: false });
+    }
+    if (this.error) {
+      return Promise.reject(this.error);
+    }
+    if (this.closed) {
+      return Promise.resolve({ value: undefined, done: true });
+    }
+    return new Promise((resolve, reject) => {
+      this.waiters.push({ resolve, reject });
+    });
+  }
 }
 
 async function* toAsyncIterable(chunks) {

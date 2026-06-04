@@ -93,6 +93,11 @@ export class VoicePipeline {
   }
 
   async *streamSegmented({ audioChunks, context = [], signal } = {}) {
+    if (typeof this.asr.transcribeStream === "function") {
+      yield* this.streamSegmentedWithStreamingASR({ audioChunks, context, signal });
+      return;
+    }
+
     const startedAt = this.clock();
     const asrResult = await this.asr.transcribe(toAsyncIterable(audioChunks), { signal });
     yield {
@@ -187,6 +192,106 @@ export class VoicePipeline {
       maxTokens: 80,
       minChars: 14
     });
+  }
+
+  async *streamSegmentedWithStreamingASR({ audioChunks, context = [], signal } = {}) {
+    const startedAt = this.clock();
+    let transcript = "";
+    let asrTiming = {};
+    let asrConnectID = "";
+    let firstText = "";
+    let firstTTS = null;
+    let firstLLM = null;
+
+    for await (const event of this.asr.transcribeStream(toAsyncIterable(audioChunks), { signal })) {
+      if ((event.type === "transcript_delta" || event.type === "transcript_partial") && event.transcript) {
+        transcript = event.transcript;
+        asrTiming = { ...asrTiming, ...(event.timing || {}) };
+        if (!firstText && this.firstPhraseMode === "template" && shouldSpeakFromPartial(transcript)) {
+          firstLLM = await this.generateFirstPhrase({ transcript, context, signal });
+          firstText = firstLLM.firstPhrase || firstLLM.text || "";
+          if (typeof this.tts.synthesizeStream === "function") {
+            yield { type: "segment_text", segment: "first", text: firstText };
+            firstTTS = yield* streamTTSegment(this.tts, { segment: "first", text: firstText, signal });
+          } else {
+            firstTTS = await this.tts.synthesize({ text: firstText, signal });
+            yield {
+              type: "segment",
+              segment: "first",
+              text: firstText,
+              ...buildSegment(firstText, firstTTS)
+            };
+          }
+        }
+      } else if (event.type === "transcript_final") {
+        transcript = event.transcript || transcript;
+        asrTiming = { ...asrTiming, ...(event.timing || {}) };
+        asrConnectID = event.connectID || asrConnectID;
+        yield {
+          type: "transcript_final",
+          transcript
+        };
+      }
+    }
+
+    if (!firstText) {
+      firstLLM = await this.generateFirstPhrase({ transcript, context, signal });
+      firstText = firstLLM.firstPhrase || firstLLM.text || "";
+      if (typeof this.tts.synthesizeStream === "function") {
+        yield { type: "segment_text", segment: "first", text: firstText };
+        firstTTS = yield* streamTTSegment(this.tts, { segment: "first", text: firstText, signal });
+      } else {
+        firstTTS = await this.tts.synthesize({ text: firstText, signal });
+        yield {
+          type: "segment",
+          segment: "first",
+          text: firstText,
+          ...buildSegment(firstText, firstTTS)
+        };
+      }
+    }
+
+    const followupLLM = await this.llm.generate({
+      transcript: buildFollowupPrompt(transcript, firstText),
+      context,
+      messages: buildFollowupMessages(transcript, firstText, context),
+      signal,
+      streamFull: true,
+      maxTokens: 64
+    });
+    const followupText = removeRepeatedPrefix(followupLLM.text || followupLLM.firstPhrase || "", firstText);
+    let followupTTS = { audioChunks: [], timing: {} };
+    if (followupText && typeof this.tts.synthesizeStream === "function") {
+      yield { type: "segment_text", segment: "followup", text: followupText };
+      followupTTS = yield* streamTTSegment(this.tts, { segment: "followup", text: followupText, signal });
+    } else if (followupText) {
+      followupTTS = await this.tts.synthesize({ text: followupText, signal });
+      yield {
+        type: "segment",
+        segment: "followup",
+        text: followupText,
+        ...buildSegment(followupText, followupTTS)
+      };
+    }
+
+    const timing = {
+      ...asrTiming,
+      ...(firstLLM?.timing || {}),
+      first_tts_first_audio_ms: firstTTS?.timing?.tts_first_audio_ms,
+      ...prefixTiming(followupLLM.timing, "followup_"),
+      followup_tts_first_audio_ms: followupTTS.timing?.tts_first_audio_ms,
+      voice_pipeline_total_ms: Math.round(this.clock() - startedAt)
+    };
+    yield {
+      type: "timing",
+      timing,
+      providerMeta: {
+        asrConnectID,
+        firstTtsConnectID: firstTTS?.connectID,
+        followupTtsConnectID: followupTTS.connectID,
+        ttsMode: firstTTS?.mode || followupTTS.mode || "websocket"
+      }
+    };
   }
 }
 
@@ -284,6 +389,14 @@ function buildTemplateFirstPhrase(transcript) {
     return "我听见你此刻有些平安。";
   }
   return "我在这里陪着你。";
+}
+
+function shouldSpeakFromPartial(transcript) {
+  const text = String(transcript || "").replace(/\s+/g, "");
+  if (text.length < 4) {
+    return false;
+  }
+  return text.length >= 8 || /(累|疲惫|害怕|恐惧|焦虑|孤单|孤独|羞耻|内疚|开心|感恩|平安)/u.test(text);
 }
 
 function buildFollowupPrompt(transcript, firstText) {

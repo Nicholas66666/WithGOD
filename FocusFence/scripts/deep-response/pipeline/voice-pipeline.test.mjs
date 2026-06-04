@@ -300,6 +300,95 @@ test("VoicePipeline streamSegmented yields streaming TTS audio before TTS comple
   assert.equal(secondAudio.value.audioChunk.toString("utf8"), "我听见你真的很累。:second");
 });
 
+test("VoicePipeline streamSegmented can speak first template from ASR partial before final transcript", async () => {
+  let releaseFinal;
+  const finalGate = new Promise((resolve) => {
+    releaseFinal = resolve;
+  });
+  const asr = {
+    async *transcribeStream() {
+      yield {
+        type: "transcript_delta",
+        transcript: "今天我有点累",
+        timing: { first_transcript_delta_ms: 500 }
+      };
+      await finalGate;
+      yield {
+        type: "transcript_final",
+        transcript: "今天我有点累，想听一句安慰的话。",
+        timing: {
+          first_transcript_delta_ms: 500,
+          transcript_final_ms: 3500
+        },
+        connectID: "asr-stream"
+      };
+    }
+  };
+  const llmCalls = [];
+  const llm = {
+    async generate({ transcript, streamFull }) {
+      llmCalls.push({ transcript, streamFull });
+      return {
+        text: "我们先停一下，听听耶稣怎样安慰劳苦的人。",
+        firstPhrase: "我们先停一下，听听耶稣怎样安慰劳苦的人。",
+        timing: { llm_first_phrase_ms: 1200 }
+      };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      yield {
+        type: "audio_chunk",
+        audioChunk: Buffer.from(`${text}:audio`),
+        sampleRate: 24000
+      };
+      yield {
+        type: "done",
+        timing: { tts_first_audio_ms: 600 },
+        connectID: "tts-first"
+      };
+    }
+  };
+
+  const pipeline = new VoicePipeline({
+    asr,
+    llm,
+    tts,
+    firstPhraseMode: "template",
+    clock: fakeClock([0, 10, 20, 30])
+  });
+  const iterator = pipeline.streamSegmented({
+    audioChunks: [Buffer.from("voice")]
+  })[Symbol.asyncIterator]();
+
+  assert.deepEqual(await iterator.next(), {
+    value: {
+      type: "segment_text",
+      segment: "first",
+      text: "我听见你真的很累。"
+    },
+    done: false
+  });
+  const firstAudio = await iterator.next();
+  assert.equal(firstAudio.done, false);
+  assert.equal(firstAudio.value.type, "audio_chunk");
+  assert.equal(firstAudio.value.segment, "first");
+  assert.equal(firstAudio.value.audioChunk.toString("utf8"), "我听见你真的很累。:audio");
+  assert.equal(llmCalls.length, 0);
+
+  releaseFinal();
+  const finalTranscript = await iterator.next();
+  assert.equal(finalTranscript.done, false);
+  assert.equal(finalTranscript.value.type, "transcript_final");
+  assert.equal(finalTranscript.value.transcript, "今天我有点累，想听一句安慰的话。");
+  const followupText = await iterator.next();
+  assert.equal(followupText.done, false);
+  assert.equal(followupText.value.type, "segment_text");
+  assert.equal(followupText.value.segment, "followup");
+  assert.equal(llmCalls.length, 1);
+  assert.match(llmCalls[0].transcript, /今天我有点累，想听一句安慰的话。/);
+});
+
 function fakeClock(values) {
   let index = 0;
   return () => values[Math.min(index++, values.length - 1)];
