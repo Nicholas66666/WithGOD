@@ -33,6 +33,7 @@
   - Server stores short-term session context and uses it for following turns.
   - Watch client has local-first abort control and stale generation audio filtering.
   - Remote one-command smoke probe passes against Fire/Volcengine ECS.
+  - DeepResponseWatchLab no longer exposes Watch-side WebSocket transport code; source tests guard against reintroducing `URLSessionWebSocketTask` in the Watch Lab target.
 - True streaming is still not complete:
   - Watch socket transport is removed from the development path. It is not a fallback, not a spike, and not a blocking dependency for DeepResponse.
   - Provider-side ASR/LLM/TTS are available, but the main path still waits for ASR final before LLM and waits for a complete LLM reply before TTS starts.
@@ -448,6 +449,7 @@ Completed evidence:
 - Added `DeepResponseMicrophoneRecorder.Configuration` with endpointing controls for local silence detection.
 - Added local PCM16 voice-activity measurement and idempotent silence callback emission.
 - Wired DeepLab continuous mode so recorder silence automatically calls `finishRecordingTurn(reason: "Auto silence")`.
+- Removed unused Watch-side WebSocket client/delegate/message encoder from `DeepResponseWatchLab`; Watch Lab is HTTP-only at the code level.
 - Verified:
 
 ```bash
@@ -463,8 +465,8 @@ npm run deep:http-smoke:test -- --endpoint http://124.174.96.149:8797 --pcm /pri
 Latest results:
 - `scripts/deep-response-server.test.mjs`: `22/22` passed.
 - `scripts/test-deep-response-http-smoke.test.mjs`: `2/2` passed.
-- `scripts/deep-response-watch-ui.test.mjs`: `9/9` passed.
-- `npm run test:node`: `114/114` passed.
+- `scripts/deep-response-watch-ui.test.mjs`: `10/10` passed.
+- `npm run test:node`: `115/115` passed.
 - `DeepResponseWatchLab` generic watchOS build: `BUILD SUCCEEDED`.
 - Fire/Volcengine deployment: remote `HEAD` at `5f3a0e3`, service `active`, health `200`.
 - Fire/Volcengine smoke: `ok: true`.

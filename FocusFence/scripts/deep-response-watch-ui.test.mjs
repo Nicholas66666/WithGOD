@@ -65,3 +65,11 @@ test("DeepResponse Watch continuous mode auto-finishes a turn on recorder silenc
   assert.match(debugViewSource, /onSilence: \{/);
   assert.match(debugViewSource, /await finishRecordingTurn\(reason: "Auto silence"\)/);
 });
+
+test("DeepResponse Watch lab does not expose Watch WebSocket transport", () => {
+  assert.doesNotMatch(realtimeClientSource, /URLSessionWebSocketTask/);
+  assert.doesNotMatch(realtimeClientSource, /webSocketTask/);
+  assert.doesNotMatch(realtimeClientSource, /DeepResponseWebSocketDelegate/);
+  assert.doesNotMatch(realtimeClientSource, /func connect\(\) async throws/);
+  assert.doesNotMatch(realtimeClientSource, /connectionStage = "ws:/);
+});
