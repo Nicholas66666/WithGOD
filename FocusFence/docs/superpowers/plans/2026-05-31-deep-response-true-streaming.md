@@ -463,6 +463,19 @@ Latest results:
 - stop-to-first audio: `1385ms`, `1234ms`.
 - abort stale audio chunks/bytes: `0` / `0`.
 
+Latest Watch HTTP polling optimization:
+- Changed `DeepResponseWatchLab` HTTP session polling to use `40ms` before first audio and return to `120ms` after first audio is received.
+- This keeps the Watch transport HTTP-only while reducing client-side first-audio wait from the previous fixed `120ms` poll delay.
+- Added source gate proving low-latency first-audio polling constants and helper are present.
+- `node --test scripts/deep-response-watch-ui.test.mjs`: `13/13` passed.
+- `npm run test:node`: `126/126` passed.
+- `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-volc-build build`: `BUILD SUCCEEDED`.
+- Fire/Volcengine HTTP cascade smoke baseline after this Watch-only change: passed.
+- Remote stop-to-first-audio baseline: `1039ms`, `1681ms`.
+- Remote HTTP stop-to-first-phrase: `788ms`, `1341ms`.
+- Remote HTTP first-audio-after-first-phrase: `251ms`, `340ms`.
+- Timing implication: Watch client first-audio polling is now less likely to add avoidable delay; remaining larger variance is still provider first-phrase generation.
+
 ### Milestone S5: Hands-Free Conversation Loop
 
 Status: complete for the self-test gate. Server-side goodbye/idle lifecycle, remote smoke self-tests, Watch automatic return-to-listening source/build gate, local VAD/silence endpointing source/build gate, VAD fixture calibration, explicit Watch conversation state source gate, simulator-only continuous HTTP fixture autorun source gate, local 8-turn rolling-context/goodbye self-test, and remote 8-turn session-end probe are complete.

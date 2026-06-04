@@ -13,6 +13,9 @@ enum DeepResponseClientError: LocalizedError {
 
 @MainActor
 final class DeepResponseRealtimeClient: ObservableObject {
+    private static let httpFastPollNanoseconds: UInt64 = 40_000_000
+    private static let httpSteadyPollNanoseconds: UInt64 = 120_000_000
+
     @Published private(set) var lastError: String?
     @Published private(set) var lastErrorCode: String?
     @Published private(set) var lastHealthStatus: String?
@@ -597,7 +600,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
             }
 
             if !isDone {
-                try await Task.sleep(nanoseconds: 120_000_000)
+                try await Task.sleep(nanoseconds: Self.httpPollDelayNanoseconds(hasReceivedFirstAudio: httpFirstAudioMs != nil))
             }
         }
         if !isDone {
@@ -605,6 +608,10 @@ final class DeepResponseRealtimeClient: ObservableObject {
                 NSLocalizedDescriptionKey: "HTTP session timeout"
             ])
         }
+    }
+
+    private static func httpPollDelayNanoseconds(hasReceivedFirstAudio: Bool) -> UInt64 {
+        hasReceivedFirstAudio ? httpSteadyPollNanoseconds : httpFastPollNanoseconds
     }
 
     private func handleHTTPSessionEvent(_ event: DeepResponseHTTPSessionEvent) {
