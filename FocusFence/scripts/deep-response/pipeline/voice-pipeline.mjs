@@ -851,11 +851,17 @@ function normalizeAssistantPhraseText(text, { context = [] } = {}) {
 
 function rotateOverusedOpeningStem(text, { context = [], maxRepeats = 2 } = {}) {
   const openingStem = extractOpeningStem(text);
-  if (!openingStem || countAssistantOpeningStem(context, openingStem) < maxRepeats) {
+  const effectiveMaxRepeats = getOpeningStemMaxRepeats(openingStem, maxRepeats);
+  if (!openingStem || countAssistantOpeningStem(context, openingStem) < effectiveMaxRepeats) {
     return text;
   }
-  const replacement = pickOpeningReplacement(context, openingStem, maxRepeats);
+  const replacement = pickOpeningReplacement(context, openingStem, effectiveMaxRepeats);
   return String(text || "").replace(/^[^。！？!?；;]*[。！？!?；;]?/u, replacement);
+}
+
+function getOpeningStemMaxRepeats(openingStem, defaultMaxRepeats) {
+  const highFrequencyComfortStems = new Set(["我在"]);
+  return highFrequencyComfortStems.has(openingStem) ? 1 : defaultMaxRepeats;
 }
 
 function pickOpeningReplacement(context, avoidedStem, maxRepeats) {

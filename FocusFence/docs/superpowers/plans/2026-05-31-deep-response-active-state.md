@@ -79,18 +79,18 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `182/182` passed.
+- Node self-tests: `184/184` passed.
 - Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply, lookup-style-comfort, harsh repeated-comfort, mechanical tired/fatigue, incomplete-utterance, and `是还想听` gate enabled.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
 - Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
 - Fire/Volcengine partial-ASR LLM start: `llm_started_from_partial: 1` on both standard smoke turns.
-- Fire/Volcengine smoke stop-to-first-audio: `143ms`, `174ms`.
+- Fire/Volcengine smoke stop-to-first-audio: `212ms`, `221ms`.
 - Fire/Volcengine repeated reply failures: `[]`.
 - Fire/Volcengine forbidden lookup/harsh/mechanical comfort failures: `[]`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
-- Fire/Volcengine 8-turn continuous conversation gate: passed with `session_end` reason `user_goodbye`, `memoryRecalled.count: 3`, `memory_candidate.persisted: true`, `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, `longReplyFailures: []`, and late audio `409 session_ended`.
-- Fire/Volcengine 8-turn stop-to-first-audio: `1953ms`, `1990ms`, `1812ms`, `2322ms`, `2334ms`, `2004ms`, `1876ms`, `1908ms`.
+- Fire/Volcengine 8-turn continuous conversation gate: passed with `session_end` reason `user_goodbye`, `memoryRecalled.count: 3`, `memory_candidate.persisted: true`, `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, `longReplyFailures: []`, `stopToFirstAudioFailures: []`, and late audio `409 session_ended`.
+- Fire/Volcengine 8-turn stop-to-first-audio: `1797ms`, `1722ms`, `1706ms`, `1714ms`, `1901ms`, `1975ms`, `1849ms`, `2296ms`.
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
 - Latest WatchLab barge-in self-test update: continuous-mode abort now captures the old `turn_id` / `generation_id`, stops playback locally, starts barge-in recording before waiting for the `/abort` server ack, and posts the abort in the background. Full `npm run deep:selftest:full` passed after this change; no user-operated Watch test was required.
 - Latest WatchLab state self-test update: continuous-mode runtime now has an explicit `assistantThinking` state between user speech ending and playback becoming active. This separates “server/AI is thinking” from idle waiting and assistant speaking in the scriptable Watch state model and Swift source gate.
@@ -98,6 +98,7 @@ Latest result:
 - Latest spoken-text quality gate: VoicePipeline strips dangling quote lead-ins such as trailing `主说：`, `他说：`, `经上说：`, and `圣经说：` before emitting assistant text, phrase events, or TTS audio. Standard Fire/Volcengine smoke and 8-turn conversation scripts now also reject assistant text that ends with `:` or `：`.
 - Latest full-session repetition gate: the 8-turn conversation probe now treats `--forbid-identical-consecutive-replies` as a full-session identical-reply ban, not only an adjacent-turn ban. VoicePipeline prompt now lists recent assistant replies and explicitly forbids repeating any recent reply, whole scripture sentence, or full comfort structure.
 - Latest overlong-reply gate: VoicePipeline drops an overlong quoted scripture phrase after a short spoken lead-in instead of queueing it to Watch audio. The standard 8-turn Fire/Volcengine conversation gate now runs with `--max-assistant-reply-chars 48` and reports `longReplyFailures: []`. Full `npm run deep:selftest:full` passed after direct ECS sync; no user-operated Watch test was required.
+- Latest long-tail first-audio gate: the 8-turn Fire/Volcengine conversation probe now supports `--max-stop-to-first-audio-ms` and the standard gate uses `3500ms` to block 5s-class regressions while avoiding provider jitter flake. `VoicePipeline` also rotates high-frequency comfort opening stems such as `我在` after one recent use. Full `npm run deep:selftest:full` passed after direct ECS sync; no user-operated Watch test was required.
 
 Latest remote deployment note:
 

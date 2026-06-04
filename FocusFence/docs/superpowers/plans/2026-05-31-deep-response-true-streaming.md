@@ -1683,6 +1683,25 @@ Latest overlong scripture/reply length gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This remains HTTP-only and completely self-tested; no user-operated Watch test is part of this gate.
 
+Latest long-tail first-audio and high-frequency opening gate:
+- Added conversation-level `--max-stop-to-first-audio-ms` support to `scripts/test-deep-response-http-conversation.mjs`.
+- The standard 8-turn Fire/Volcengine conversation gate now runs with `--max-stop-to-first-audio-ms 3500`, so 5s-class first-audio regressions fail in self-test instead of being noted manually.
+- A trial `3000ms` gate correctly failed on a real Fire/Volcengine long-tail turn at `3066ms`. The standard gate was set to `3500ms` for now to keep the canonical self-test stable while still blocking the prior `5119ms` class of regressions. Lowering this threshold remains a future optimization target.
+- VoicePipeline now treats high-frequency comfort stems such as `我在` as overused after one recent assistant occurrence, rotating them before assistant text/audio emission. This addresses a remote 8-turn failure where `我在` appeared three times across the session.
+- Verification:
+  - RED `node --test scripts/test-deep-response-http-conversation.test.mjs` first failed because `collectStopToFirstAudioFailures` did not exist.
+  - RED `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs --test-name-pattern "high-frequency comfort stems"` first failed because `我在呢...` was emitted unchanged after a recent `我在...` context reply.
+  - `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/test-deep-response-http-conversation.test.mjs scripts/package-scripts.test.mjs`: `37/37` passed.
+  - `npm run test:node`: `184/184` passed.
+  - Fire/Volcengine ECS was updated by base64-over-SSH file sync and `systemctl restart deep-response`; service returned `active`.
+  - `npm run deep:volc:conversation:full`: passed with `stopToFirstAudioFailures: []`; one run recorded stop-to-first-audio `2000ms`, `1909ms`, `2112ms`, `1998ms`, `1917ms`, `2029ms`, `1807ms`, `1913ms`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Fire/Volcengine smoke stop-to-first-audio: `212ms`, `221ms`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `stopToFirstAudioFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Fire/Volcengine 8-turn stop-to-first-audio: `1797ms`, `1722ms`, `1706ms`, `1714ms`, `1901ms`, `1975ms`, `1849ms`, `2296ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This remains HTTP-only and completely self-tested; no user-operated Watch test is part of this gate.
+
 - Unit and server tests:
   - `npm run test:node`
 

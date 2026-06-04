@@ -25,6 +25,7 @@ export function parseHTTPConversationArgs(argv) {
     forbidIdenticalConsecutiveReplies: false,
     maxOpeningStemRepeats: 0,
     maxAssistantReplyChars: 0,
+    maxStopToFirstAudioMs: 0,
     forbiddenTextPatterns: [],
     verbose: false
   };
@@ -79,6 +80,9 @@ export function parseHTTPConversationArgs(argv) {
       index += 1;
     } else if (arg === "--max-assistant-reply-chars") {
       args.maxAssistantReplyChars = Number(argv[index + 1] || 0);
+      index += 1;
+    } else if (arg === "--max-stop-to-first-audio-ms") {
+      args.maxStopToFirstAudioMs = Number(argv[index + 1] || 0);
       index += 1;
     } else if (arg === "--forbid-text-pattern") {
       args.forbiddenTextPatterns.push(argv[index + 1] || "");
@@ -256,6 +260,12 @@ export async function runHTTPConversationProbe(args) {
   if (longReplyFailures.length > 0) {
     throw new Error(`Long conversation reply failures: ${JSON.stringify(longReplyFailures, null, 2)}`);
   }
+  const stopToFirstAudioFailures = collectStopToFirstAudioFailures(turns, {
+    maxMs: args.maxStopToFirstAudioMs
+  });
+  if (stopToFirstAudioFailures.length > 0) {
+    throw new Error(`Stop-to-first-audio failures: ${JSON.stringify(stopToFirstAudioFailures, null, 2)}`);
+  }
 
   let lateAudioRejected = null;
   if (args.expectLateAudio409) {
@@ -291,6 +301,7 @@ export async function runHTTPConversationProbe(args) {
     repeatedOpeningStemFailures,
     repeatedReplyFailures,
     longReplyFailures,
+    stopToFirstAudioFailures,
     lateAudioRejected,
     elapsedMs: Math.round(performance.now() - startedAt),
     turns
@@ -480,6 +491,28 @@ export function collectLongConversationReplyFailures(turns = [], { maxChars = 0 
   return failures;
 }
 
+export function collectStopToFirstAudioFailures(turns = [], { maxMs = 0 } = {}) {
+  const limit = Number(maxMs || 0);
+  if (!Number.isFinite(limit) || limit <= 0) {
+    return [];
+  }
+  const failures = [];
+  for (const turn of turns || []) {
+    const stopToFirstAudioMs = Number.isFinite(turn?.stopToFirstAudioMs)
+      ? Number(turn.stopToFirstAudioMs)
+      : null;
+    if (stopToFirstAudioMs == null || stopToFirstAudioMs > limit) {
+      failures.push({
+        turnID: turn?.turnID || "",
+        maxMs: limit,
+        stopToFirstAudioMs,
+        text: String(turn?.text || "").trim()
+      });
+    }
+  }
+  return failures;
+}
+
 function normalizeConversationReplyText(text) {
   return String(text || "").replace(/\s+/g, "").trim();
 }
@@ -580,6 +613,8 @@ Options:
                         Fail if any assistant replies in the same session are identical.
   --max-assistant-reply-chars <n>
                         Fail if any assistant reply exceeds this spoken character budget.
+  --max-stop-to-first-audio-ms <n>
+                        Fail if any turn has no first audio or exceeds this latency budget after upload stops.
   --forbid-text-pattern <regex>
                         Fail if any turn text or memory summary matches the regex. Repeatable.
   --verbose             Print turn event batches.
