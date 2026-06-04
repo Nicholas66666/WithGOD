@@ -1288,6 +1288,9 @@ function isSessionClosureMemoryLine(line) {
   if (!content) {
     return false;
   }
+  if (/^我先安静到这里[，,。 ]*愿你平安[。.!！ ]*拜拜[。.!！ ]*$/u.test(content)) {
+    return true;
+  }
   return /^(好的[，,。 ]*)?(拜拜|再见|不聊了|先这样|结束(对话|会话)?|bye|goodbye)[。.!！ ]*$/iu.test(content);
 }
 

@@ -867,6 +867,23 @@ S6 memory closure-sanitization update 2026-06-05:
 - This remains HTTP-only and self-tested; no user-operated Watch test was required.
 - Integration remains blocked by the explicit integration gate until user approval; this update does not touch Quick Response.
 
+S6 idle-goodbye memory-sanitization update 2026-06-05:
+- Added a self-testable memory quality gate so the server's own idle goodbye audio/text is not persisted or recalled as long-term user memory.
+- Idle timeout still emits the gentle goodbye text/audio before `session_end`; only the memory candidate / recalled-memory summary filters the assistant-only closure line `我先安静到这里，愿你平安。拜拜。`.
+- The rule preserves useful prior turns in the same session while removing the idle closure line from memory summaries.
+- Verification:
+  - RED `node --test --test-name-pattern "excludes idle goodbye" scripts/deep-response-server.test.mjs` first failed because a useful turn followed by idle timeout produced a memory summary containing `AI: 我先安静到这里，愿你平安。拜拜。`.
+  - Targeted server/memory tests passed: `node --test scripts/deep-response-server.test.mjs scripts/test-deep-response-http-conversation.test.mjs scripts/test-deep-response-http-smoke.test.mjs`: `55/55`.
+  - `npm run test:node`: `199/199` passed.
+  - Fire/Volcengine ECS was updated by direct `scp`, remote `node --check` passed, service returned `active`, and `/health` returned `{"ok":true,"service":"deep-response","mode":"provider","providerConfigured":true}`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `217ms`, `219ms`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `218ms`, `212ms`, `205ms`, `199ms`, `205ms`, `200ms`, `201ms`, `201ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This remains HTTP-only and self-tested; no user-operated Watch test was required.
+- Integration remains blocked by the explicit integration gate until user approval; this update does not touch Quick Response.
+
 Product gate:
 - Only after S1-S5 self-tests pass and any explicitly requested final experience check is acceptable.
 - User approves whether to integrate into old Watch app or keep separate for more Lab testing.
