@@ -185,32 +185,54 @@ async function runNextTurnAfterAbort({
     audioCursor = audioBatch.nextCursor;
     audioChunks.push(...audioBatch.chunks.filter((chunk) => chunk.generationID === generationID));
     if (events.some((event) => event.type === "timing" && event.generationID === generationID)
-      && events.some((event) => event.type === "audio_done" && event.generationID === generationID)) {
+      && events.some((event) => event.type === "audio_done" && event.generationID === generationID)
+      && events.some((event) => event.type === "turn_done" && event.generationID === generationID)) {
       break;
     }
     await sleep(pollMs);
   }
 
+  const summary = summarizeNextTurnAfterAbort({
+    turnID,
+    generationID,
+    events,
+    audioChunks
+  });
+  if (!summary.ok) {
+    throw new Error(`Expected next turn after abort, got transcript=${JSON.stringify(summary.transcript)} text=${JSON.stringify(summary.text)} audioChunks=${summary.audioChunks} audioDone=${summary.audioDone} turnDone=${summary.turnDone}`);
+  }
+  return {
+    ...summary,
+    eventCursor,
+    audioCursor
+  };
+}
+
+export function summarizeNextTurnAfterAbort({
+  turnID,
+  generationID,
+  events,
+  audioChunks
+}) {
   const transcript = events.find((event) => event.type === "transcript_final")?.text || "";
   const text = events
     .filter((event) => event.type === "assistant_text_delta")
     .map((event) => event.delta || "")
     .join("");
-  const ok = Boolean(transcript) && Boolean(text) && audioChunks.length > 0;
-  if (!ok) {
-    throw new Error(`Expected next turn after abort, got transcript=${JSON.stringify(transcript)} text=${JSON.stringify(text)} audioChunks=${audioChunks.length}`);
-  }
+  const audioDone = events.some((event) => event.type === "audio_done" && event.generationID === generationID);
+  const turnDone = events.some((event) => event.type === "turn_done" && event.generationID === generationID);
+  const ok = Boolean(transcript) && Boolean(text) && audioChunks.length > 0 && audioDone && turnDone;
   return {
     ok,
     turnID,
     generationID,
     transcript,
     text,
+    audioDone,
+    turnDone,
     audioChunks: audioChunks.length,
     audioBytes: audioChunks.reduce((sum, chunk) => sum + Number(chunk.audioByteLength || 0), 0),
-    eventTypes: events.map((event) => event.type),
-    eventCursor,
-    audioCursor
+    eventTypes: events.map((event) => event.type)
   };
 }
 

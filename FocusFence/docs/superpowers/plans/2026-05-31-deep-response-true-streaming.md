@@ -1106,6 +1106,22 @@ Latest server `turn_done` authoritative completion gate:
   - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-turn-done-server-build build`: `BUILD SUCCEEDED`.
 - Development remained self-test only; no user-operated Watch testing was required.
 
+Latest abort next-turn `turn_done` gate:
+- Tightened `scripts/test-deep-response-http-abort.mjs` so the post-abort same-session next turn must observe `timing`, `audio_done`, and `turn_done` for the active `generationID`.
+- Added `summarizeNextTurnAfterAbort()` and local regression coverage for `audioDone: true` and `turnDone: true`.
+- Full HTTP smoke now includes `audioDone` and `turnDone` in the abort `nextTurn` summary.
+- This closes the barge-in-resume self-test loop: abort no stale audio, then next turn completes with the same authoritative turn boundary used by Watch continuous mode.
+- Verification:
+  - RED test first failed because `summarizeNextTurnAfterAbort()` was not exported and the abort next-turn probe did not expose authoritative completion fields.
+  - `node --test scripts/test-deep-response-http-abort.test.mjs scripts/test-deep-response-http-smoke.test.mjs`: `6/6` passed.
+  - `npm run test:node`: `148/148` passed.
+  - Direct Fire/Volcengine abort-next-turn probe: passed; stale audio chunks/bytes `0` / `0`; next turn reported `audioDone: true`, `turnDone: true`, audio chunks/bytes `30` / `248472`.
+  - Fire/Volcengine full HTTP smoke with `--expect-abort-next-turn`, `--idle-goodbye`, `--wait-ms 800`, cascade mode, and forbidden-pattern gates: passed.
+  - Latest full-smoke abort next turn reported `audioDone: true`, `turnDone: true`, audio chunks/bytes `37` / `289106`.
+  - Latest full-smoke conversation turns also reported `turnDone: true`; stop-to-first-audio `225ms`, `222ms`.
+  - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-abort-next-turn-done-build build`: `BUILD SUCCEEDED`.
+- Development remained self-test only; no user-operated Watch testing was required.
+
 ## File Responsibilities
 
 - Modify `scripts/deep-response/protocol/deep-response-protocol.mjs`

@@ -199,6 +199,8 @@ export async function runHTTPSmokeProbe(args) {
         generationID: abort.nextTurn.generationID,
         transcript: abort.nextTurn.transcript,
         text: abort.nextTurn.text,
+        audioDone: abort.nextTurn.audioDone,
+        turnDone: abort.nextTurn.turnDone,
         audioChunks: abort.nextTurn.audioChunks,
         audioBytes: abort.nextTurn.audioBytes
       } : null
