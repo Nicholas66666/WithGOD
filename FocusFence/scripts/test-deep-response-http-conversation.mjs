@@ -115,8 +115,9 @@ export async function runHTTPConversationProbe(args) {
     await waitFor(async () => {
       const eventBatch = await fetchJSON(buildURL(args.endpoint, `${basePath}/events?cursor=${eventCursor}`));
       eventCursor = eventBatch.nextCursor;
+      const eventReceivedAtMs = Math.round(performance.now() - turnStartedAt);
       const turnEvents = eventBatch.events.filter((event) => event.turnID === turnID || event.type === "session_ready");
-      events.push(...turnEvents);
+      events.push(...turnEvents.map((event) => ({ ...event, receivedAtMs: eventReceivedAtMs })));
       if (args.verbose && turnEvents.length > 0) {
         for (const event of turnEvents) {
           console.log("event", JSON.stringify(event));
@@ -129,7 +130,8 @@ export async function runHTTPConversationProbe(args) {
       if (firstAudioAt == null && turnAudio.length > 0) {
         firstAudioAt = performance.now();
       }
-      audioChunks.push(...turnAudio);
+      const audioReceivedAtMs = Math.round(performance.now() - turnStartedAt);
+      audioChunks.push(...turnAudio.map((chunk) => ({ ...chunk, receivedAtMs: audioReceivedAtMs })));
       return events.some((event) => event.type === "timing" && event.generationID === generationID)
         && events.some((event) => event.type === "audio_done" && event.generationID === generationID);
     }, { timeoutMs: args.timeoutMs, intervalMs: args.pollMs });
@@ -215,6 +217,21 @@ export function summarizeTurn({
     .map((event) => event.delta || "")
     .join("");
   const timing = events.find((event) => event.type === "timing")?.timing || null;
+  const firstPhraseEvent = events.find((event) => event.type === "assistant_phrase");
+  const firstAudioChunk = audioChunks[0] || null;
+  const stopAtMs = Math.round(uploadEndedAt - turnStartedAt);
+  const firstPhraseAtMs = Number.isFinite(firstPhraseEvent?.receivedAtMs) ? firstPhraseEvent.receivedAtMs : null;
+  const firstAudioAtMs = Number.isFinite(firstAudioChunk?.receivedAtMs)
+    ? firstAudioChunk.receivedAtMs
+    : (firstAudioAt != null ? Math.round(firstAudioAt - turnStartedAt) : null);
+  const timingWithHTTP = {
+    ...(timing || {}),
+    ...(firstPhraseAtMs != null ? { http_stop_to_first_phrase_ms: firstPhraseAtMs - stopAtMs } : {}),
+    ...(firstAudioAtMs != null ? { http_stop_to_first_audio_ms: firstAudioAtMs - stopAtMs } : {}),
+    ...(firstPhraseAtMs != null && firstAudioAtMs != null
+      ? { http_first_audio_after_first_phrase_ms: firstAudioAtMs - firstPhraseAtMs }
+      : {})
+  };
   return {
     turnID,
     generationID,
@@ -229,7 +246,7 @@ export function summarizeTurn({
     text,
     audioByteLength: audioChunks.reduce((sum, chunk) => sum + Number(chunk.audioByteLength || 0), 0),
     audioChunks: audioChunks.length,
-    timing
+    timing: timingWithHTTP
   };
 }
 

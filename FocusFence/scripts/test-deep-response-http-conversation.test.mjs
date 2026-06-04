@@ -54,3 +54,29 @@ test("summarizeTurn concatenates streaming text deltas without inserting spaces"
   assert.equal(summary.text, "我听见你真的很累。");
   assert.equal(summary.stopToFirstAudioMs, 150);
 });
+
+test("summarizeTurn reports HTTP phrase and audio receive timing", () => {
+  const summary = summarizeTurn({
+    turnID: "turn-1",
+    generationID: "gen-1",
+    turnStartedAt: 0,
+    uploadStartedAt: 0,
+    uploadEndedAt: 100,
+    endedAt: 600,
+    firstAudioAt: 260,
+    uploadChunks: 1,
+    encodedUploadBytes: 10,
+    decodedUploadBytes: 10,
+    events: [
+      { type: "transcript_final", text: "今天我累。" },
+      { type: "assistant_phrase", text: "我听见你。", receivedAtMs: 220 },
+      { type: "assistant_text_delta", delta: "我听见你。" },
+      { type: "timing", timing: { transcript_final_ms: 900 } }
+    ],
+    audioChunks: [{ audioByteLength: 100, receivedAtMs: 260 }]
+  });
+
+  assert.equal(summary.timing.http_stop_to_first_phrase_ms, 120);
+  assert.equal(summary.timing.http_stop_to_first_audio_ms, 160);
+  assert.equal(summary.timing.http_first_audio_after_first_phrase_ms, 40);
+});
