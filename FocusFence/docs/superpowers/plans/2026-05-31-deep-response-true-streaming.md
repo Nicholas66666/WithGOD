@@ -1165,6 +1165,19 @@ Latest abort next-turn `turn_done` gate:
   - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-abort-next-turn-done-build build`: `BUILD SUCCEEDED`.
 - Development remained self-test only; no user-operated Watch testing was required.
 
+Latest Watch late-abort/session-end gate:
+- Added a state-machine regression for the out-of-order path where continuous barge-in starts local recording, the server emits `session_end`, and a delayed `/abort` ack arrives afterward.
+- The Watch state model now treats local `isHTTPSessionEnded` as authoritative even if the delayed abort ack itself reports `sessionEnded: false`; it must remain ended and must not start a second `barge_in` recording.
+- `DeepResponseDebugView.abortCurrentTurn()` now checks `client.isHTTPSessionEnded` after `await abortTask?.value` in the continuous barge-in branch and calls `markSessionEnded()` if the session closed while the new recording turn was starting.
+- Added source-level coverage proving the continuous barge-in branch handles `session_end` after abort ack, alongside the existing local-first abort and no-WebSocket gates.
+- Verification:
+  - RED state-machine test first failed because delayed abort ack after `session_end` added another `local_stop_playback` and `start_recording:barge_in`.
+  - RED source gate then failed until the continuous Swift branch handled post-abort session closure directly.
+  - `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`: passed, `29/29`.
+  - `npm run test:node`: passed, `194/194`.
+  - `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
+  - Development remained self-test only; no user-operated Watch testing was required.
+
 Latest full-smoke memory recall gate:
 - Added `--expect-memory-recalled` to `scripts/test-deep-response-http-smoke.mjs`.
 - The standard full HTTP smoke can now require persisted JSONL memory recall through the same remote self-test path that already covers conversation turns, authoritative `turn_done`, abort resume, stale-audio rejection, idle goodbye, and forbidden reply-pattern gates.
@@ -1840,6 +1853,25 @@ Latest 8-turn partial-ASR and repeated-fatigue gate:
   - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `166ms`, `180ms`, `177ms`, `180ms`, `187ms`, `179ms`, `183ms`, `194ms`.
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This remains HTTP-only and self-tested; no user-operated Watch test is part of this gate.
+
+Latest late-abort/session-end and dangling-particle gates:
+- User correction remains hard policy: DeepResponse Watch transport is HTTP only, and validation is completely self-test by default. Do not plan, implement, spike, benchmark, compare, or fall back to any Watch WebSocket path. Do not ask the user to operate Apple Watch as a planned phase gate.
+- Watch continuous-mode barge-in now handles an out-of-order `/abort` ack that arrives after the server has already emitted `session_end`. The state machine must keep the session ended and must not start another `barge_in` recording after closure.
+- `DeepResponseDebugView.abortCurrentTurn()` now checks `client.isHTTPSessionEnded` after awaiting the background abort task in the continuous barge-in path and calls `markSessionEnded()` if the session closed while local recording had already restarted.
+- Full self-test exposed a remote spoken-text artifact like `我听见你真的累了。啦。...`; `VoicePipeline.streamCascadeTurn()` now removes dangling `啦` particles after tired-opening normalization before emitting assistant text, phrase events, or TTS audio.
+- Standard Fire/Volcengine smoke and 8-turn conversation gates now forbid `啦。`, so this class fails in self-test instead of relying on user listening feedback.
+- Verification:
+  - RED `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs` first failed because a late `abort_finished` after `session_end` resumed `barge_in` recording.
+  - RED `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs` first failed because `你又累了啦。主会让你如鹰展翅上腾。` normalized to `我听见你真的累了。啦。主会让你如鹰展翅上腾。`.
+  - `node --test scripts/package-scripts.test.mjs`: `5/5` passed.
+  - `npm run test:node`: `195/195` passed.
+  - Fire/Volcengine ECS was updated by direct `scp`, remote `node --check` passed, service returned `active`, and `/health` returned `{"ok":true,"service":"deep-response","mode":"provider","providerConfigured":true}`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `211ms`, `217ms`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `219ms`, `224ms`, `212ms`, `207ms`, `206ms`, `216ms`, `211ms`, `229ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This remains HTTP-only and completely self-tested; no user-operated Watch test is part of this gate.
 
 - Unit and server tests:
   - `npm run test:node`

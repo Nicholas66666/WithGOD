@@ -902,6 +902,45 @@ test("VoicePipeline streamCascadeTurn removes dangling modal particles after nor
   assert.deepEqual(ttsTexts, ["我听见你真的累了。", "“主必赐你平安。”"]);
 });
 
+test("VoicePipeline streamCascadeTurn removes dangling la particle after normalized tired opening", async () => {
+  const spokenTexts = [];
+  const asr = {
+    async *transcribeStream() {
+      yield { type: "transcript_final", transcript: "今天我有点累，想听一句安慰的话。" };
+    }
+  };
+  const llm = {
+    async *streamTokens() {
+      yield { type: "delta", delta: "你又累了啦。主会让你如鹰展翅上腾。" };
+      yield { type: "done", timing: { llm_total_ms: 700 } };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      spokenTexts.push(text);
+      yield { type: "audio_chunk", audioChunk: Buffer.from(text), sampleRate: 24000 };
+      yield { type: "done", timing: { tts_first_audio_ms: 10 } };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 1, 2, 3]) });
+  const events = [];
+  for await (const event of pipeline.streamCascadeTurn({
+    audioChunks: [Buffer.from("voice")],
+    maxSpokenReplyChars: 48
+  })) {
+    events.push(event);
+  }
+
+  const text = events
+    .filter((event) => event.type === "assistant_text_delta")
+    .map((event) => event.delta)
+    .join("");
+  assert.doesNotMatch(text, /啦。/u);
+  assert.equal(text, "我听见你真的累了。主会让你如鹰展翅上腾。");
+  assert.deepEqual(spokenTexts, ["我听见你真的累了。", "主会让你如鹰展翅上腾。"]);
+});
+
 test("VoicePipeline streamCascadeTurn removes dangling quote lead-ins before speech", async () => {
   const ttsTexts = [];
   const asr = {

@@ -118,3 +118,27 @@ test("session end enters ending before final ended state", () => {
   assert.equal(afterFinalized.state.isRecording, false);
   assert.equal(afterFinalized.state.isWaitingForResponse, false);
 });
+
+test("late abort ack after session end does not resume barge-in recording", () => {
+  const result = simulateDeepResponseWatchEvents([
+    { type: "toggle_continuous", enabled: true },
+    { type: "recording_started" },
+    { type: "recording_finished", playbackActive: true },
+    { type: "abort_requested" },
+    { type: "session_end" },
+    { type: "abort_finished", sessionEnded: false, error: null },
+    { type: "session_end_finalized" }
+  ]);
+
+  assert.equal(result.state.conversationState, "ended");
+  assert.equal(result.state.isRecording, false);
+  assert.equal(result.state.isHTTPSessionEnded, true);
+  assert.deepEqual(result.actions, [
+    "wait_for_playback",
+    "local_stop_playback",
+    "post_abort:background",
+    "start_recording:barge_in",
+    "stop_auto_listen",
+    "finalize_session_end"
+  ]);
+});

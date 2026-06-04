@@ -79,21 +79,23 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `192/192` passed.
-- Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply, lookup-style-comfort, harsh repeated-comfort, mechanical tired/fatigue, incomplete-utterance, `是还想听`, formulaic scripture lead-in, and awkward spoken-opening gates enabled.
+- Node self-tests: `195/195` passed.
+- Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply, lookup-style-comfort, harsh repeated-comfort, mechanical tired/fatigue, incomplete-utterance, `是还想听`, formulaic scripture lead-in, awkward spoken-opening, and dangling `啦。` gates enabled.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
 - Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
 - Fire/Volcengine partial-ASR LLM start: `llm_started_from_partial: 1` on both standard smoke turns.
-- Fire/Volcengine smoke stop-to-first-audio: `209ms`, `200ms`.
+- Fire/Volcengine smoke stop-to-first-audio: `211ms`, `217ms`.
 - Fire/Volcengine repeated reply failures: `[]`.
 - Fire/Volcengine forbidden lookup/harsh/mechanical comfort failures: `[]`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
 - Fire/Volcengine 8-turn continuous conversation gate now uses realtime upload pacing (`--upload-sleep-ms 1000`) and `--max-stop-to-first-audio-ms 1000`.
 - Fire/Volcengine 8-turn continuous conversation gate: passed with `session_end` reason `user_goodbye`, `memoryRecalled.count: 3`, `memory_candidate.persisted: true`, `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, and late audio `409 session_ended`.
-- Fire/Volcengine 8-turn stop-to-first-audio: `192ms`, `181ms`, `189ms`, `186ms`, `192ms`, `188ms`, `178ms`, `171ms`.
+- Fire/Volcengine 8-turn stop-to-first-audio: `219ms`, `224ms`, `212ms`, `207ms`, `206ms`, `216ms`, `211ms`, `229ms`.
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
 - Latest WatchLab barge-in self-test update: continuous-mode abort now captures the old `turn_id` / `generation_id`, stops playback locally, starts barge-in recording before waiting for the `/abort` server ack, and posts the abort in the background. Full `npm run deep:selftest:full` passed after this change; no user-operated Watch test was required.
+- Latest WatchLab late-abort/session-end gate: continuous-mode state machine now keeps the session ended if a delayed `/abort` ack arrives after `session_end`; it must not start another `barge_in` recording after the server has closed the session. `DeepResponseDebugView.abortCurrentTurn()` now checks `client.isHTTPSessionEnded` again after awaiting the background abort task in the continuous barge-in branch and calls `markSessionEnded()` if closure arrived during the new recording start. Source and state-machine gates cover this out-of-order event path; no user-operated Watch test was required.
+- Latest dangling `啦。` quality gate: full self-test exposed a remote spoken-text artifact like `我听见你真的累了。啦。...`; `VoicePipeline.streamCascadeTurn()` now removes dangling `啦` particles after tired-opening normalization before emitting assistant text, phrase events, or TTS audio. Standard Fire/Volcengine smoke and 8-turn conversation gates now forbid `啦。`; latest `npm run deep:selftest:full` passed with `forbiddenTextFailures: []`. No user-operated Watch test was required.
 - Latest WatchLab state self-test update: continuous-mode runtime now has an explicit `assistantThinking` state between user speech ending and playback becoming active. This separates “server/AI is thinking” from idle waiting and assistant speaking in the scriptable Watch state model and Swift source gate.
 - Latest WatchLab ending-state self-test update: continuous-mode runtime now includes an explicit `ending` state before final `ended` when a server session end is observed. This makes the Watch state model match the planned listening/user-speaking/assistant-thinking/assistant-speaking/idle-waiting/ending/ended lifecycle and blocks auto-listen during session closure.
 - Latest spoken-text quality gate: VoicePipeline strips dangling quote lead-ins such as trailing `主说：`, `他说：`, `经上说：`, and `圣经说：` before emitting assistant text, phrase events, or TTS audio. Standard Fire/Volcengine smoke and 8-turn conversation scripts now also reject assistant text that ends with `:` or `：`.

@@ -864,7 +864,7 @@ function normalizeAssistantPhraseText(text, { context = [] } = {}) {
     .replace(/^那?缓缓神吧?[，。]?/u, "那缓一缓吧。")
     .replace(/^《[^》]+》(?:里)?说[，,：:\s]*/u, "")
     .replace(/^(?:(?:主|神|耶稣|他)说|经上说|圣经说)[，,：:\s]*/u, "")
-    .replace(/^我听见你真的累了。[了呢呀啊]+\s*[，。]?/u, "我听见你真的累了。")
+    .replace(/^我听见你真的累了。[了呢呀啊啦]+\s*[，。]?/u, "我听见你真的累了。")
     .replace(/^[了呢呀啊]+[，。]?/u, "")
     .replace(/[，。；;]?\s*(?:(?:主|神|耶稣|他)说|经上说|圣经说)[：:]\s*$/u, (match) => {
       return /^[，。；;]/u.test(match) ? match[0] : "";

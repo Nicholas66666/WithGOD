@@ -136,7 +136,20 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
 
   if (event.type === "abort_finished") {
     const lastError = event.error ?? state.lastError;
-    const isHTTPSessionEnded = Boolean(event.sessionEnded ?? state.isHTTPSessionEnded);
+    const isHTTPSessionEnded = Boolean(state.isHTTPSessionEnded || event.sessionEnded);
+    if (isHTTPSessionEnded) {
+      return {
+        state: {
+          ...state,
+          isRecording: false,
+          isWaitingForResponse: false,
+          isHTTPSessionEnded: true,
+          lastError,
+          conversationState: "ended"
+        },
+        actions
+      };
+    }
     actions.push("local_stop_playback");
     if (state.isContinuousMode && !lastError && !isHTTPSessionEnded) {
       actions.push("start_recording:barge_in");

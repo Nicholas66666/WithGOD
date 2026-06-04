@@ -267,6 +267,9 @@ struct DeepResponseDebugView: View {
            !client.isHTTPSessionEnded {
             await startRecordingTurn(reason: "Barge-in recording")
             await abortTask?.value
+            if client.isHTTPSessionEnded {
+                markSessionEnded()
+            }
         } else {
             await abortTask?.value
             status = client.lastError == nil ? "Aborted" : "Abort failed"
