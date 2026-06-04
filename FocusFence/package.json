@@ -7,6 +7,7 @@
     "deep:provider:benchmark": "node scripts/deep-response-benchmark.mjs",
     "deep:fixture:tts-http": "node scripts/deep-response-generate-fixture.mjs",
     "deep:server": "node scripts/deep-response-server.mjs",
+    "watch:wss:echo": "node scripts/watch-wss-echo-server.mjs",
     "deep:server:provider": "DEEP_RESPONSE_MODE=provider node scripts/deep-response-server.mjs",
     "deep:render:deploy": "node scripts/render-deploy.mjs",
     "deep:render:sync-env": "node scripts/render-sync-deep-env.mjs",

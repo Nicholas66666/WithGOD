@@ -57,6 +57,20 @@ schemes:
       config: Debug
     archive:
       config: Release
+  WatchSocketLab:
+    build:
+      targets:
+        WatchSocketLab: all
+    run:
+      config: Debug
+      executable: WatchSocketLab
+    profile:
+      config: Release
+      executable: WatchSocketLab
+    analyze:
+      config: Debug
+    archive:
+      config: Release
 targets:
   Focus:
     type: application
@@ -178,6 +192,33 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_PREFIX).DeepResponseWatchLab
         PRODUCT_NAME: DeepLab
         ASSETCATALOG_COMPILER_APPICON_NAME: PresenceAppIcon
+
+  WatchSocketLab:
+    type: application
+    platform: watchOS
+    deploymentTarget: "10.0"
+    sources:
+      - Sources/WatchSocketLab
+    info:
+      path: Sources/WatchSocketLab/Info.plist
+      properties:
+        CFBundleDisplayName: SocketLab
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        NSLocalNetworkUsageDescription: "SocketLab connects directly to a WebSocket echo server for Watch runtime testing."
+        NSMicrophoneUsageDescription: "SocketLab needs microphone access to verify Watch audio streaming runtime behavior."
+        UIBackgroundModes:
+          - audio
+        WatchSocketLabDefaultWSSURL: "$(WATCH_SOCKET_LAB_WSS_URL)"
+        WKApplication: true
+        WKWatchOnly: true
+    settings:
+      base:
+        CODE_SIGN_IDENTITY: Apple Development
+        PRODUCT_BUNDLE_IDENTIFIER: $(APP_BUNDLE_PREFIX).WatchSocketLab
+        PRODUCT_NAME: SocketLab
 
   FocusFenceMonitor:
     type: app-extension
