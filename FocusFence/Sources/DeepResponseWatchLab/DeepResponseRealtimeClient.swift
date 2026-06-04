@@ -560,6 +560,13 @@ final class DeepResponseRealtimeClient: ObservableObject {
         await abortTask.value
     }
 
+    func stopHTTPSessionPlaybackForBargeIn() {
+        player.stop()
+        isHTTPSessionPlaybackActive = false
+        canAbortHTTPSessionTurn = false
+        connectionStage = "http_session:playback_stopped"
+    }
+
     func beginEndHTTPSessionRuntime(reason: String) -> Task<Void, Never>? {
         guard let sessionID = httpSessionID else {
             return nil

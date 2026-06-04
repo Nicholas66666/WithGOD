@@ -303,8 +303,11 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
 
   if (event.type === "mic_pressed") {
     if (state.conversationState === "assistantSpeaking" && !state.isHTTPSessionEnded && !state.lastError) {
+      const canAbort = event.canAbort !== false;
       actions.push("local_stop_playback");
-      actions.push("post_abort:background");
+      if (canAbort) {
+        actions.push("post_abort:background");
+      }
       if (state.isContinuousMode) {
         actions.push("start_recording:barge_in");
         return {

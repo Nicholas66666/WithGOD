@@ -2138,6 +2138,23 @@ Latest WatchLab mic-button barge-in gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This is a WatchLab local-first barge-in state update; no ECS deploy and no user-operated Watch test were required.
 
+Latest WatchLab post-turn playback barge-in gate:
+- Strengthened the local playback interruption path after `turn_done`. The server generation may already be complete while queued audio is still playing on Watch; a microphone press in that state must still stop local playback before starting the next recording.
+- `watch-continuous-state-machine.mjs` now handles `mic_pressed` during `assistantSpeaking` with `canAbort: false` by emitting `local_stop_playback` and `start_recording:barge_in` without `post_abort:background`.
+- `DeepResponseRealtimeClient.stopHTTPSessionPlaybackForBargeIn()` now stops the local player, clears `isHTTPSessionPlaybackActive`, clears `canAbortHTTPSessionTurn`, and marks `http_session:playback_stopped`.
+- `DeepResponseDebugView.toggleMicrophoneTurn()` now has a second assistant-speaking branch for local-only playback stop when no active server abort is available, then starts `Barge-in recording`.
+- Verification:
+  - RED `node --test --test-name-pattern "post-turn playback" scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs` first failed because the model still emitted `post_abort:background` and Swift had no local-only playback stop path.
+  - `node --test --test-name-pattern "post-turn playback|mic press" scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`: `4/4` passed.
+  - `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs scripts/deep-response-integration-gate.test.mjs`: `60/60` passed.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Node self-tests: `217/217` passed.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `247ms`, `235ms`; `llm_started_from_partial: 1` on both turns; abort stale audio chunks/bytes: `0` / `0`; idle memory `closureClean: true`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `225ms`, `208ms`, `232ms`, `220ms`, `228ms`, `223ms`, `225ms`, `217ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This is a WatchLab local playback interruption state update; no ECS deploy and no user-operated Watch test were required.
+
 - Unit and server tests:
   - `npm run test:node`
 

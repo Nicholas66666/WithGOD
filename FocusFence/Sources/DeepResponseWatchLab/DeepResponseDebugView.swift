@@ -199,6 +199,12 @@ struct DeepResponseDebugView: View {
             return
         }
 
+        if conversationState == .assistantSpeaking || client.isHTTPSessionPlaybackActive {
+            client.stopHTTPSessionPlaybackForBargeIn()
+            await startRecordingTurn(reason: "Barge-in recording")
+            return
+        }
+
         await startRecordingTurn(reason: "Recording")
     }
 
