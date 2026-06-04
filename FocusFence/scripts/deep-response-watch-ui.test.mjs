@@ -263,6 +263,12 @@ test("DeepResponse Watch continuous barge-in starts recording before abort ack",
   assert.match(abortFunction, /if shouldResumeListening,[\s\S]*?!client\.isHTTPSessionEnded[\s\S]*?await startRecordingTurn\(reason: "Barge-in recording"\)[\s\S]*?await abortTask\?\.value/);
 });
 
+test("DeepResponse Watch mic press during assistant speech triggers local-first barge-in", () => {
+  const toggleFunction = debugViewSource.match(/private func toggleMicrophoneTurn\(\) async \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(toggleFunction, /if client\.canAbortHTTPSessionTurn,[\s\S]*?\(conversationState == \.assistantSpeaking \|\| client\.isHTTPSessionPlaybackActive\) \{[\s\S]*?await abortCurrentTurn\(\)[\s\S]*?return/);
+  assert.doesNotMatch(toggleFunction, /await startRecordingTurn\(reason: "Recording"\)[\s\S]*?if client\.canAbortHTTPSessionTurn/);
+});
+
 test("DeepResponse Watch continuous barge-in handles session end after abort ack", () => {
   const abortFunction = debugViewSource.match(/private func abortCurrentTurn\(\) async \{[\s\S]*?\n    \}/)?.[0] || "";
   const continuousBranch = abortFunction.match(/if shouldResumeListening,[\s\S]*?\{([\s\S]*?)\n        \} else \{/)?.[1] || "";

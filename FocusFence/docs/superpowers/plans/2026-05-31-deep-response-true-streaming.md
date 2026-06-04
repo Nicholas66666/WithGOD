@@ -2122,6 +2122,22 @@ Latest WatchLab first-audio speaking-state gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This is a WatchLab full-streaming state update; no ECS deploy and no user-operated Watch test were required.
 
+Latest WatchLab mic-button barge-in gate:
+- Strengthened the WatchLab barge-in path after first streamed audio. When the assistant is speaking and the user presses the microphone button, DeepLab now treats that press as local-first barge-in instead of starting a new recording over an active generation.
+- `watch-continuous-state-machine.mjs` now handles `mic_pressed` during `assistantSpeaking` by emitting `local_stop_playback`, `post_abort:background`, and `start_recording:barge_in`, then returning to `userSpeaking`.
+- `DeepResponseDebugView.toggleMicrophoneTurn()` now checks `client.canAbortHTTPSessionTurn` plus `conversationState == .assistantSpeaking || client.isHTTPSessionPlaybackActive` before normal manual recording, and routes that path through `abortCurrentTurn()`.
+- Verification:
+  - RED `node --test --test-name-pattern "mic press" scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs` first failed because the model stayed in `assistantSpeaking` and Swift went directly to `startRecordingTurn(reason: "Recording")`.
+  - `node --test --test-name-pattern "mic press" scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`: `2/2` passed.
+  - `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs scripts/deep-response-integration-gate.test.mjs`: `58/58` passed.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Node self-tests: `215/215` passed.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `244ms`, `192ms`; `llm_started_from_partial: 1` on both turns; abort stale audio chunks/bytes: `0` / `0`; idle memory `closureClean: true`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `216ms`, `235ms`, `235ms`, `220ms`, `227ms`, `226ms`, `225ms`, `216ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This is a WatchLab local-first barge-in state update; no ECS deploy and no user-operated Watch test were required.
+
 - Unit and server tests:
   - `npm run test:node`
 

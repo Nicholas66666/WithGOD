@@ -193,6 +193,12 @@ struct DeepResponseDebugView: View {
             return
         }
 
+        if client.canAbortHTTPSessionTurn,
+           (conversationState == .assistantSpeaking || client.isHTTPSessionPlaybackActive) {
+            await abortCurrentTurn()
+            return
+        }
+
         await startRecordingTurn(reason: "Recording")
     }
 
