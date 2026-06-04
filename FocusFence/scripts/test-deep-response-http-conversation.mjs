@@ -25,6 +25,7 @@ export function parseHTTPConversationArgs(argv) {
     forbidIdenticalConsecutiveReplies: false,
     maxOpeningStemRepeats: 0,
     maxAssistantReplyChars: 0,
+    minAssistantReplyChars: 0,
     maxStopToFirstAudioMs: 0,
     forbiddenTextPatterns: [],
     verbose: false
@@ -80,6 +81,9 @@ export function parseHTTPConversationArgs(argv) {
       index += 1;
     } else if (arg === "--max-assistant-reply-chars") {
       args.maxAssistantReplyChars = Number(argv[index + 1] || 0);
+      index += 1;
+    } else if (arg === "--min-assistant-reply-chars") {
+      args.minAssistantReplyChars = Number(argv[index + 1] || 0);
       index += 1;
     } else if (arg === "--max-stop-to-first-audio-ms") {
       args.maxStopToFirstAudioMs = Number(argv[index + 1] || 0);
@@ -260,6 +264,12 @@ export async function runHTTPConversationProbe(args) {
   if (longReplyFailures.length > 0) {
     throw new Error(`Long conversation reply failures: ${JSON.stringify(longReplyFailures, null, 2)}`);
   }
+  const shortReplyFailures = collectShortConversationReplyFailures(turns, {
+    minChars: args.minAssistantReplyChars
+  });
+  if (shortReplyFailures.length > 0) {
+    throw new Error(`Short conversation reply failures: ${JSON.stringify(shortReplyFailures, null, 2)}`);
+  }
   const stopToFirstAudioFailures = collectStopToFirstAudioFailures(turns, {
     maxMs: args.maxStopToFirstAudioMs
   });
@@ -301,6 +311,7 @@ export async function runHTTPConversationProbe(args) {
     repeatedOpeningStemFailures,
     repeatedReplyFailures,
     longReplyFailures,
+    shortReplyFailures,
     stopToFirstAudioFailures,
     lateAudioRejected,
     elapsedMs: Math.round(performance.now() - startedAt),
@@ -483,6 +494,27 @@ export function collectLongConversationReplyFailures(turns = [], { maxChars = 0 
       failures.push({
         turnID: turn?.turnID || "",
         maxChars: limit,
+        charCount,
+        text
+      });
+    }
+  }
+  return failures;
+}
+
+export function collectShortConversationReplyFailures(turns = [], { minChars = 0 } = {}) {
+  const limit = Number(minChars || 0);
+  if (!Number.isFinite(limit) || limit <= 0) {
+    return [];
+  }
+  const failures = [];
+  for (const turn of turns || []) {
+    const text = String(turn?.text || "").trim();
+    const charCount = countConversationReplyChars(text);
+    if (charCount < limit) {
+      failures.push({
+        turnID: turn?.turnID || "",
+        minChars: limit,
         charCount,
         text
       });

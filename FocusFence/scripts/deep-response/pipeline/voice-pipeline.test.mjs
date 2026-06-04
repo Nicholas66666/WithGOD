@@ -1187,6 +1187,54 @@ test("VoicePipeline streamCascadeTurn shortens an overlong first phrase before s
   assert.equal(timing.timing.reply_truncated_for_length, 1);
 });
 
+test("VoicePipeline streamCascadeTurn adds a short fallback when truncation would leave a placeholder reply", async () => {
+  const spokenTexts = [];
+  const asr = {
+    async *transcribeStream() {
+      yield { type: "transcript_final", transcript: "今天我有点累，想停一下。" };
+    }
+  };
+  const llm = {
+    async *streamTokens() {
+      yield { type: "delta", delta: "那停一下吧。" };
+      yield { type: "delta", delta: "“我的神必照他荣耀的丰富，在基督耶稣里使你一切所需用的都充足，也继续扶着你往前走。”" };
+      yield { type: "done", timing: { llm_total_ms: 900 } };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      spokenTexts.push(text);
+      yield { type: "audio_chunk", audioChunk: Buffer.from(text), sampleRate: 24000 };
+      yield { type: "done", timing: { tts_first_audio_ms: 10 } };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 1, 2, 3]) });
+  const events = [];
+  for await (const event of pipeline.streamCascadeTurn({
+    audioChunks: [Buffer.from("voice")],
+    maxSpokenReplyChars: 48,
+    minSpokenReplyChars: 8
+  })) {
+    events.push(event);
+  }
+
+  const deltas = events
+    .filter((event) => event.type === "assistant_text_delta")
+    .map((event) => event.delta);
+  const phrases = events
+    .filter((event) => event.type === "assistant_phrase")
+    .map((event) => event.text);
+  const done = events.find((event) => event.type === "turn_done");
+  const timing = events.find((event) => event.type === "timing");
+
+  assert.deepEqual(deltas, ["那停一下吧。", "我陪你慢慢缓过来。"]);
+  assert.deepEqual(phrases, ["那停一下吧。", "我陪你慢慢缓过来。"]);
+  assert.deepEqual(spokenTexts, ["那停一下吧。", "我陪你慢慢缓过来。"]);
+  assert.equal(done.assistantText, "那停一下吧。我陪你慢慢缓过来。");
+  assert.equal(timing.timing.reply_truncated_for_length, 1);
+});
+
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

@@ -1719,6 +1719,25 @@ Latest formulaic scripture lead-in gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This remains HTTP-only and completely self-tested; no user-operated Watch test is part of this gate.
 
+Latest short reply floor gate:
+- Added a self-testable lower bound for assistant spoken replies so placeholder-length turns such as `那停一下吧。` cannot pass the canonical Fire/Volcengine 8-turn conversation gate.
+- `scripts/test-deep-response-http-conversation.mjs` now accepts `--min-assistant-reply-chars` and reports `shortReplyFailures`.
+- Standard `deep:volc:conversation:full` now runs with `--min-assistant-reply-chars 8` alongside the existing `--max-assistant-reply-chars 48`, repeated-reply, repeated-opening, forbidden-text, memory, goodbye, late-audio, and stop-to-first-audio gates.
+- `VoicePipeline.streamCascadeTurn()` now supports explicit `minSpokenReplyChars`; HTTP cascade sessions enable it by default through `DEEP_RESPONSE_CASCADE_MIN_SPOKEN_CHARS || 8`.
+- When length truncation would leave only a placeholder-length reply, the pipeline appends a short non-scripture fallback phrase before stopping the TTS queue, for example `那停一下吧。我陪你慢慢缓过来。`.
+- Verification:
+  - RED `node --test scripts/test-deep-response-http-conversation.test.mjs scripts/package-scripts.test.mjs` first failed because `collectShortConversationReplyFailures` and the standard package gate did not exist.
+  - RED `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/test-deep-response-http-conversation.test.mjs scripts/package-scripts.test.mjs` first failed because `VoicePipeline.streamCascadeTurn()` emitted only `那停一下吧。` after dropping an overlong quote.
+  - `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/test-deep-response-http-conversation.test.mjs scripts/package-scripts.test.mjs scripts/deep-response-server.test.mjs`: `72/72` passed.
+  - `npm run test:node`: `188/188` passed.
+  - Fire/Volcengine ECS was updated by `scp` after a failed multi-file base64 sync was caught by remote `node --check`; `/health` returned `{"ok":true,"service":"deep-response","mode":"provider","providerConfigured":true}`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Fire/Volcengine smoke stop-to-first-audio: `216ms`, `216ms`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Latest Fire/Volcengine 8-turn stop-to-first-audio after exposing `shortReplyFailures`: `1723ms`, `1717ms`, `1902ms`, `1742ms`, `1941ms`, `1785ms`, `1794ms`, `1746ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This remains HTTP-only and self-tested; no user-operated Watch test is part of this gate.
+
 - Unit and server tests:
   - `npm run test:node`
 

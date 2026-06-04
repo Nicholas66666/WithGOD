@@ -7,6 +7,7 @@ import {
   collectRepeatedOpeningStemFailures,
   collectRepeatedConversationReplyFailures,
   collectLongConversationReplyFailures,
+  collectShortConversationReplyFailures,
   collectStopToFirstAudioFailures,
   parseHTTPConversationArgs,
   summarizeTurn
@@ -36,6 +37,7 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
     "--forbid-identical-consecutive-replies",
     "--max-opening-stem-repeats", "2",
     "--max-assistant-reply-chars", "48",
+    "--min-assistant-reply-chars", "8",
     "--max-stop-to-first-audio-ms", "3500",
     "--forbid-text-pattern", "[:：]\\s*$|你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|是还想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)"
   ]);
@@ -50,6 +52,7 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
   assert.equal(args.forbidIdenticalConsecutiveReplies, true);
   assert.equal(args.maxOpeningStemRepeats, 2);
   assert.equal(args.maxAssistantReplyChars, 48);
+  assert.equal(args.minAssistantReplyChars, 8);
   assert.equal(args.maxStopToFirstAudioMs, 3500);
   assert.deepEqual(args.forbiddenTextPatterns, ["[:：]\\s*$|你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|是还想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)"]);
 });
@@ -246,6 +249,29 @@ test("collectLongConversationReplyFailures flags overlong assistant replies", ()
       maxChars: 48,
       charCount: 49,
       text: "主会看顾你的。“我的神必照他荣耀的丰富，在基督耶稣里使你一切所需用的都充足，也继续扶着你往前走。”"
+    }
+  ]);
+});
+
+test("collectShortConversationReplyFailures flags placeholder-length assistant replies", () => {
+  const failures = collectShortConversationReplyFailures([
+    { turnID: "turn-1", text: "那停一下吧。" },
+    { turnID: "turn-2", text: "那咱缓缓。“你们要休息，要知道我是神。”" },
+    { turnID: "turn-3", text: "" }
+  ], { minChars: 8 });
+
+  assert.deepEqual(failures, [
+    {
+      turnID: "turn-1",
+      minChars: 8,
+      charCount: 6,
+      text: "那停一下吧。"
+    },
+    {
+      turnID: "turn-3",
+      minChars: 8,
+      charCount: 0,
+      text: ""
     }
   ]);
 });

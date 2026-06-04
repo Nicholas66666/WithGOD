@@ -960,7 +960,8 @@ function selectHTTPSessionStream(pipeline, { session, env, context, audioChunks,
       audioChunks,
       turnID,
       generationID,
-      phraseMaxChars: Number(env.DEEP_RESPONSE_CASCADE_PHRASE_MAX_CHARS || 28)
+      phraseMaxChars: Number(env.DEEP_RESPONSE_CASCADE_PHRASE_MAX_CHARS || 28),
+      minSpokenReplyChars: Number(env.DEEP_RESPONSE_CASCADE_MIN_SPOKEN_CHARS || 8)
     });
   }
   if (typeof pipeline.streamSegmented === "function") {

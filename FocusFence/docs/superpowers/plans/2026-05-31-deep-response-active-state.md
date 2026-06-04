@@ -123,12 +123,14 @@ Latest LLM selection benchmark:
 - This is a self-test/model-selection gate only; it does not introduce Watch WebSocket, user-operated Watch validation, or product integration.
 - Standard Fire/Volcengine smoke and 8-turn conversation gates forbid identical assistant replies anywhere in the same session via `--forbid-identical-consecutive-replies`.
 - Standard Fire/Volcengine smoke requires every conversation turn to start LLM from usable ASR partial via `--expect-llm-started-from-partial`.
+- Standard Fire/Volcengine 8-turn conversation gate requires assistant replies to stay within `8..48` spoken characters via `--min-assistant-reply-chars 8` and `--max-assistant-reply-chars 48`, preventing placeholder-length replies such as `那停一下吧。` from passing self-test.
 - The LLM prompt now explicitly quotes recent assistant replies when present and forbids repeating any of them, including when the user repeats the same request.
 - Standard Fire/Volcengine smoke now rejects lookup-style, harsh repeated-comfort, mechanical tired/fatigue, incomplete-utterance, and stale followup replies such as `给你找一句`, `再给你读一句`, `你还想听`, `你还是想听`, `你又想听`, `喊累`, `没说完`, `只说想听`, `是还想听`, `你还是觉得累`, `你又累`, and `你又感到疲惫`.
 - The complete-reply prompt now requires comfort-intent turns to directly承接情绪 instead of opening as a scripture lookup or repeating the user's "想听安慰" request.
 - Standard `deep:selftest:full` now includes an 8-turn Fire/Volcengine continuous conversation gate with memory recall/persist, explicit user-goodbye session end, late-audio rejection, repeated-opening-stem rejection, full-session identical-reply rejection, and lookup/harsh/mechanical/incomplete-utterance/stale-followup text rejection.
 - Server memory recall sanitizes lookup-style, harsh, mechanical tired/fatigue, incomplete-utterance, and stale-followup comfort phrases before placing persisted summaries into LLM context.
 - VoicePipeline normalizes lookup-style, harsh repeated-comfort, mechanical tired/fatigue openings, incomplete-utterance misreads, dangling modal particles, and dangling quote lead-ins before emitting assistant text, phrase events, or TTS audio.
+- VoicePipeline can add a short non-scripture fallback phrase when length truncation would leave only a placeholder-length spoken reply; this is enabled for HTTP cascade sessions with `DEEP_RESPONSE_CASCADE_MIN_SPOKEN_CHARS` defaulting to `8`.
 
 ## Standard Commands
 

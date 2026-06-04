@@ -150,7 +150,8 @@ export class VoicePipeline {
     turnID,
     generationID,
     phraseMaxChars,
-    maxSpokenReplyChars = 48
+    maxSpokenReplyChars = 48,
+    minSpokenReplyChars = 0
   } = {}) {
     const startedAt = this.clock();
     const phraseChunker = createPhraseChunker({ maxChars: phraseMaxChars });
@@ -167,6 +168,42 @@ export class VoicePipeline {
     let llmStartedFromPartial = false;
     let spokenReplyChars = 0;
     let replyTruncatedForLength = false;
+
+    const enqueuePhrase = (phraseText, phrase = {}) => {
+      spokenReplyChars += countSpokenChars(phraseText);
+      assistantText += phraseText;
+      outputQueue.push({
+        type: "assistant_text_delta",
+        turnID,
+        generationID,
+        delta: phraseText
+      });
+      outputQueue.push({
+        type: "assistant_phrase",
+        turnID,
+        generationID,
+        phraseIndex: phrase.index,
+        text: phraseText,
+        reason: phrase.reason
+      });
+      phraseQueue.push({ index: phrase.index, text: phraseText });
+    };
+
+    const enqueueShortReplyFallbackIfNeeded = (phrase = {}) => {
+      const minChars = Number(minSpokenReplyChars || 0);
+      if (!Number.isFinite(minChars) || minChars <= 0 || spokenReplyChars >= minChars) {
+        return false;
+      }
+      const fallbackText = pickShortReplyFallback(context);
+      if (!fallbackText || wouldExceedSpokenReplyLimit(spokenReplyChars, fallbackText, maxSpokenReplyChars)) {
+        return false;
+      }
+      enqueuePhrase(fallbackText, {
+        index: phrase.index,
+        reason: "short_reply_fallback"
+      });
+      return true;
+    };
 
     const startLLM = (transcript, { source = "final" } = {}) => {
       if (llmTask) {
@@ -206,29 +243,15 @@ export class VoicePipeline {
               }
               if (shouldDropLongQuotedPhrase(spokenReplyChars, phraseText)) {
                 replyTruncatedForLength = true;
+                enqueueShortReplyFallbackIfNeeded(phrase);
                 return;
               }
               if (wouldExceedSpokenReplyLimit(spokenReplyChars, phraseText, maxSpokenReplyChars)) {
                 replyTruncatedForLength = true;
+                enqueueShortReplyFallbackIfNeeded(phrase);
                 return;
               }
-              spokenReplyChars += countSpokenChars(phraseText);
-              assistantText += phraseText;
-              outputQueue.push({
-                type: "assistant_text_delta",
-                turnID,
-                generationID,
-                delta: phraseText
-              });
-              outputQueue.push({
-                type: "assistant_phrase",
-                turnID,
-                generationID,
-                phraseIndex: phrase.index,
-                text: phraseText,
-                reason: phrase.reason
-              });
-              phraseQueue.push({ index: phrase.index, text: phraseText });
+              enqueuePhrase(phraseText, phrase);
             }
           }
 
@@ -239,29 +262,15 @@ export class VoicePipeline {
             }
             if (shouldDropLongQuotedPhrase(spokenReplyChars, phraseText)) {
               replyTruncatedForLength = true;
+              enqueueShortReplyFallbackIfNeeded(phrase);
               break;
             }
             if (wouldExceedSpokenReplyLimit(spokenReplyChars, phraseText, maxSpokenReplyChars)) {
               replyTruncatedForLength = true;
+              enqueueShortReplyFallbackIfNeeded(phrase);
               break;
             }
-            spokenReplyChars += countSpokenChars(phraseText);
-            assistantText += phraseText;
-            outputQueue.push({
-              type: "assistant_text_delta",
-              turnID,
-              generationID,
-              delta: phraseText
-            });
-            outputQueue.push({
-              type: "assistant_phrase",
-              turnID,
-              generationID,
-              phraseIndex: phrase.index,
-              text: phraseText,
-              reason: phrase.reason
-            });
-            phraseQueue.push({ index: phrase.index, text: phraseText });
+            enqueuePhrase(phraseText, phrase);
           }
         } finally {
           phraseQueue.close();
@@ -877,6 +886,18 @@ function pickOpeningReplacement(context, avoidedStem, maxRepeats) {
     const stem = extractOpeningStem(candidate);
     return stem && stem !== avoidedStem && countAssistantOpeningStem(context, stem) < maxRepeats;
   }) || "我陪你慢下来。";
+}
+
+function pickShortReplyFallback(context) {
+  const candidates = [
+    "我陪你慢慢缓过来。",
+    "不用急着把自己撑住。",
+    "先把这一口气放下。"
+  ];
+  return candidates.find((candidate) => {
+    const stem = extractOpeningStem(candidate);
+    return stem && countAssistantOpeningStem(context, stem) === 0;
+  }) || candidates[0];
 }
 
 function countAssistantOpeningStem(context, openingStem) {
