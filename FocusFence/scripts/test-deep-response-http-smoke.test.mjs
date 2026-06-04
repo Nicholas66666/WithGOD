@@ -1,5 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
+import { mkdtemp } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 import { startDeepResponseServer } from "./deep-response-server.mjs";
 import {
@@ -20,6 +24,7 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
     "--expect-abort-next-turn",
     "--expect-memory-recalled",
     "--expect-memory-persisted",
+    "--expect-idle-memory-persisted",
     "--forbid-text-pattern", "大卫.*歌利亚",
     "--forbid-text-pattern", "你知道.*为什么"
   ]);
@@ -34,6 +39,7 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
   assert.equal(args.expectAbortNextTurn, true);
   assert.equal(args.expectMemoryRecalled, true);
   assert.equal(args.expectMemoryPersisted, true);
+  assert.equal(args.expectIdleMemoryPersisted, true);
   assert.deepEqual(args.forbiddenTextPatterns, ["大卫.*歌利亚", "你知道.*为什么"]);
 });
 
@@ -74,11 +80,16 @@ test("runHTTPIdleProbe verifies idle session end and rejects late audio", async 
 });
 
 test("runHTTPIdleProbe can require gentle idle goodbye audio before session end", async () => {
+  const tempDir = await mkdtemp(join(tmpdir(), "deep-response-idle-memory-"));
+  const memoryPath = join(tempDir, "memory.jsonl");
   const server = await startDeepResponseServer({
     port: 0,
     host: "127.0.0.1",
     mode: "provider",
     log: false,
+    env: {
+      DEEP_RESPONSE_MEMORY_JSONL_PATH: memoryPath
+    },
     createPipeline: () => ({
       tts: {
         async *synthesizeStream({ text }) {
@@ -95,13 +106,18 @@ test("runHTTPIdleProbe can require gentle idle goodbye audio before session end"
       idleTimeoutMs: 20,
       idleObserveMs: 1_000,
       pollMs: 25,
-      idleGoodbye: true
+      idleGoodbye: true,
+      expectMemoryPersisted: true
     });
 
     assert.equal(summary.ok, true);
     assert.equal(summary.endReason, "idle_timeout");
     assert.equal(summary.idleGoodbye.text.includes("拜拜"), true);
     assert.equal(summary.idleGoodbye.audioChunks, 1);
+    assert.equal(summary.memoryCandidate.persisted, true);
+    assert.equal(summary.memoryCandidate.store, "jsonl");
+    assert.equal(summary.memoryCandidate.reason, "idle_timeout");
+    assert.equal(existsSync(memoryPath), true);
   } finally {
     await server.close();
   }

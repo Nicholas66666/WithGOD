@@ -1157,6 +1157,23 @@ Latest full-smoke memory persistence gate:
   - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-smoke-memory-persist-build build`: `BUILD SUCCEEDED`.
 - Development remained self-test only; no user-operated Watch testing was required.
 
+Latest idle memory persistence gate:
+- Added `--expect-idle-memory-persisted` to `scripts/test-deep-response-http-smoke.mjs`.
+- The idle self-test now continues polling after `session_end idle_timeout` until the async `memory_candidate` is observed when this gate is enabled.
+- `runHTTPIdleProbe()` now reports `idle.memoryCandidate.persisted`, `store`, `reason`, and `turnCount`, and includes the memory persistence expectation in its summary.
+- This covers the natural Xiaozhi-style ending path: idle goodbye text/audio, authoritative turn/session end, late audio rejection, and persisted summary/memory without user-operated Watch testing.
+- Verification:
+  - RED tests first failed with `Unknown argument: --expect-idle-memory-persisted` and missing `summary.memoryCandidate`.
+  - `node --test scripts/test-deep-response-http-smoke.test.mjs scripts/test-deep-response-http-conversation.test.mjs`: `10/10` passed.
+  - `npm run test:node`: `148/148` passed.
+  - Fire/Volcengine full HTTP smoke with `--expect-idle-memory-persisted`, `--expect-memory-recalled`, `--expect-memory-persisted`, `--expect-abort-next-turn`, `--idle-goodbye`, `--wait-ms 800`, cascade mode, and forbidden-pattern gates: passed.
+  - Latest full-smoke idle event order included `session_ready`, `memory_recalled`, idle goodbye text/phrase/audio, `turn_done`, `session_end`, and `memory_candidate`.
+  - Latest full-smoke idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`, `turnCount: 1`.
+  - Latest full-smoke conversation stop-to-first-audio: `206ms`, `194ms`.
+  - Latest abort stale audio chunks/bytes: `0` / `0`; abort next turn reported `audioDone: true`, `turnDone: true`.
+  - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-idle-memory-persist-build build`: `BUILD SUCCEEDED`.
+- Development remained self-test only; no user-operated Watch testing was required.
+
 ## File Responsibilities
 
 - Modify `scripts/deep-response/protocol/deep-response-protocol.mjs`

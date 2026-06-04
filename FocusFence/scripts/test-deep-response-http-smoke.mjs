@@ -31,6 +31,7 @@ export function parseHTTPSmokeArgs(argv) {
     expectAbortNextTurn: false,
     expectMemoryRecalled: false,
     expectMemoryPersisted: false,
+    expectIdleMemoryPersisted: false,
     forbiddenTextPatterns: [],
     verbose: false
   };
@@ -87,6 +88,8 @@ export function parseHTTPSmokeArgs(argv) {
       args.expectMemoryRecalled = true;
     } else if (arg === "--expect-memory-persisted") {
       args.expectMemoryPersisted = true;
+    } else if (arg === "--expect-idle-memory-persisted") {
+      args.expectIdleMemoryPersisted = true;
     } else if (arg === "--forbid-text-pattern") {
       args.forbiddenTextPatterns.push(argv[index + 1] || "");
       index += 1;
@@ -148,7 +151,8 @@ export async function runHTTPSmokeProbe(args) {
     idleTimeoutMs: args.idleTimeoutMs,
     idleObserveMs: args.idleObserveMs,
     pollMs: args.pollMs,
-    idleGoodbye: args.idleGoodbye
+    idleGoodbye: args.idleGoodbye,
+    expectMemoryPersisted: args.expectIdleMemoryPersisted
   }), {
     attempts: args.retries + 1,
     label: "idle"
@@ -265,7 +269,8 @@ export async function runHTTPIdleProbe({
   idleTimeoutMs = 150,
   idleObserveMs = 2_000,
   pollMs = 50,
-  idleGoodbye = false
+  idleGoodbye = false,
+  expectMemoryPersisted = false
 }) {
   const created = await postJSON(buildURL(endpoint, "/deep-response/sessions"), {
     sampleRate: 16_000,
@@ -277,15 +282,20 @@ export async function runHTTPIdleProbe({
   let audioCursor = 0;
   const events = [];
   const audioChunks = [];
+  let memoryCandidate = null;
   const startedAt = performance.now();
   while (performance.now() - startedAt < idleObserveMs) {
     const eventBatch = await fetchJSON(buildURL(endpoint, `${basePath}/events?cursor=${eventCursor}`));
     eventCursor = eventBatch.nextCursor;
     events.push(...eventBatch.events);
+    memoryCandidate = events.find((event) => event.type === "memory_candidate") || memoryCandidate;
     const audioBatch = await fetchJSON(buildURL(endpoint, `${basePath}/audio?cursor=${audioCursor}`));
     audioCursor = audioBatch.nextCursor;
     audioChunks.push(...audioBatch.chunks);
-    if (events.some((event) => event.type === "session_end" && event.reason === "idle_timeout")) {
+    if (
+      events.some((event) => event.type === "session_end" && event.reason === "idle_timeout")
+      && (!expectMemoryPersisted || memoryCandidate?.persisted === true)
+    ) {
       break;
     }
     await sleep(pollMs);
@@ -310,8 +320,9 @@ export async function runHTTPIdleProbe({
     .join("");
   const sawIdleGoodbyeDone = events.some((event) => event.type === "audio_done" && event.reason === "idle_goodbye_complete");
   const idleGoodbyeOK = !idleGoodbye || (idleGoodbyeText.length > 0 && sawIdleGoodbyeDone && audioChunks.length > 0);
+  const memoryOK = !expectMemoryPersisted || memoryCandidate?.persisted === true;
   return {
-    ok: sawIdleEnd && rejected.status === 409 && rejectedBody?.error === "session_ended" && idleGoodbyeOK,
+    ok: sawIdleEnd && rejected.status === 409 && rejectedBody?.error === "session_ended" && idleGoodbyeOK && memoryOK,
     sessionID: created.sessionID,
     elapsedMs: Math.round(performance.now() - startedAt),
     idleTimeoutMs,
@@ -325,6 +336,15 @@ export async function runHTTPIdleProbe({
       audioChunks: audioChunks.length,
       audioBytes: audioChunks.reduce((sum, chunk) => sum + Number(chunk.audioByteLength || 0), 0),
       done: sawIdleGoodbyeDone
+    },
+    memoryCandidate: memoryCandidate ? {
+      persisted: memoryCandidate.persisted,
+      store: memoryCandidate.store,
+      reason: memoryCandidate.reason,
+      turnCount: memoryCandidate.turnCount
+    } : null,
+    expectations: {
+      memoryPersisted: expectMemoryPersisted
     }
   };
 }
@@ -412,6 +432,7 @@ Options:
   --expect-abort-next-turn         Require abort probe to complete another turn in the same session.
   --expect-memory-recalled         Require conversation probe to recall persisted memory into context.
   --expect-memory-persisted        Require conversation probe to persist a memory candidate after /end.
+  --expect-idle-memory-persisted   Require idle timeout probe to persist a memory candidate.
   --forbid-text-pattern <regex>    Fail if any assistant reply matches this regex. Repeatable.
   --verbose                        Print event details from child probes.
 `);
