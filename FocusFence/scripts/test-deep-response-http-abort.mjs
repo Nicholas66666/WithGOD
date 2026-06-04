@@ -14,6 +14,7 @@ export function parseHTTPAbortArgs(argv) {
     pollMs: 50,
     observeMs: 3_000,
     pipelineMode: "",
+    expectNextTurn: false,
     verbose: false
   };
 
@@ -40,6 +41,8 @@ export function parseHTTPAbortArgs(argv) {
     } else if (arg === "--pipeline-mode") {
       args.pipelineMode = argv[index + 1] || "";
       index += 1;
+    } else if (arg === "--expect-next-turn") {
+      args.expectNextTurn = true;
     } else if (arg === "--verbose") {
       args.verbose = true;
     } else if (arg === "--help" || arg === "-h") {
@@ -110,14 +113,31 @@ export async function runHTTPAbortProbe(args) {
     await sleep(args.pollMs);
   }
 
+  let nextTurn = null;
+  if (args.expectNextTurn) {
+    nextTurn = await runNextTurnAfterAbort({
+      endpoint: args.endpoint,
+      basePath,
+      chunks,
+      uploadSleepMs,
+      pollMs: args.pollMs,
+      verbose: args.verbose,
+      eventCursor,
+      audioCursor
+    });
+    eventCursor = nextTurn.eventCursor;
+    audioCursor = nextTurn.audioCursor;
+  }
+
   await postJSON(buildURL(args.endpoint, `${basePath}/end`), { reason: "abort_probe_complete" });
 
   return {
-    ok: aborted.ok === true && audioChunks.length === 0,
+    ok: aborted.ok === true && audioChunks.length === 0 && (!args.expectNextTurn || nextTurn?.ok === true),
     endpoint: args.endpoint,
     sessionID,
     turnID,
     generationID,
+    nextTurn,
     elapsedMs: Math.round(performance.now() - startedAt),
     uploadMs: Math.round(uploadEndedAt - uploadStartedAt),
     observeMs: args.observeMs,
@@ -125,6 +145,72 @@ export async function runHTTPAbortProbe(args) {
     eventTypes: events.map((event) => event.type),
     staleAudioChunks: audioChunks.length,
     staleAudioBytes: audioChunks.reduce((sum, chunk) => sum + Number(chunk.audioByteLength || 0), 0)
+  };
+}
+
+async function runNextTurnAfterAbort({
+  endpoint,
+  basePath,
+  chunks,
+  uploadSleepMs,
+  pollMs,
+  verbose,
+  eventCursor,
+  audioCursor
+}) {
+  const turnID = `turn_after_abort_${Date.now()}`;
+  for (let index = 0; index < chunks.length; index += 1) {
+    await postBytes(buildURL(endpoint, `${basePath}/audio?turn_id=${turnID}&seq=${index}`), chunks[index]);
+    if (uploadSleepMs > 0) {
+      await sleep(uploadSleepMs);
+    }
+  }
+  const stopped = await postJSON(buildURL(endpoint, `${basePath}/input-stop`), { turnID });
+  const generationID = stopped.generationID;
+  const events = [];
+  const audioChunks = [];
+  const startedAt = performance.now();
+  while (performance.now() - startedAt < 30_000) {
+    const eventBatch = await fetchJSON(buildURL(endpoint, `${basePath}/events?cursor=${eventCursor}`));
+    eventCursor = eventBatch.nextCursor;
+    const turnEvents = eventBatch.events.filter((event) => event.turnID === turnID);
+    events.push(...turnEvents);
+    if (verbose && turnEvents.length > 0) {
+      for (const event of turnEvents) {
+        console.log("next_event", JSON.stringify(event));
+      }
+    }
+
+    const audioBatch = await fetchJSON(buildURL(endpoint, `${basePath}/audio?cursor=${audioCursor}`));
+    audioCursor = audioBatch.nextCursor;
+    audioChunks.push(...audioBatch.chunks.filter((chunk) => chunk.generationID === generationID));
+    if (events.some((event) => event.type === "timing" && event.generationID === generationID)
+      && events.some((event) => event.type === "audio_done" && event.generationID === generationID)) {
+      break;
+    }
+    await sleep(pollMs);
+  }
+
+  const transcript = events.find((event) => event.type === "transcript_final")?.text || "";
+  const text = events
+    .filter((event) => event.type === "assistant_text_delta")
+    .map((event) => event.delta || "")
+    .join("");
+  const ok = Boolean(transcript) && Boolean(text) && audioChunks.length > 0;
+  if (!ok) {
+    throw new Error(`Expected next turn after abort, got transcript=${JSON.stringify(transcript)} text=${JSON.stringify(text)} audioChunks=${audioChunks.length}`);
+  }
+  return {
+    ok,
+    turnID,
+    generationID,
+    transcript,
+    text,
+    audioChunks: audioChunks.length,
+    audioBytes: audioChunks.reduce((sum, chunk) => sum + Number(chunk.audioByteLength || 0), 0),
+    eventTypes: events.map((event) => event.type),
+    eventCursor,
+    audioCursor
   };
 }
 
@@ -181,6 +267,7 @@ Options:
   --poll-ms <ms>        Poll interval for events/audio. Default: 50
   --observe-ms <ms>     How long to watch for stale audio after abort. Default: 3000
   --pipeline-mode <m>   Optional HTTP session pipeline mode, e.g. cascade.
+  --expect-next-turn    After abort, require a new turn in the same session to complete.
   --verbose             Print turn event batches.
 `);
 }

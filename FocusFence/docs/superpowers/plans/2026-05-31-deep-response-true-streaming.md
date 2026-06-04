@@ -55,17 +55,30 @@ npm run deep:http-smoke:test -- \
   --chunk-ms 1000 \
   --upload-sleep-ms 1000 \
   --poll-ms 50 \
-  --timeout-ms 90000 \
+  --wait-ms 800 \
+  --timeout-ms 120000 \
   --observe-ms 3000 \
-  --max-stop-to-first-audio-ms 3000
+  --idle-timeout-ms 150 \
+  --idle-observe-ms 5000 \
+  --idle-goodbye \
+  --max-stop-to-first-audio-ms 3000 \
+  --retries 1 \
+  --pipeline-mode cascade \
+  --expect-abort-next-turn \
+  --forbid-text-pattern '大卫.*歌利亚' \
+  --forbid-text-pattern '你知道.*为什么' \
+  --forbid-text-pattern '从哪卷书|哪卷书.*开始|哪句经文.*开始' \
+  --forbid-text-pattern '从哪里开始|想从哪里开始'
 ```
 
 Latest remote smoke result:
 
 - health `200`
 - two-turn conversation in one session passed
-- stop-to-first-audio after single-reply Fire/Volcengine deployment: `1963ms`, `1902ms`
+- stop-to-first-audio on Fire/Volcengine HTTP cascade: `215ms`, `217ms`
 - abort stale audio chunks/bytes: `0` / `0`
+- abort-next-turn same-session probe passed with transcript/text/audio in the following turn
+- idle goodbye emitted text/audio, then `session_end idle_timeout`; late audio rejected with `409 session_ended`
 
 ## Next Target: Full Streaming Pipeline
 
@@ -1038,6 +1051,21 @@ Latest Watch continuous barge-in resume gate:
   - Remote abort stale audio chunks/bytes: `0` / `0`.
   - Remote idle goodbye emitted text/audio and late audio was rejected with `409 session_ended`.
   - No user-operated Watch testing was required.
+
+Latest HTTP abort-next-turn self-test gate:
+- Added `--expect-next-turn` to `scripts/test-deep-response-http-abort.mjs`.
+- Added `--expect-abort-next-turn` to `scripts/test-deep-response-http-smoke.mjs`, forwarding the requirement into the abort probe.
+- The abort probe now verifies that after `/abort` drops the old generation, the same HTTP session can accept another uploaded turn and produce transcript, assistant text, and audio.
+- This covers the server/session half of continuous barge-in resume without requiring user-operated Watch testing.
+- Verification:
+  - `node --test scripts/test-deep-response-http-abort.test.mjs scripts/test-deep-response-http-smoke.test.mjs`: `5/5` passed.
+  - `npm run test:node`: `145/145` passed.
+  - Direct Fire/Volcengine abort-next-turn probe: passed; stale audio chunks/bytes `0` / `0`, next turn audio chunks/bytes `30` / `231112`.
+  - Fire/Volcengine full HTTP smoke with `--expect-abort-next-turn`, `--idle-goodbye`, `--wait-ms 800`, cascade mode, and forbidden-pattern gates: passed.
+  - Latest full-smoke stop-to-first-audio: `215ms`, `217ms`.
+  - Latest full-smoke abort next turn audio chunks/bytes: `27` / `237872`.
+  - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-abort-next-turn-build build`: `BUILD SUCCEEDED`.
+- Development remained self-test only; no user-operated Watch testing was required.
 
 ## File Responsibilities
 

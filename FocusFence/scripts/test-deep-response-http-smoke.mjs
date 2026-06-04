@@ -28,6 +28,7 @@ export function parseHTTPSmokeArgs(argv) {
     maxStopToFirstAudioMs: 3_000,
     retries: 2,
     pipelineMode: "",
+    expectAbortNextTurn: false,
     forbiddenTextPatterns: [],
     verbose: false
   };
@@ -78,6 +79,8 @@ export function parseHTTPSmokeArgs(argv) {
     } else if (arg === "--pipeline-mode") {
       args.pipelineMode = argv[index + 1] || "";
       index += 1;
+    } else if (arg === "--expect-abort-next-turn") {
+      args.expectAbortNextTurn = true;
     } else if (arg === "--forbid-text-pattern") {
       args.forbiddenTextPatterns.push(argv[index + 1] || "");
       index += 1;
@@ -125,6 +128,7 @@ export async function runHTTPSmokeProbe(args) {
     "--poll-ms", String(args.pollMs),
     "--observe-ms", String(args.observeMs),
     ...(args.pipelineMode ? ["--pipeline-mode", args.pipelineMode] : []),
+    ...(args.expectAbortNextTurn ? ["--expect-next-turn"] : []),
     ...(args.verbose ? ["--verbose"] : [])
   ]);
   const abort = await withRetries(() => runHTTPAbortProbe(abortArgs), {
@@ -185,7 +189,16 @@ export async function runHTTPSmokeProbe(args) {
       generationID: abort.generationID,
       staleAudioChunks: abort.staleAudioChunks,
       staleAudioBytes: abort.staleAudioBytes,
-      eventTypes: abort.eventTypes
+      eventTypes: abort.eventTypes,
+      nextTurn: abort.nextTurn ? {
+        ok: abort.nextTurn.ok,
+        turnID: abort.nextTurn.turnID,
+        generationID: abort.nextTurn.generationID,
+        transcript: abort.nextTurn.transcript,
+        text: abort.nextTurn.text,
+        audioChunks: abort.nextTurn.audioChunks,
+        audioBytes: abort.nextTurn.audioBytes
+      } : null
     },
     idle,
     failures: [
@@ -371,6 +384,7 @@ Options:
                                    Fail if any turn exceeds this stop-to-first-audio budget. Default: 3000
   --retries <n>                    Retry each top-level probe after transient network failures. Default: 2
   --pipeline-mode <m>              Optional HTTP session pipeline mode, e.g. cascade.
+  --expect-abort-next-turn         Require abort probe to complete another turn in the same session.
   --forbid-text-pattern <regex>    Fail if any assistant reply matches this regex. Repeatable.
   --verbose                        Print event details from child probes.
 `);
