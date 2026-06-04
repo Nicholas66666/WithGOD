@@ -12,32 +12,37 @@
 
 ## Current Baseline
 
-- `http-turn-v2` works on real Watch:
-  - Watch mic recording works.
-  - Render server receives audio.
-  - Doubao ASR returns correct Chinese transcript.
-  - Ark LLM returns first/followup text.
-  - Doubao TTS returns natural Chinese audio.
-  - Watch plays first segment then followup segment smoothly.
+- Update 2026-06-04:
+  - Fire/Volcengine ECS is now the primary test deployment: `http://124.174.96.149:8797`.
+  - Render remains a rollback/reference deployment, not the main latency target.
+  - Watch Lab points to the Fire/Volcengine endpoint.
+  - `http-turn-v2` and HTTP session mode both work on real Watch.
+  - Server-side prompt flow was simplified from first/followup to one complete AI reply:
+    - ASR: one final transcript per manual turn.
+    - LLM: one complete short reply.
+    - TTS: one synthesis stream for the complete reply.
+    - Watch UI shows one `god:` reply, no `first:` / `more:` fields.
 - Latest branch: `codex/deep-response-lab`.
-- Latest pushed commit: `ea8dc1f Add DeepResponse HTTP smoke probe`.
+- Latest pushed commit after single-reply pipeline: `d4640de Use single DeepResponse reply pipeline`.
 - Current DeepLab HTTP session baseline:
   - Watch client reuses one HTTP session across repeated mic turns.
   - Server stores short-term session context and uses it for following turns.
   - Watch client has local-first abort control and stale generation audio filtering.
-  - Remote one-command smoke probe passes against Render.
+  - Remote one-command smoke probe passes against Fire/Volcengine ECS.
 - True streaming is still not complete:
   - Watch -> Render WebSocket has previously failed with `-1001` / `-999` and is no longer mainline.
+  - Provider-side ASR/LLM/TTS are available, but the main path still waits for ASR final before LLM and waits for a complete LLM reply before TTS starts.
+  - Current TTS audio itself is chunked/streamed to Watch, but LLM->TTS is not yet a true incremental phrase pipeline.
   - Full hands-free listening/VAD loop is not implemented.
   - Goodbye and idle-end flows are not implemented.
   - Summary/memory candidate persistence is not implemented.
-  - Latest abort UI build is not yet installed on Watch because CoreDevice tunnel setup failed.
+  - Watch installation/launch is sometimes blocked by CoreDevice tunnel instability; do not rely on manual Watch testing until local/remote script gates pass.
 
 Latest remote smoke command:
 
 ```bash
 npm run deep:http-smoke:test -- \
-  --endpoint https://withgod-deep-response.onrender.com \
+  --endpoint http://124.174.96.149:8797 \
   --pcm /private/tmp/deep-response-http-speed.pcm \
   --turns 2 \
   --chunk-ms 1000 \
@@ -52,8 +57,286 @@ Latest remote smoke result:
 
 - health `200`
 - two-turn conversation in one session passed
-- stop-to-first-audio: `1682ms`, `1993ms`
+- stop-to-first-audio after single-reply Fire/Volcengine deployment: `1963ms`, `1902ms`
 - abort stale audio chunks/bytes: `0` / `0`
+
+## Next Target: Full Streaming Pipeline
+
+The next target is not another two-step reply trick. The target is a real cascade:
+
+```text
+Watch uploads mic chunks over HTTP while user speaks
+-> Server streams chunks to Doubao ASR
+-> ASR partial/final events update turn state
+-> LLM streams tokens as soon as a usable utterance boundary exists
+-> Sentence/phrase chunker emits speakable Chinese phrases
+-> TTS starts on the first speakable phrase while LLM continues
+-> Watch receives audio chunks and plays them progressively
+-> User barge-in stops local playback immediately and aborts the active generation
+```
+
+Important distinction:
+
+- Current deployed path: streaming transport and chunked TTS playback, but LLM waits for ASR final and TTS waits for complete LLM text.
+- Next path: incremental ASR -> incremental LLM -> phrase chunker -> incremental TTS queue.
+
+Main latency goal:
+
+- Stop speaking to first playable audio: target `<= 1500ms`, stretch `<= 1000ms` on scripted Fire/Volcengine fixture.
+- Barge-in local stop: target `<= 200ms`; server stale audio after abort: `0`.
+- Manual Watch test should only be requested after script/local/remote tests show the target is plausible.
+
+## Full Streaming Implementation Units
+
+### Server Pipeline Files
+
+- Modify `scripts/deep-response/pipeline/voice-pipeline.mjs`
+  - Keep `runSegmented()` as the single-reply fallback.
+  - Add `streamCascadeTurn()` as the true streaming path.
+  - Own orchestration only: ASR stream, LLM stream, phrase chunker, TTS queue, abort propagation, timing.
+
+- Create `scripts/deep-response/pipeline/phrase-chunker.mjs`
+  - Convert LLM token deltas into speakable Chinese phrase chunks.
+  - Flush on punctuation such as `。！？；`.
+  - Flush on max character threshold for low-latency first phrase.
+  - Avoid sending obviously incomplete scripture reference fragments to TTS.
+
+- Create `scripts/deep-response/pipeline/tts-queue.mjs`
+  - Accept phrase chunks.
+  - Run one-at-a-time TTS synthesis streams in order.
+  - Yield audio chunks with `turn_id`, `generation_id`, `phrase_index`, and `audio_index`.
+  - Stop immediately on abort.
+
+- Modify `scripts/deep-response/providers/ark-llm.mjs` or current Ark provider file
+  - Expose `streamTokens()` or equivalent async generator.
+  - Preserve existing `generate()` for fallback/tests.
+  - Emit first-token and token-count timing.
+
+- Modify Doubao ASR provider file under `scripts/deep-response/providers/`
+  - Ensure `transcribeStream()` emits partial/final transcript events consistently.
+  - Preserve existing `transcribe()` for fallback/tests.
+
+- Modify Doubao TTS provider file under `scripts/deep-response/providers/`
+  - Ensure `synthesizeStream()` is the primary TTS interface for cascade mode.
+  - Preserve existing `synthesize()` for fallback/tests.
+
+### Server Session Files
+
+- Modify `scripts/deep-response-server.mjs`
+  - Add a feature flag or mode switch for HTTP session cascade:
+    - fallback: current single-reply session pipeline.
+    - cascade: true streaming pipeline.
+  - Event stream should emit:
+    - `transcript_partial`
+    - `transcript_final`
+    - `assistant_text_delta`
+    - `assistant_phrase`
+    - `audio_chunk`
+    - `timing`
+    - `turn_done`
+    - `abort_ack`
+  - Audio pull endpoint should continue using `session_id`, `turn_id`, `generation_id`.
+
+- Modify `scripts/test-deep-response-http-smoke.mjs`
+  - Add assertions for cascade mode:
+    - first phrase emitted before full LLM done.
+    - first audio emitted before full reply text done.
+    - stale generation audio remains `0` after abort.
+
+- Create or extend `scripts/test-deep-response-cascade-provider.mjs`
+  - Provider-only fixture benchmark, no Watch.
+  - Measures:
+    - upload stop to ASR final
+    - ASR partial to LLM request start
+    - LLM first token
+    - first phrase ready
+    - first TTS audio
+    - first audio available to HTTP session
+
+### Watch Lab Files
+
+- Modify `Sources/DeepResponseWatchLab/DeepResponseRealtimeClient.swift`
+  - Keep current HTTP polling/pull fallback.
+  - Add cascade event handling if new event names are introduced.
+  - Continue rejecting stale `generation_id` audio.
+
+- Modify `Sources/DeepResponseWatchLab/DeepResponseAudioPlayer.swift`
+  - Confirm queued chunk playback does not require a full response.
+  - Add/keep immediate local stop for abort.
+
+- Modify `Sources/DeepResponseWatchLab/DeepResponseDebugView.swift`
+  - Keep UI compact:
+    - `you:`
+    - `god:`
+    - `upl / first / done`
+    - `asr / llm1 / phrase1 / tts1`
+    - `abort`
+  - Do not reintroduce `first:` / `more:` display.
+
+## Full Streaming Milestones
+
+### Milestone S1: Scripted Cascade With Mock Providers
+
+Purpose:
+- Prove the orchestration works before touching real providers or Watch.
+
+Implementation:
+- Add `phrase-chunker.mjs`.
+- Add `tts-queue.mjs`.
+- Add `VoicePipeline.streamCascadeTurn()`.
+- Use mock ASR partial/final, mock LLM token stream, mock streaming TTS.
+
+Validation:
+
+```bash
+node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs
+node --test scripts/deep-response/pipeline/phrase-chunker.test.mjs
+node --test scripts/deep-response/pipeline/tts-queue.test.mjs
+node --test scripts/deep-response-server.test.mjs
+```
+
+Acceptance:
+- First `assistant_phrase` appears before LLM stream is complete.
+- First `audio_chunk` appears before final assistant text is complete.
+- Abort cancels TTS queue and no stale generation audio is yielded.
+- No Watch manual testing.
+
+### Milestone S2: Real Provider Cascade Harness
+
+Purpose:
+- Prove Fire/Volcengine ASR + Ark streaming LLM + Doubao streaming TTS can behave like a pipeline.
+
+Implementation:
+- Wire real `transcribeStream()`, `streamTokens()`, and `synthesizeStream()` into `streamCascadeTurn()`.
+- Add timing fields for each boundary.
+- Add provider-only benchmark script.
+
+Validation:
+
+```bash
+npm run deep:provider:check
+npm run deep:streaming:provider:test
+node scripts/test-deep-response-cascade-provider.mjs --pcm /private/tmp/deep-response-http-speed.pcm --turns 3
+```
+
+Acceptance:
+- No Watch required.
+- First phrase and first audio are emitted progressively.
+- Scripted stop-to-first audio target is `<= 1500ms` for at least 2 of 3 turns.
+- If ASR final remains the bottleneck, document exact timing before changing Watch behavior.
+
+### Milestone S3: HTTP Session Cascade On Fire/Volcengine ECS
+
+Purpose:
+- Prove Watch-compatible HTTP session transport can deliver cascade events/audio remotely.
+
+Implementation:
+- Add cascade mode to `/deep-response/sessions`.
+- Keep current single-reply mode as fallback.
+- Deploy to Fire/Volcengine ECS.
+
+Validation:
+
+```bash
+node --test scripts/deep-response-server.test.mjs
+npm run deep:volc:deploy
+npm run deep:http-smoke:test -- \
+  --endpoint http://124.174.96.149:8797 \
+  --pcm /private/tmp/deep-response-http-speed.pcm \
+  --turns 3 \
+  --chunk-ms 1000 \
+  --upload-sleep-ms 1000 \
+  --poll-ms 50 \
+  --timeout-ms 120000 \
+  --observe-ms 3000 \
+  --max-stop-to-first-audio-ms 2000
+```
+
+Acceptance:
+- Remote smoke passes.
+- First audio is produced through the HTTP session path before full reply completion.
+- Abort still reports stale audio chunks/bytes `0` / `0`.
+- No Watch manual testing unless these pass.
+
+### Milestone S4: Watch Cascade Playback Gate
+
+Purpose:
+- Validate that real Watch can consume cascade events/audio without UI or playback regressions.
+
+Implementation:
+- Update Watch Lab only if event schema requires it.
+- Install only after build passes.
+- Keep single-reply fallback available.
+
+Validation before user:
+
+```bash
+node --test scripts/deep-response-watch-ui.test.mjs
+xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-volc-build build
+```
+
+Manual Watch test:
+- User records one short sentence.
+- Expected:
+  - `you:` correct.
+  - `god:` appears as one reply, not first/more.
+  - First audio feels faster or at least no slower than current 3-4s Watch experience.
+  - No chunk jitter, repeated first syllable, truncation, or stale old audio.
+
+Acceptance:
+- One-turn Watch cascade works.
+- If Watch playback stutters while script tests are clean, fix Watch audio queue before advancing.
+
+### Milestone S5: Hands-Free Conversation Loop
+
+Purpose:
+- Move from manual press-to-talk turns toward Xiaozhi-style continuous conversation.
+
+Implementation:
+- Watch local state machine:
+  - listening
+  - user_speaking
+  - assistant_speaking
+  - barge_in
+  - idle_waiting
+  - ended
+- Add local VAD/silence endpoint detection or server-assisted endpointing.
+- Automatically return to listening after assistant playback.
+- Add goodbye intent and idle close handling.
+
+Validation before user:
+- Script 8-turn session with context and goodbye.
+- Script idle timeout and gentle goodbye.
+- Abort test still passes.
+
+Manual Watch test:
+- User completes 3-5 turns without manually reconnecting.
+- User interrupts once while AI is speaking.
+- User says goodbye and session ends naturally.
+
+Acceptance:
+- Continuous conversation feels coherent.
+- No reconnect per turn.
+- Barge-in local stop target `<= 500ms` by user perception; script stale audio remains `0`.
+
+### Milestone S6: Memory/Summary And Product Integration Decision
+
+Purpose:
+- Decide whether DeepResponse can move out of isolated Lab.
+
+Implementation:
+- Add async transcript/summary/memory candidate write path.
+- Keep this out of first-audio path.
+- Define integration point with Quick Response invite flow.
+
+Validation:
+- Summary write tested by script.
+- Quick Response old flow remains untouched.
+- DeepLab remains independently launchable.
+
+Manual gate:
+- Only after S1-S5 pass.
+- User approves whether to integrate into old Watch app or keep separate for more Lab testing.
 
 ## Next Development Shape
 
