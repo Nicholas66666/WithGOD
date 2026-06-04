@@ -550,6 +550,13 @@ final class DeepResponseRealtimeClient: ObservableObject {
         isHTTPSessionPlaybackActive = false
         canAbortHTTPSessionTurn = false
         isAbortingHTTPSessionTurn = false
+        httpSessionID = nil
+        httpTurnID = nil
+        httpGenerationID = nil
+        httpAudioSeq = 0
+        httpEventCursor = 0
+        httpOutputAudioCursor = 0
+        isHTTPSessionEnded = false
     }
 
     private func finishHTTPSessionAbort(

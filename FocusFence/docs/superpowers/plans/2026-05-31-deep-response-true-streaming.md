@@ -2026,6 +2026,21 @@ Latest WatchLab upload-drain cleanup gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This is a WatchLab lifecycle self-test update; no ECS deploy and no user-operated Watch test were required.
 
+Latest WatchLab reusable-session cleanup gate:
+- Strengthened DeepLab page lifecycle cleanup so leaving and re-entering the debug screen cannot reuse a stale HTTP session identity after local runtime shutdown.
+- `DeepResponseRealtimeClient.stopHTTPSessionRuntime()` now clears `httpSessionID`, `httpTurnID`, `httpGenerationID`, `httpAudioSeq`, `httpEventCursor`, and `httpOutputAudioCursor`, while keeping `isHTTPSessionEnded = false` so the next recording can create a fresh HTTP session.
+- Verification:
+  - RED `node --test --test-name-pattern "teardown clears reusable HTTP session identity" scripts/deep-response-watch-ui.test.mjs` first failed because `stopHTTPSessionRuntime()` did not clear `httpSessionID`.
+  - `node --test --test-name-pattern "teardown clears reusable HTTP session identity" scripts/deep-response-watch-ui.test.mjs`: `1/1` passed.
+  - `node --test scripts/deep-response-watch-ui.test.mjs scripts/deep-response-integration-gate.test.mjs`: `38/38` passed.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Node self-tests: `206/206` passed.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `204ms`, `221ms`; idle `memoryCandidate.summary: ""`, `closureClean: true`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `229ms`, `225ms`, `217ms`, `225ms`, `241ms`, `221ms`, `236ms`, `230ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This is a WatchLab lifecycle self-test update; no ECS deploy and no user-operated Watch test were required.
+
 - Unit and server tests:
   - `npm run test:node`
 

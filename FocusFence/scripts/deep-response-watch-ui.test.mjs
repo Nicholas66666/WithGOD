@@ -143,6 +143,17 @@ test("DeepResponse Watch teardown cancels pending HTTP audio uploads", () => {
   assert.match(cleanupFunction, /isDrainingHTTPUploads = false/);
 });
 
+test("DeepResponse Watch teardown clears reusable HTTP session identity", () => {
+  const cleanupFunction = realtimeClientSource.match(/func stopHTTPSessionRuntime\(\) \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(cleanupFunction, /httpSessionID = nil/);
+  assert.match(cleanupFunction, /httpTurnID = nil/);
+  assert.match(cleanupFunction, /httpGenerationID = nil/);
+  assert.match(cleanupFunction, /httpAudioSeq = 0/);
+  assert.match(cleanupFunction, /httpEventCursor = 0/);
+  assert.match(cleanupFunction, /httpOutputAudioCursor = 0/);
+  assert.match(cleanupFunction, /isHTTPSessionEnded = false/);
+});
+
 test("DeepResponse Watch marks server wait as assistantThinking before playback", () => {
   const finishFunction = debugViewSource.match(/private func finishRecordingTurn\(reason: String\) async \{[\s\S]*?\n    \}/)?.[0] || "";
   assert.match(finishFunction, /isWaitingForResponse = true[\s\S]*?conversationState = \.assistantThinking[\s\S]*?await client\.finishHTTPSessionTurn\(\)/);
