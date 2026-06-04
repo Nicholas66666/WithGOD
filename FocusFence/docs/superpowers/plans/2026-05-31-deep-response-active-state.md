@@ -56,6 +56,7 @@ DeepResponse remains in the independent Lab target.
 
 Latest pushed commits:
 
+- `3ca01b1` Record DeepResponse benchmark model deployment.
 - `006347b` Use benchmark-selected DeepResponse Ark model.
 - `4dac218` Add DeepResponse LLM benchmark harness.
 - `1388a67` Add DeepResponse product integration decision gate.
@@ -71,10 +72,11 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `149/149` passed.
+- Node self-tests: `150/150` passed.
 - Fire/Volcengine HTTP smoke: passed.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
-- Fire/Volcengine stop-to-first-audio: `235ms`, `230ms`.
+- Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
+- Fire/Volcengine stop-to-first-audio: `211ms`, `213ms`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
@@ -97,6 +99,7 @@ Latest LLM selection benchmark:
 - Latest one-row provider smoke against `doubao-seed-character-251128` recorded first token `506ms`, conservative first phrase `965ms`, and output passed automatic content checks. One-row smoke is only a CLI/provider-path check, not a model-selection conclusion.
 - Runtime/default model config now uses `ARK_MODEL=doubao-seed-character-251128` and `ARK_FALLBACK_MODEL=`. The old `doubao-seed-2-0-pro-260215` fallback is not a default because it failed realtime latency gates.
 - Fire/Volcengine `/debug/config` after deploying `006347b` reports `arkModel: "doubao-seed-character-251128"` and `arkFallbackModel: ""`.
+- Standard Fire/Volcengine smoke now requires `/debug/config` to match that model/fallback pair via `--expect-ark-model doubao-seed-character-251128 --expect-ark-fallback-model ""`.
 - This is a self-test/model-selection gate only; it does not introduce Watch WebSocket, user Watch testing, or product integration.
 
 ## Standard Commands

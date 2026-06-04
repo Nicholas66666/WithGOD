@@ -7,6 +7,7 @@ import { join } from "node:path";
 
 import { startDeepResponseServer } from "./deep-response-server.mjs";
 import {
+  collectDebugConfigFailures,
   collectForbiddenTextFailures,
   parseHTTPSmokeArgs,
   runHTTPIdleProbe
@@ -25,6 +26,8 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
     "--expect-memory-recalled",
     "--expect-memory-persisted",
     "--expect-idle-memory-persisted",
+    "--expect-ark-model", "doubao-seed-character-251128",
+    "--expect-ark-fallback-model", "",
     "--forbid-text-pattern", "大卫.*歌利亚",
     "--forbid-text-pattern", "你知道.*为什么"
   ]);
@@ -40,7 +43,30 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
   assert.equal(args.expectMemoryRecalled, true);
   assert.equal(args.expectMemoryPersisted, true);
   assert.equal(args.expectIdleMemoryPersisted, true);
+  assert.equal(args.expectArkModel, "doubao-seed-character-251128");
+  assert.equal(args.expectArkFallbackModel, "");
   assert.deepEqual(args.forbiddenTextPatterns, ["大卫.*歌利亚", "你知道.*为什么"]);
+});
+
+test("collectDebugConfigFailures flags Ark model drift", () => {
+  assert.deepEqual(collectDebugConfigFailures({
+    arkModel: "doubao-seed-2-0-lite-260215",
+    arkFallbackModel: "doubao-seed-2-0-pro-260215"
+  }, {
+    expectArkModel: "doubao-seed-character-251128",
+    expectArkFallbackModel: ""
+  }), [
+    {
+      configField: "arkModel",
+      expected: "doubao-seed-character-251128",
+      actual: "doubao-seed-2-0-lite-260215"
+    },
+    {
+      configField: "arkFallbackModel",
+      expected: "",
+      actual: "doubao-seed-2-0-pro-260215"
+    }
+  ]);
 });
 
 test("collectForbiddenTextFailures flags obvious comfort-intent derailments", () => {

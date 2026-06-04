@@ -32,6 +32,8 @@ export function parseHTTPSmokeArgs(argv) {
     expectMemoryRecalled: false,
     expectMemoryPersisted: false,
     expectIdleMemoryPersisted: false,
+    expectArkModel: "",
+    expectArkFallbackModel: null,
     forbiddenTextPatterns: [],
     verbose: false
   };
@@ -90,6 +92,12 @@ export function parseHTTPSmokeArgs(argv) {
       args.expectMemoryPersisted = true;
     } else if (arg === "--expect-idle-memory-persisted") {
       args.expectIdleMemoryPersisted = true;
+    } else if (arg === "--expect-ark-model") {
+      args.expectArkModel = argv[index + 1] || "";
+      index += 1;
+    } else if (arg === "--expect-ark-fallback-model") {
+      args.expectArkFallbackModel = argv[index + 1] ?? "";
+      index += 1;
     } else if (arg === "--forbid-text-pattern") {
       args.forbiddenTextPatterns.push(argv[index + 1] || "");
       index += 1;
@@ -112,6 +120,10 @@ export async function runHTTPSmokeProbe(args) {
   const health = await withRetries(() => fetchHealth(args.endpoint), {
     attempts: args.retries + 1,
     label: "health"
+  });
+  const debugConfig = await withRetries(() => fetchDebugConfig(args.endpoint), {
+    attempts: args.retries + 1,
+    label: "debug_config"
   });
   const conversationArgs = parseHTTPConversationArgs([
     "--endpoint", args.endpoint,
@@ -168,9 +180,10 @@ export async function runHTTPSmokeProbe(args) {
       || turn.stopToFirstAudioMs > args.maxStopToFirstAudioMs;
   });
   const textFailures = collectForbiddenTextFailures(conversation.turns, args.forbiddenTextPatterns);
+  const configFailures = collectDebugConfigFailures(debugConfig.body, args);
 
   return {
-    ok: health.ok && conversation.ok && abort.ok && idle.ok && turnFailures.length === 0 && textFailures.length === 0,
+    ok: health.ok && debugConfig.ok && conversation.ok && abort.ok && idle.ok && turnFailures.length === 0 && textFailures.length === 0 && configFailures.length === 0,
     endpoint: args.endpoint,
     thresholds: {
       maxStopToFirstAudioMs: args.maxStopToFirstAudioMs,
@@ -180,6 +193,7 @@ export async function runHTTPSmokeProbe(args) {
       idleGoodbye: args.idleGoodbye
     },
     health,
+    debugConfig,
     conversation: {
       ok: conversation.ok,
       sessionID: conversation.sessionID,
@@ -239,9 +253,29 @@ export async function runHTTPSmokeProbe(args) {
         audioChunks: turn.audioChunks,
         audioByteLength: turn.audioByteLength
       })),
+      ...configFailures,
       ...textFailures
     ]
   };
+}
+
+export function collectDebugConfigFailures(config = {}, args = {}) {
+  const failures = [];
+  if (args.expectArkModel && config.arkModel !== args.expectArkModel) {
+    failures.push({
+      configField: "arkModel",
+      expected: args.expectArkModel,
+      actual: config.arkModel ?? ""
+    });
+  }
+  if (args.expectArkFallbackModel !== null && args.expectArkFallbackModel !== undefined && config.arkFallbackModel !== args.expectArkFallbackModel) {
+    failures.push({
+      configField: "arkFallbackModel",
+      expected: args.expectArkFallbackModel,
+      actual: config.arkFallbackModel ?? ""
+    });
+  }
+  return failures;
 }
 
 export function collectForbiddenTextFailures(turns, forbiddenTextPatterns = []) {
@@ -364,6 +398,21 @@ async function fetchHealth(endpoint) {
   };
 }
 
+async function fetchDebugConfig(endpoint) {
+  const response = await fetch(buildURL(endpoint, "/debug/config"));
+  let body = null;
+  try {
+    body = await response.json();
+  } catch {
+    body = await response.text();
+  }
+  return {
+    ok: response.status === 200 && body?.ok === true,
+    status: response.status,
+    body
+  };
+}
+
 async function postJSON(url, body) {
   const response = await fetch(url, {
     method: "POST",
@@ -433,6 +482,9 @@ Options:
   --expect-memory-recalled         Require conversation probe to recall persisted memory into context.
   --expect-memory-persisted        Require conversation probe to persist a memory candidate after /end.
   --expect-idle-memory-persisted   Require idle timeout probe to persist a memory candidate.
+  --expect-ark-model <model>       Require /debug/config arkModel to match.
+  --expect-ark-fallback-model <model>
+                                   Require /debug/config arkFallbackModel to match. Use "" for no fallback.
   --forbid-text-pattern <regex>    Fail if any assistant reply matches this regex. Repeatable.
   --verbose                        Print event details from child probes.
 `);

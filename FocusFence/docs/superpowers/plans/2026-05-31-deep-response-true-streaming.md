@@ -1474,6 +1474,24 @@ Acceptance:
 - No change to Quick Response main flow until user explicitly approves product integration.
 - There is a rollback tag before integration.
 
+Latest standard smoke config gate:
+- Added `/debug/config` validation to `scripts/test-deep-response-http-smoke.mjs`.
+- The smoke script now supports:
+  - `--expect-ark-model`
+  - `--expect-ark-fallback-model`
+- `npm run deep:volc:smoke:full` now requires:
+  - `arkModel: doubao-seed-character-251128`
+  - `arkFallbackModel: ""`
+- This makes remote ECS model/fallback drift a standard self-test failure instead of an ad hoc manual check.
+- Verification:
+  - RED `node --test scripts/test-deep-response-http-smoke.test.mjs` first failed because `collectDebugConfigFailures` did not exist.
+  - RED `node --test scripts/package-scripts.test.mjs` first failed because the standard smoke command lacked the Ark config assertions.
+  - `node --test scripts/test-deep-response-http-smoke.test.mjs scripts/package-scripts.test.mjs`: `9/9` passed.
+  - `npm run test:node`: `150/150` passed.
+  - `npm run deep:volc:smoke:full`: passed and reported `debugConfig.body.arkModel = "doubao-seed-character-251128"` and `debugConfig.body.arkFallbackModel = ""`.
+  - `npm run deep:selftest:full`: passed; nested WatchLab build `BUILD SUCCEEDED`.
+- Development remained self-test only; no user-operated Watch testing was required.
+
 ## Test Commands
 
 - Unit and server tests:
