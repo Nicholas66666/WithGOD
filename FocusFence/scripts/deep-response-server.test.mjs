@@ -1148,6 +1148,60 @@ test("DeepResponse HTTP session emits idle timeout end without user-operated Wat
   }
 });
 
+test("DeepResponse HTTP session can speak a gentle idle goodbye before ending", async () => {
+  const ttsTexts = [];
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    createPipeline: () => ({
+      tts: {
+        async *synthesizeStream({ text }) {
+          ttsTexts.push(text);
+          yield { type: "audio_chunk", audioChunk: Buffer.from(`${text}:audio`), sampleRate: 24000 };
+          yield { type: "done", timing: { tts_first_audio_ms: 12 } };
+        }
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {
+      idleTimeoutMs: 20,
+      idleGoodbye: true
+    });
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "session_end" && event.reason === "idle_timeout");
+    }, { timeoutMs: 1_000, intervalMs: 25 });
+
+    const events = await fetchJSON(`${base}/events?cursor=0`);
+    const assistantIndex = events.events.findIndex((event) => event.type === "assistant_text_delta" && /拜拜/u.test(event.delta || ""));
+    const endIndex = events.events.findIndex((event) => event.type === "session_end" && event.reason === "idle_timeout");
+    assert(assistantIndex >= 0);
+    assert(endIndex > assistantIndex);
+    assert(events.events.some((event) => event.type === "audio_done" && event.reason === "idle_goodbye_complete"));
+    assert.deepEqual(ttsTexts, ["我先安静到这里，愿你平安。拜拜。"]);
+
+    const audio = await fetchJSON(`${base}/audio?cursor=0`);
+    assert.equal(audio.chunks.length, 1);
+    assert.match(Buffer.from(audio.chunks[0].audioBase64, "base64").toString("utf8"), /拜拜/);
+
+    const rejected = await fetch(`${base}/audio?turn_id=turn-after-idle-goodbye&seq=0`, {
+      method: "POST",
+      headers: { "Content-Type": "application/octet-stream" },
+      body: Buffer.from("late")
+    });
+    assert.equal(rejected.status, 409);
+    const body = await rejected.json();
+    assert.equal(body.error, "session_ended");
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse HTTP session passes prior turns as LLM context", async () => {
   const seenContexts = [];
   const server = await startDeepResponseServer({

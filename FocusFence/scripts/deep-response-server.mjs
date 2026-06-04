@@ -206,12 +206,15 @@ async function handleHTTPSessionCreate(request, response, { sessions, env = {}, 
     const sessionID = body.sessionID || `drs_${crypto.randomUUID().replaceAll("-", "")}`;
     const pipelineMode = body.pipelineMode === "cascade" ? "cascade" : "";
     const idleTimeoutMs = Number(body.idleTimeoutMs || envNumber(process.env.DEEP_RESPONSE_SESSION_IDLE_TIMEOUT_MS, 0));
+    const idleGoodbye = Boolean(body.idleGoodbye || truthyEnv(process.env.DEEP_RESPONSE_SESSION_IDLE_GOODBYE));
     const session = {
       sessionID,
       state: "listening",
       pipelineMode,
       sampleRate: Number(body.sampleRate || 16000),
       idleTimeoutMs: Number.isFinite(idleTimeoutMs) && idleTimeoutMs > 0 ? idleTimeoutMs : 0,
+      idleGoodbye,
+      idleGoodbyeStarted: false,
       lastActivityAt: Date.now(),
       audioByTurn: new Map(),
       events: [],
@@ -245,6 +248,7 @@ async function handleHTTPSessionCreate(request, response, { sessions, env = {}, 
       state: session.state,
       sampleRate: session.sampleRate,
       idleTimeoutMs: session.idleTimeoutMs,
+      idleGoodbye: session.idleGoodbye,
       pipelineMode
     });
   } catch (error) {
@@ -519,10 +523,10 @@ function ensureHTTPSessionTurnStream({
   return turnStream;
 }
 
-async function handleHTTPSessionEvents(response, { url, session, recordEvent = () => {} }) {
+async function handleHTTPSessionEvents(response, { url, session, createPipeline, env, recordEvent = () => {} }) {
   const cursor = Number(url.searchParams.get("cursor") || 0);
   const waitMs = parseHTTPSessionWaitMs(url);
-  const selected = await waitForHTTPSessionEvents(session, cursor, waitMs, { recordEvent });
+  const selected = await waitForHTTPSessionEvents(session, cursor, waitMs, { recordEvent, createPipeline, env });
   const nextCursor = selected.length > 0 ? selected.at(-1).seq + 1 : cursor;
   sendJSON(response, 200, {
     ok: true,
@@ -533,11 +537,11 @@ async function handleHTTPSessionEvents(response, { url, session, recordEvent = (
   });
 }
 
-async function handleHTTPSessionAudioPull(response, { url, session, recordEvent = () => {} }) {
+async function handleHTTPSessionAudioPull(response, { url, session, createPipeline, env, recordEvent = () => {} }) {
   const cursor = Number(url.searchParams.get("cursor") || 0);
   const generationID = url.searchParams.get("generation_id") || "";
   const waitMs = parseHTTPSessionWaitMs(url);
-  const selected = await waitForHTTPSessionAudio(session, cursor, generationID, waitMs, { recordEvent });
+  const selected = await waitForHTTPSessionAudio(session, cursor, generationID, waitMs, { recordEvent, createPipeline, env });
   const nextCursor = selected.length > 0 ? selected.at(-1).seq + 1 : cursor;
   sendJSON(response, 200, {
     ok: true,
@@ -556,10 +560,10 @@ function parseHTTPSessionWaitMs(url) {
   return Math.min(Math.round(raw), 1_000);
 }
 
-async function waitForHTTPSessionEvents(session, cursor, waitMs, { recordEvent = () => {} } = {}) {
+async function waitForHTTPSessionEvents(session, cursor, waitMs, options = {}) {
   const startedAt = Date.now();
   while (true) {
-    maybeEndIdleHTTPSession(session, { recordEvent });
+    await maybeEndIdleHTTPSession(session, options);
     const selected = selectHTTPSessionEvents(session, cursor);
     if (selected.length > 0 || Date.now() - startedAt >= waitMs) {
       return selected;
@@ -568,10 +572,10 @@ async function waitForHTTPSessionEvents(session, cursor, waitMs, { recordEvent =
   }
 }
 
-async function waitForHTTPSessionAudio(session, cursor, generationID, waitMs, { recordEvent = () => {} } = {}) {
+async function waitForHTTPSessionAudio(session, cursor, generationID, waitMs, options = {}) {
   const startedAt = Date.now();
   while (true) {
-    maybeEndIdleHTTPSession(session, { recordEvent });
+    await maybeEndIdleHTTPSession(session, options);
     const selected = selectHTTPSessionAudio(session, cursor, generationID);
     if (selected.length > 0 || Date.now() - startedAt >= waitMs) {
       return selected;
@@ -917,15 +921,135 @@ function appendSessionHistory(session, { transcript, assistantText }) {
   }
 }
 
-function maybeEndIdleHTTPSession(session, { recordEvent = () => {} } = {}) {
+async function maybeEndIdleHTTPSession(session, {
+  createPipeline,
+  env = {},
+  recordEvent = () => {}
+} = {}) {
   if (session.state !== "listening" || !session.idleTimeoutMs || session.activeGenerations.size > 0) {
     return false;
   }
   if (Date.now() - Number(session.lastActivityAt || 0) < session.idleTimeoutMs) {
     return false;
   }
+  if (session.idleGoodbye && !session.idleGoodbyeStarted) {
+    session.idleGoodbyeStarted = true;
+    await speakIdleGoodbye(session, { createPipeline, env, recordEvent });
+    return true;
+  }
   endHTTPSession(session, { reason: "idle_timeout", recordEvent });
   return true;
+}
+
+async function speakIdleGoodbye(session, {
+  createPipeline,
+  env = {},
+  recordEvent = () => {}
+} = {}) {
+  const turnID = `turn_idle_${crypto.randomUUID().replaceAll("-", "")}`;
+  const generationID = `gen_idle_${crypto.randomUUID().replaceAll("-", "")}`;
+  const text = env.DEEP_RESPONSE_IDLE_GOODBYE_TEXT || "我先安静到这里，愿你平安。拜拜。";
+  let timing = {};
+  session.state = "assistant_speaking";
+  session.activeGenerations.add(generationID);
+  pushSessionEvent(session, {
+    type: "assistant_text_delta",
+    sessionID: session.sessionID,
+    turnID,
+    generationID,
+    segment: "idle_goodbye",
+    delta: text
+  });
+  pushSessionEvent(session, {
+    type: "assistant_phrase",
+    sessionID: session.sessionID,
+    turnID,
+    generationID,
+    segment: "idle_goodbye",
+    phraseIndex: 0,
+    text,
+    reason: "idle_timeout"
+  });
+
+  try {
+    const pipeline = createPipeline ? createPipeline() : createDefaultPipeline(env);
+    const tts = pipeline?.tts;
+    if (tts && typeof tts.synthesizeStream === "function") {
+      for await (const event of tts.synthesizeStream({ text })) {
+        if (event.type === "audio_chunk") {
+          pushSessionAudio(session, {
+            turnID,
+            generationID,
+            segment: "idle_goodbye",
+            audio: Buffer.from(event.audioChunk || []),
+            sampleRate: event.sampleRate
+          });
+        } else if (event.type === "done") {
+          timing = event.timing || timing;
+        }
+      }
+    } else if (tts && typeof tts.synthesize === "function") {
+      const result = await tts.synthesize({ text });
+      timing = result.timing || {};
+      for (const chunk of result.audioChunks || []) {
+        pushSessionAudio(session, {
+          turnID,
+          generationID,
+          segment: "idle_goodbye",
+          audio: Buffer.from(chunk),
+          sampleRate: result.sampleRate
+        });
+      }
+    }
+  } catch (error) {
+    pushSessionEvent(session, {
+      type: "error",
+      sessionID: session.sessionID,
+      turnID,
+      generationID,
+      message: error instanceof Error ? error.message : String(error)
+    });
+  }
+
+  pushSessionEvent(session, {
+    type: "audio_done",
+    sessionID: session.sessionID,
+    turnID,
+    generationID,
+    reason: "idle_goodbye_complete"
+  });
+  pushSessionEvent(session, {
+    type: "timing",
+    sessionID: session.sessionID,
+    turnID,
+    generationID,
+    timing: {
+      ...timing,
+      idle_goodbye: 1
+    },
+    providerMeta: { kind: "idle_goodbye" }
+  });
+  pushSessionEvent(session, {
+    type: "turn_done",
+    sessionID: session.sessionID,
+    turnID,
+    generationID,
+    transcript: "",
+    assistantText: text
+  });
+  appendSessionHistory(session, {
+    transcript: "",
+    assistantText: text
+  });
+  session.activeGenerations.delete(generationID);
+  session.state = "listening";
+  endHTTPSession(session, { reason: "idle_timeout", turnID, generationID, recordEvent });
+  recordEvent("http_session_idle_goodbye", {
+    sessionID: session.sessionID,
+    turnID,
+    generationID,
+    audioChunks: session.audio.filter((chunk) => chunk.generationID === generationID).length
+  });
 }
 
 function endHTTPSession(session, {
@@ -1473,6 +1597,10 @@ function sendJSON(response, statusCode, body) {
 function envNumber(value, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function truthyEnv(value) {
+  return /^(1|true|yes|on)$/i.test(String(value || "").trim());
 }
 
 async function readRequestBody(request) {

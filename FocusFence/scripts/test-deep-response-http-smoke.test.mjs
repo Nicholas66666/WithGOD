@@ -16,6 +16,7 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
     "--retries", "0",
     "--idle-timeout-ms", "50",
     "--idle-observe-ms", "1000",
+    "--idle-goodbye",
     "--forbid-text-pattern", "大卫.*歌利亚",
     "--forbid-text-pattern", "你知道.*为什么"
   ]);
@@ -26,6 +27,7 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
   assert.equal(args.retries, 0);
   assert.equal(args.idleTimeoutMs, 50);
   assert.equal(args.idleObserveMs, 1000);
+  assert.equal(args.idleGoodbye, true);
   assert.deepEqual(args.forbiddenTextPatterns, ["大卫.*歌利亚", "你知道.*为什么"]);
 });
 
@@ -60,6 +62,40 @@ test("runHTTPIdleProbe verifies idle session end and rejects late audio", async 
     assert.equal(summary.ok, true);
     assert.equal(summary.endReason, "idle_timeout");
     assert.equal(summary.rejectedStatus, 409);
+  } finally {
+    await server.close();
+  }
+});
+
+test("runHTTPIdleProbe can require gentle idle goodbye audio before session end", async () => {
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    createPipeline: () => ({
+      tts: {
+        async *synthesizeStream({ text }) {
+          yield { type: "audio_chunk", audioChunk: Buffer.from(`${text}:audio`), sampleRate: 24000 };
+          yield { type: "done", timing: {} };
+        }
+      }
+    })
+  });
+
+  try {
+    const summary = await runHTTPIdleProbe({
+      endpoint: `http://127.0.0.1:${server.port}`,
+      idleTimeoutMs: 20,
+      idleObserveMs: 1_000,
+      pollMs: 25,
+      idleGoodbye: true
+    });
+
+    assert.equal(summary.ok, true);
+    assert.equal(summary.endReason, "idle_timeout");
+    assert.equal(summary.idleGoodbye.text.includes("拜拜"), true);
+    assert.equal(summary.idleGoodbye.audioChunks, 1);
   } finally {
     await server.close();
   }

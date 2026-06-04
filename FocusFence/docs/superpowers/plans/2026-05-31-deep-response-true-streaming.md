@@ -552,6 +552,25 @@ Latest comfort-intent relevance guard:
   - Remote idle probe: `session_end` reason `idle_timeout`, late audio rejected with `409 session_ended`.
 - This is a narrow automated relevance guard, not a claim that all reply-quality issues are solved.
 
+Latest idle gentle-goodbye self-test:
+- Added optional HTTP session `idleGoodbye` behavior. When enabled, idle timeout first emits a short assistant goodbye text/audio turn, then emits `session_end` with reason `idle_timeout`.
+- Default behavior remains unchanged unless `idleGoodbye` is requested or `DEEP_RESPONSE_SESSION_IDLE_GOODBYE` is set.
+- Idle goodbye events use their own `turn_idle_*` / `gen_idle_*` IDs and segment `idle_goodbye`.
+- Added server regression coverage proving `assistant_text_delta`, `assistant_phrase`, audio chunk, `audio_done idle_goodbye_complete`, `timing`, `turn_done`, and then `session_end idle_timeout` are emitted in order.
+- Extended HTTP smoke with `--idle-goodbye` so Fire/Volcengine remote tests can require real idle goodbye text/audio before session end.
+- Added one more comfort-intent prompt guard for the observed derailment pattern "想从哪里开始听".
+- `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/deep-response-server.test.mjs scripts/test-deep-response-http-smoke.test.mjs`: `42/42` passed.
+- `npm run test:node`: `140/140` passed.
+- `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-volc-build build`: `BUILD SUCCEEDED`.
+- Fire/Volcengine ECS was updated by direct SSH file sync and `systemctl restart deep-response`; `/health` returned provider mode with `providerConfigured: true`.
+- Fire/Volcengine HTTP cascade smoke with `--idle-goodbye` and comfort-intent forbidden patterns passed:
+  - Remote stop-to-first-audio: `195ms`, `174ms`.
+  - Remote idle goodbye text: `我先安静到这里，愿你平安。拜拜。`
+  - Remote idle goodbye audio chunks/bytes: `23` / `185610`.
+  - Remote abort stale audio chunks/bytes: `0` / `0`.
+  - Remote idle late audio rejected with `409 session_ended`.
+  - No user-operated Watch testing was required.
+
 ### Milestone S5: Hands-Free Conversation Loop
 
 Status: complete for the self-test gate. Server-side goodbye/idle lifecycle, remote smoke self-tests, Watch automatic return-to-listening source/build gate, local VAD/silence endpointing source/build gate, VAD fixture calibration, explicit Watch conversation state source gate, simulator-only continuous HTTP fixture autorun source gate, local 8-turn rolling-context/goodbye self-test, and remote 8-turn session-end probe are complete.
@@ -833,7 +852,7 @@ Completed:
 
 Remaining:
 
-- A real gentle goodbye audio/text turn before idle close, if needed for the product feel.
+- None for the current self-test gate. A real Watch product-experience spot check remains optional and user-requested, not a development gate.
 
 Expected effect:
 - AI speaks, then returns to listening.

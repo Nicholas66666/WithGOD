@@ -24,6 +24,7 @@ export function parseHTTPSmokeArgs(argv) {
     observeMs: 3_000,
     idleTimeoutMs: 150,
     idleObserveMs: 2_000,
+    idleGoodbye: false,
     maxStopToFirstAudioMs: 3_000,
     retries: 2,
     pipelineMode: "",
@@ -66,6 +67,8 @@ export function parseHTTPSmokeArgs(argv) {
     } else if (arg === "--idle-observe-ms") {
       args.idleObserveMs = Number(argv[index + 1] || args.idleObserveMs);
       index += 1;
+    } else if (arg === "--idle-goodbye") {
+      args.idleGoodbye = true;
     } else if (arg === "--max-stop-to-first-audio-ms") {
       args.maxStopToFirstAudioMs = Number(argv[index + 1] || args.maxStopToFirstAudioMs);
       index += 1;
@@ -132,7 +135,8 @@ export async function runHTTPSmokeProbe(args) {
     endpoint: args.endpoint,
     idleTimeoutMs: args.idleTimeoutMs,
     idleObserveMs: args.idleObserveMs,
-    pollMs: args.pollMs
+    pollMs: args.pollMs,
+    idleGoodbye: args.idleGoodbye
   }), {
     attempts: args.retries + 1,
     label: "idle"
@@ -155,7 +159,8 @@ export async function runHTTPSmokeProbe(args) {
       maxStopToFirstAudioMs: args.maxStopToFirstAudioMs,
       pipelineMode: args.pipelineMode,
       waitMs: args.waitMs,
-      idleTimeoutMs: args.idleTimeoutMs
+      idleTimeoutMs: args.idleTimeoutMs,
+      idleGoodbye: args.idleGoodbye
     },
     health,
     conversation: {
@@ -217,19 +222,31 @@ export function collectForbiddenTextFailures(turns, forbiddenTextPatterns = []) 
   return failures;
 }
 
-export async function runHTTPIdleProbe({ endpoint, idleTimeoutMs = 150, idleObserveMs = 2_000, pollMs = 50 }) {
+export async function runHTTPIdleProbe({
+  endpoint,
+  idleTimeoutMs = 150,
+  idleObserveMs = 2_000,
+  pollMs = 50,
+  idleGoodbye = false
+}) {
   const created = await postJSON(buildURL(endpoint, "/deep-response/sessions"), {
     sampleRate: 16_000,
-    idleTimeoutMs
+    idleTimeoutMs,
+    idleGoodbye
   });
   const basePath = `/deep-response/sessions/${encodeURIComponent(created.sessionID)}`;
   let eventCursor = 0;
+  let audioCursor = 0;
   const events = [];
+  const audioChunks = [];
   const startedAt = performance.now();
   while (performance.now() - startedAt < idleObserveMs) {
     const eventBatch = await fetchJSON(buildURL(endpoint, `${basePath}/events?cursor=${eventCursor}`));
     eventCursor = eventBatch.nextCursor;
     events.push(...eventBatch.events);
+    const audioBatch = await fetchJSON(buildURL(endpoint, `${basePath}/audio?cursor=${audioCursor}`));
+    audioCursor = audioBatch.nextCursor;
+    audioChunks.push(...audioBatch.chunks);
     if (events.some((event) => event.type === "session_end" && event.reason === "idle_timeout")) {
       break;
     }
@@ -249,15 +266,28 @@ export async function runHTTPIdleProbe({ endpoint, idleTimeoutMs = 150, idleObse
   }
 
   const sawIdleEnd = events.some((event) => event.type === "session_end" && event.reason === "idle_timeout");
+  const idleGoodbyeText = events
+    .filter((event) => event.type === "assistant_text_delta" && event.segment === "idle_goodbye")
+    .map((event) => event.delta || "")
+    .join("");
+  const sawIdleGoodbyeDone = events.some((event) => event.type === "audio_done" && event.reason === "idle_goodbye_complete");
+  const idleGoodbyeOK = !idleGoodbye || (idleGoodbyeText.length > 0 && sawIdleGoodbyeDone && audioChunks.length > 0);
   return {
-    ok: sawIdleEnd && rejected.status === 409 && rejectedBody?.error === "session_ended",
+    ok: sawIdleEnd && rejected.status === 409 && rejectedBody?.error === "session_ended" && idleGoodbyeOK,
     sessionID: created.sessionID,
     elapsedMs: Math.round(performance.now() - startedAt),
     idleTimeoutMs,
     rejectedStatus: rejected.status,
     rejectedBody,
     eventTypes: events.map((event) => event.type),
-    endReason: events.find((event) => event.type === "session_end")?.reason || ""
+    endReason: events.find((event) => event.type === "session_end")?.reason || "",
+    idleGoodbye: {
+      enabled: idleGoodbye,
+      text: idleGoodbyeText,
+      audioChunks: audioChunks.length,
+      audioBytes: audioChunks.reduce((sum, chunk) => sum + Number(chunk.audioByteLength || 0), 0),
+      done: sawIdleGoodbyeDone
+    }
   };
 }
 
@@ -336,6 +366,7 @@ Options:
   --observe-ms <ms>                Abort stale-audio observation window. Default: 3000
   --idle-timeout-ms <ms>           Idle timeout used by the self-test session. Default: 150
   --idle-observe-ms <ms>           How long to wait for idle timeout. Default: 2000
+  --idle-goodbye                   Require idle timeout to emit a gentle goodbye text/audio before session_end.
   --max-stop-to-first-audio-ms <ms>
                                    Fail if any turn exceeds this stop-to-first-audio budget. Default: 3000
   --retries <n>                    Retry each top-level probe after transient network failures. Default: 2
