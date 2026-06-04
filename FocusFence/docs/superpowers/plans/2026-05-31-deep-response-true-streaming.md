@@ -1086,6 +1086,26 @@ Latest Watch turn completion polling gate:
   - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-turn-done-build build`: `BUILD SUCCEEDED`.
 - Development remained self-test only; no user-operated Watch testing was required.
 
+Latest server `turn_done` authoritative completion gate:
+- Fixed the server-side HTTP session pipeline to emit `turn_done` for normal user turns after `audio_done` and `timing`.
+- Both fallback segmented turns and streamed/cascade turns now emit `turn_done` with `sessionID`, `turnID`, `generationID`, `transcript`, and `assistantText`.
+- Tightened `scripts/test-deep-response-http-conversation.mjs` so a turn is not considered complete until `timing`, `audio_done`, and `turn_done` for the active `generationID` are all observed.
+- Tightened `scripts/test-deep-response-http-smoke.mjs` so every conversation turn must report `turnDone: true`.
+- Verification:
+  - RED server test first failed because regular cascade turns did not emit `turn_done`.
+  - Initial remote smoke with the stricter probe failed with `conversation failed after 2 attempts: waitFor timeout`, proving the old Fire/Volcengine service lacked the authoritative completion event.
+  - `node --test scripts/deep-response-server.test.mjs --test-name-pattern "streams cascade phrase"`: `32/32` passed after implementation.
+  - `node --test scripts/test-deep-response-http-conversation.test.mjs scripts/test-deep-response-http-smoke.test.mjs`: `10/10` passed.
+  - `npm run test:node`: `147/147` passed.
+  - `npm run deep:volc:deploy`: deployed remote `HEAD` at `22c208e`, service `active`, health `200`.
+  - Fire/Volcengine full HTTP smoke with `--expect-abort-next-turn`, `--idle-goodbye`, `--wait-ms 800`, cascade mode, and forbidden-pattern gates: passed.
+  - Latest full-smoke conversation turns reported `audioDone: true` and `turnDone: true`.
+  - Latest full-smoke stop-to-first-audio: `203ms`, `205ms`.
+  - Latest full-smoke abort next turn audio chunks/bytes: `30` / `248472`.
+  - Latest idle event order included `audio_done`, `timing`, `turn_done`, `session_end`, `memory_candidate`.
+  - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-turn-done-server-build build`: `BUILD SUCCEEDED`.
+- Development remained self-test only; no user-operated Watch testing was required.
+
 ## File Responsibilities
 
 - Modify `scripts/deep-response/protocol/deep-response-protocol.mjs`
