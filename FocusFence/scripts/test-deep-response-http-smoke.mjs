@@ -27,6 +27,7 @@ export function parseHTTPSmokeArgs(argv) {
     maxStopToFirstAudioMs: 3_000,
     retries: 2,
     pipelineMode: "",
+    forbiddenTextPatterns: [],
     verbose: false
   };
 
@@ -73,6 +74,9 @@ export function parseHTTPSmokeArgs(argv) {
       index += 1;
     } else if (arg === "--pipeline-mode") {
       args.pipelineMode = argv[index + 1] || "";
+      index += 1;
+    } else if (arg === "--forbid-text-pattern") {
+      args.forbiddenTextPatterns.push(argv[index + 1] || "");
       index += 1;
     } else if (arg === "--verbose") {
       args.verbose = true;
@@ -142,9 +146,10 @@ export async function runHTTPSmokeProbe(args) {
       || turn.stopToFirstAudioMs == null
       || turn.stopToFirstAudioMs > args.maxStopToFirstAudioMs;
   });
+  const textFailures = collectForbiddenTextFailures(conversation.turns, args.forbiddenTextPatterns);
 
   return {
-    ok: health.ok && conversation.ok && abort.ok && idle.ok && turnFailures.length === 0,
+    ok: health.ok && conversation.ok && abort.ok && idle.ok && turnFailures.length === 0 && textFailures.length === 0,
     endpoint: args.endpoint,
     thresholds: {
       maxStopToFirstAudioMs: args.maxStopToFirstAudioMs,
@@ -178,15 +183,38 @@ export async function runHTTPSmokeProbe(args) {
       eventTypes: abort.eventTypes
     },
     idle,
-    failures: turnFailures.map((turn) => ({
-      turnID: turn.turnID,
-      stopToFirstAudioMs: turn.stopToFirstAudioMs,
-      hasTranscript: Boolean(turn.transcript),
-      hasText: Boolean(turn.text),
-      audioChunks: turn.audioChunks,
-      audioByteLength: turn.audioByteLength
-    }))
+    failures: [
+      ...turnFailures.map((turn) => ({
+        turnID: turn.turnID,
+        stopToFirstAudioMs: turn.stopToFirstAudioMs,
+        hasTranscript: Boolean(turn.transcript),
+        hasText: Boolean(turn.text),
+        audioChunks: turn.audioChunks,
+        audioByteLength: turn.audioByteLength
+      })),
+      ...textFailures
+    ]
   };
+}
+
+export function collectForbiddenTextFailures(turns, forbiddenTextPatterns = []) {
+  const patterns = forbiddenTextPatterns
+    .filter(Boolean)
+    .map((pattern) => ({ pattern, regex: new RegExp(pattern, "u") }));
+  const failures = [];
+  for (const turn of turns) {
+    const text = String(turn.text || "");
+    for (const { pattern, regex } of patterns) {
+      if (regex.test(text)) {
+        failures.push({
+          turnID: turn.turnID,
+          forbiddenPattern: pattern,
+          text
+        });
+      }
+    }
+  }
+  return failures;
 }
 
 export async function runHTTPIdleProbe({ endpoint, idleTimeoutMs = 150, idleObserveMs = 2_000, pollMs = 50 }) {
@@ -312,6 +340,7 @@ Options:
                                    Fail if any turn exceeds this stop-to-first-audio budget. Default: 3000
   --retries <n>                    Retry each top-level probe after transient network failures. Default: 2
   --pipeline-mode <m>              Optional HTTP session pipeline mode, e.g. cascade.
+  --forbid-text-pattern <regex>    Fail if any assistant reply matches this regex. Repeatable.
   --verbose                        Print event details from child probes.
 `);
 }

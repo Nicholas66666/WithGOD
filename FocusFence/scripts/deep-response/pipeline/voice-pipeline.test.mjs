@@ -109,6 +109,9 @@ test("VoicePipeline creates one complete spoken reply without followup generatio
   assert.match(prompt, /第一句.*不要直接引用经文/);
   assert.match(prompt, /总长度控制在 45 个中文字符以内/);
   assert.match(prompt, /不要朗读整段经文/);
+  assert.match(prompt, /如果用户是在要安慰/);
+  assert.match(prompt, /不要把安慰请求转成圣经知识问答/);
+  assert.match(prompt, /不要问用户想从哪卷书或哪句经文开始/);
 });
 
 test("VoicePipeline streamSegmented emits one reply segment and no followup segment", async () => {

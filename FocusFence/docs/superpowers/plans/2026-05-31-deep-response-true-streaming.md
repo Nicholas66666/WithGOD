@@ -537,6 +537,21 @@ Latest short spoken-reply optimization:
 - Remote idle probe: `session_end` reason `idle_timeout`, late audio rejected with `409 session_ended`.
 - Validation mode remains self-test first; no user-operated Watch test is required for this milestone update.
 
+Latest comfort-intent relevance guard:
+- Added prompt constraints so when the user asks for comfort, the reply must directly comfort the user's feeling.
+- Explicitly blocked turning a comfort request into a Bible trivia question, guessing game, story opener, light test, or "which Bible book / verse should we start with" handoff unless the user asks for Bible study.
+- Added `--forbid-text-pattern` to `scripts/test-deep-response-http-smoke.mjs` so remote smoke can fail on obvious derailment patterns without user-operated Watch testing.
+- Added tests for repeated forbidden reply regex parsing and failure collection.
+- `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/test-deep-response-http-smoke.test.mjs`: `12/12` passed.
+- `npm run test:node`: `138/138` passed.
+- Fire/Volcengine ECS was updated by direct SSH file sync and `systemctl restart deep-response`; `/health` returned provider mode with `providerConfigured: true`.
+- Fire/Volcengine HTTP cascade smoke with comfort-intent forbidden patterns passed:
+  - forbidden patterns: `大卫.*歌利亚`, `你知道.*为什么`, `从哪卷书|哪卷书.*开始|哪句经文.*开始`.
+  - Remote stop-to-first-audio: `204ms`, `199ms`.
+  - Remote abort stale audio chunks/bytes: `0` / `0`.
+  - Remote idle probe: `session_end` reason `idle_timeout`, late audio rejected with `409 session_ended`.
+- This is a narrow automated relevance guard, not a claim that all reply-quality issues are solved.
+
 ### Milestone S5: Hands-Free Conversation Loop
 
 Status: complete for the self-test gate. Server-side goodbye/idle lifecycle, remote smoke self-tests, Watch automatic return-to-listening source/build gate, local VAD/silence endpointing source/build gate, VAD fixture calibration, explicit Watch conversation state source gate, simulator-only continuous HTTP fixture autorun source gate, local 8-turn rolling-context/goodbye self-test, and remote 8-turn session-end probe are complete.
