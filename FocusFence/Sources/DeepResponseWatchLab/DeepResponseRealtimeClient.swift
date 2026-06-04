@@ -52,7 +52,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private var isDrainingHTTPUploads = false
     private var httpStopStartedAt: Date?
     private var httpFirstAudioMs: Int?
-    private let httpUploadBatchBytes = 16_000
+    private let httpUploadBatchBytes = 32_000
     private var httpSessionPollTask: Task<Void, Error>?
 
     func checkHealth() async {
@@ -361,8 +361,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
                 request.setValue(turnID, forHTTPHeaderField: "X-Deep-Response-Turn")
                 request.setValue(String(seq), forHTTPHeaderField: "X-Deep-Response-Seq")
                 request.setValue("DeepLab-watchOS", forHTTPHeaderField: "X-Deep-Response-Client")
-                request.httpBody = uploadBody
-                let (_, response) = try await URLSession.shared.data(for: request)
+                let (_, response) = try await URLSession.shared.upload(for: request, from: uploadBody)
                 let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
                 if statusCode == 200 {
                     uploadedAudioChunks += 1
