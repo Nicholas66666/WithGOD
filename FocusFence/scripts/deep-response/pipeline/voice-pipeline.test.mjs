@@ -108,6 +108,63 @@ test("VoicePipeline creates first and followup spoken segments", async () => {
   assert.match(llmCalls[1].transcript, /不要重复已经说过的第一句/);
 });
 
+test("VoicePipeline retries an invalid scripture quote first phrase", async () => {
+  const llmCalls = [];
+  const asr = {
+    async transcribe() {
+      return {
+        transcript: "今天我有点累，想听一句安慰的话。",
+        timing: { transcript_final_ms: 100 }
+      };
+    }
+  };
+  const llm = {
+    async generate({ messages, streamFull }) {
+      llmCalls.push({ messages, streamFull });
+      if (llmCalls.length === 1) {
+        return {
+          text: "主耶稣说：“凡劳苦担重担的人。",
+          firstPhrase: "主耶稣说：“凡劳苦担重担的人。",
+          timing: { llm_first_phrase_ms: 200 }
+        };
+      }
+      if (llmCalls.length === 2) {
+        return {
+          text: "我听见你今天真的很累。",
+          firstPhrase: "我听见你今天真的很累。",
+          timing: { llm_first_phrase_ms: 120 }
+        };
+      }
+      return {
+        text: "我们先把这口气慢慢放下来。",
+        firstPhrase: "我们先把这口气慢慢放下来。",
+        timing: { llm_followup_done_ms: 300 }
+      };
+    }
+  };
+  const tts = {
+    async synthesize({ text }) {
+      return {
+        audioChunks: [Buffer.from(text)],
+        timing: { tts_first_audio_ms: text.length }
+      };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20]) });
+  const result = await pipeline.runSegmented({
+    audioChunks: [Buffer.from("voice")]
+  });
+
+  assert.equal(result.first.text, "我听见你今天真的很累。");
+  assert.equal(Buffer.concat(result.first.audioChunks).toString("utf8"), "我听见你今天真的很累。");
+  assert.equal(llmCalls.length, 3);
+  assert.equal(llmCalls[0].streamFull, false);
+  assert.equal(llmCalls[1].streamFull, false);
+  assert.match(llmCalls[1].messages.at(-1).content, /刚才这句不适合作为语音首句/);
+  assert.equal(result.timing.llm_first_phrase_retry_count, 1);
+});
+
 test("VoicePipeline can use a local first phrase template before followup LLM", async () => {
   const llmCalls = [];
   const asr = {

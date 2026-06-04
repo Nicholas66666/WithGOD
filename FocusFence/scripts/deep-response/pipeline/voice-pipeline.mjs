@@ -183,7 +183,7 @@ export class VoicePipeline {
         streamChunks: []
       };
     }
-    return await this.llm.generate({
+    const firstAttempt = await this.llm.generate({
       transcript,
       context,
       messages: buildFirstPhraseMessages(transcript, context),
@@ -191,8 +191,32 @@ export class VoicePipeline {
       streamFull: false,
       maxTokens: 80,
       minChars: 8,
+      temperature: 0.2,
       firstPhraseExtractor: findCompleteFirstPhrase
     });
+    const firstText = firstAttempt.firstPhrase || firstAttempt.text || "";
+    if (isValidFirstPhrase(firstText)) {
+      return firstAttempt;
+    }
+
+    const retry = await this.llm.generate({
+      transcript,
+      context,
+      messages: buildFirstPhraseRetryMessages(transcript, firstText, context),
+      signal,
+      streamFull: false,
+      maxTokens: 48,
+      minChars: 8,
+      temperature: 0.1,
+      firstPhraseExtractor: findCompleteFirstPhrase
+    });
+    return {
+      ...retry,
+      timing: {
+        ...(retry.timing || {}),
+        llm_first_phrase_retry_count: 1
+      }
+    };
   }
 
   async *streamSegmentedWithStreamingASR({ audioChunks, context = [], signal } = {}) {
@@ -363,6 +387,25 @@ function buildFirstPhraseMessages(transcript, context = []) {
   ];
 }
 
+function buildFirstPhraseRetryMessages(transcript, rejectedText, context = []) {
+  return [
+    { role: "system", content: firstPhraseSystemPrompt() },
+    ...context,
+    {
+      role: "user",
+      content: [
+        `刚才这句不适合作为语音首句：${rejectedText}`,
+        "原因：它像经文引用、讲道、属灵建议，或不是一句自然情绪承接。",
+        "请重新输出一句完整短句，8-28 个中文字符，必须以句号、问号或感叹号结尾。",
+        "只承接用户此刻的感受；不要提圣经、经文、神、耶稣、主、章、节、引用、引号或冒号。",
+        "不要输出解释、编号、标题或 Markdown。",
+        "",
+        `用户 ASR transcript：${transcript}`
+      ].join("\n")
+    }
+  ];
+}
+
 function firstPhraseSystemPrompt() {
   return [
     "你只负责生成语音对话的第一句回应。",
@@ -421,6 +464,23 @@ function findCompleteFirstPhrase(text, { minChars = 8 } = {}) {
     return "";
   }
   return [...match[0]].length >= minChars ? match[0] : "";
+}
+
+function isValidFirstPhrase(text) {
+  const cleaned = String(text || "").replace(/\s+/g, "").trim();
+  if (!cleaned) {
+    return false;
+  }
+  const charCount = [...cleaned].length;
+  if (charCount < 6 || charCount > 36) {
+    return false;
+  }
+  if (!/[。！？!?]$/u.test(cleaned)) {
+    return false;
+  }
+  return !/(圣经|经文|经上|诗篇|箴言|以赛亚|马太|约翰|罗马|第?\d+章|\d+[:：]\d+|主耶稣|耶稣说|凡劳苦|担重担|安息|神说|主说|“|”|:|：)/u.test(
+    cleaned
+  );
 }
 
 function buildFollowupPrompt(transcript, firstText) {
