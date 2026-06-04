@@ -212,16 +212,16 @@ test("collectRepeatedOpeningStemFailures flags overused session openings", () =>
   ]);
 });
 
-test("collectRepeatedConversationReplyFailures flags identical adjacent replies", () => {
+test("collectRepeatedConversationReplyFailures flags identical replies anywhere in the same session", () => {
   const failures = collectRepeatedConversationReplyFailures([
     { turnID: "turn-1", text: "你还没说完呢，是不是累得慌？“主赐能力给软弱的人。”" },
-    { turnID: "turn-2", text: " 你还没说完呢，是不是累得慌？“主赐能力给软弱的人。” " },
-    { turnID: "turn-3", text: "我陪你慢下来。“主赐能力给软弱的人。”" }
+    { turnID: "turn-2", text: "我陪你慢下来。“主赐能力给软弱的人。”" },
+    { turnID: "turn-3", text: " 你还没说完呢，是不是累得慌？“主赐能力给软弱的人。” " }
   ]);
 
   assert.deepEqual(failures, [
     {
-      turnID: "turn-2",
+      turnID: "turn-3",
       previousTurnID: "turn-1",
       repeatedText: "你还没说完呢，是不是累得慌？“主赐能力给软弱的人。”"
     }

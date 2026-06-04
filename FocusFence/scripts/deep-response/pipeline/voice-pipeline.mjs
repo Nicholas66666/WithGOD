@@ -694,6 +694,7 @@ function buildFollowupMessages(transcript, firstText, context = []) {
 
 function buildCompleteReplyMessages(transcript, context = []) {
   const previousAssistantReply = getPreviousAssistantReply(context);
+  const recentAssistantReplies = getRecentAssistantReplies(context, { limit: 4 });
   return [
     { role: "system", content: scriptureCompanionSystemPrompt() },
     ...context,
@@ -709,6 +710,12 @@ function buildCompleteReplyMessages(transcript, context = []) {
           `上一轮 assistant 回复：${previousAssistantReply}`,
           "本轮禁止输出与上一轮相同或只有标点空格差异的回复。",
           "如果用户重复相同请求，要像连续对话一样推进承接，例如“你又提到这份累”，不要机械复读。"
+        ] : []),
+        ...(recentAssistantReplies.length > 0 ? [
+          "最近 assistant 回复：",
+          ...recentAssistantReplies.map((reply, index) => `${index + 1}. ${reply}`),
+          "本轮禁止输出与最近任意一条 assistant 回复相同或只有标点空格差异的回复。",
+          "不要重复最近已经用过的整句、经文句或完整安慰结构。"
         ] : []),
         "第一句必须是 6-14 个中文字符的日常口语承接，适合立刻语音播放。",
         "第一句不要直接引用经文，不要出现书名、章节、引号或冒号。",
@@ -740,6 +747,28 @@ function getPreviousAssistantReply(context = []) {
     }
   }
   return "";
+}
+
+function getRecentAssistantReplies(context = [], { limit = 4 } = {}) {
+  const replies = [];
+  const seen = new Set();
+  for (let index = context.length - 1; index >= 0; index -= 1) {
+    const message = context[index];
+    if (message?.role !== "assistant") {
+      continue;
+    }
+    const reply = String(message.content || "").replace(/\s+/gu, " ").trim().slice(0, 80);
+    const normalized = reply.replace(/\s+/gu, "");
+    if (!reply || seen.has(normalized)) {
+      continue;
+    }
+    replies.unshift(reply);
+    seen.add(normalized);
+    if (replies.length >= limit) {
+      break;
+    }
+  }
+  return replies;
 }
 
 function buildTemplateFirstPhrase(transcript) {

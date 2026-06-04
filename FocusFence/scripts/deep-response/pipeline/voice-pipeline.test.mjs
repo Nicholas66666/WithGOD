@@ -163,6 +163,55 @@ test("VoicePipeline prompt explicitly forbids repeating previous assistant reply
   assert.match(prompt, /本轮禁止输出与上一轮相同/);
 });
 
+test("VoicePipeline prompt forbids repeating any recent assistant reply in session context", async () => {
+  let prompt = "";
+  const asr = {
+    async transcribe() {
+      return {
+        transcript: "今天我有点累，想听一句安慰的话。",
+        timing: {}
+      };
+    }
+  };
+  const llm = {
+    async generate({ messages }) {
+      prompt = messages.at(-1).content;
+      return {
+        text: "先把这口气放下。",
+        firstPhrase: "先把这口气放下。",
+        timing: {}
+      };
+    }
+  };
+  const tts = {
+    async synthesize({ text }) {
+      return {
+        audioChunks: [Buffer.from(text)],
+        timing: {}
+      };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 1, 2]) });
+  await pipeline.runSegmented({
+    audioChunks: [Buffer.from("voice")],
+    context: [
+      { role: "user", content: "今天我有点累，想听一句安慰的话。" },
+      { role: "assistant", content: "主与你同在。“我会坚固你，帮助你。”（以赛亚书 41:10）" },
+      { role: "user", content: "今天我有点累，想听一句安慰的话。" },
+      { role: "assistant", content: "那咱靠着主歇一歇。“我的恩典够你用的。”（哥林多后书 12:9）" },
+      { role: "user", content: "今天我有点累，想听一句安慰的话。" },
+      { role: "assistant", content: "主知道你累了。“凡劳苦担重担的人，可以到我这里来。”（马太福音 11:28）" }
+    ]
+  });
+
+  assert.match(prompt, /最近 assistant 回复/);
+  assert.match(prompt, /主与你同在/);
+  assert.match(prompt, /那咱靠着主歇一歇/);
+  assert.match(prompt, /主知道你累了/);
+  assert.match(prompt, /本轮禁止输出与最近任意一条 assistant 回复相同/);
+});
+
 test("VoicePipeline streamSegmented emits one reply segment and no followup segment", async () => {
   const llmCalls = [];
   const asr = {

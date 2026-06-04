@@ -102,7 +102,7 @@ Latest full self-test update:
 - Added conversation-level `--forbid-text-pattern` support so long continuous probes reject lookup-style, harsh repeated-comfort, and mechanical tired/fatigue replies in turn text and memory summaries, not only in the 2-turn smoke.
 - Added memory recall sanitization for lookup-style, harsh repeated-comfort, and mechanical tired/fatigue phrases before persisted summaries enter LLM context.
 - Added VoicePipeline output normalization so lookup-style, harsh repeated-comfort, and mechanical tired/fatigue openings are corrected before `assistant_text_delta`, `assistant_phrase`, and TTS audio.
-- Latest `npm run deep:selftest:full`: passed; Node `179/179`, nested Fire/Volcengine smoke stop-to-first-audio `214ms` / `224ms`, 8-turn continuous gate `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
+- Latest `npm run deep:selftest:full`: passed; Node `180/180`, nested Fire/Volcengine smoke stop-to-first-audio `239ms` / `221ms`, 8-turn continuous gate `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
 
 ## Next Target: Full Streaming Pipeline
 
@@ -1646,6 +1646,23 @@ Latest dangling quote lead-in quality gate:
   - Fire/Volcengine 8-turn stop-to-first-audio: `1755ms`, `2094ms`, `1879ms`, `1713ms`, `1879ms`, `1667ms`, `1668ms`, `1736ms`.
   - `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
 - This remains completely self-tested; no user-operated Watch test is part of this gate.
+
+Latest full-session repeated reply gate:
+- Upgraded the 8-turn conversation repeated-reply gate from adjacent-turn detection to full-session identical-reply detection.
+- `--forbid-identical-consecutive-replies` is kept for script compatibility, but it now fails when any later assistant reply repeats any earlier assistant reply in the same session after whitespace normalization.
+- `VoicePipeline` now includes a bounded list of recent assistant replies in the LLM prompt and explicitly forbids repeating any recent reply, whole scripture sentence, or full comfort structure.
+- Verification:
+  - RED `node --test scripts/test-deep-response-http-conversation.test.mjs` first failed because turn 1 and turn 3 could repeat without detection.
+  - RED `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs` first failed because the prompt only listed the previous assistant reply.
+  - `node --test scripts/test-deep-response-http-conversation.test.mjs scripts/deep-response/pipeline/voice-pipeline.test.mjs`: `28/28` passed.
+  - `npm run test:node`: `180/180` passed.
+  - Fire/Volcengine ECS was updated by base64-over-SSH file sync after `scp` temporarily hit `Exceeded MaxStartups`; service returned `active`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Fire/Volcengine smoke stop-to-first-audio: `239ms`, `221ms`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Fire/Volcengine 8-turn stop-to-first-audio: `1728ms`, `1803ms`, `5119ms`, `1924ms`, `1721ms`, `1947ms`, `1921ms`, `1809ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- Observed follow-up risk: one 8-turn run had a single long-tail first-audio outlier at `5119ms` and some replies still carried overly long scripture quotes. Treat latency-tail and quote-length hardening as the next self-testable quality targets.
 
 - Unit and server tests:
   - `npm run test:node`

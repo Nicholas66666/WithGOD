@@ -79,23 +79,24 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `179/179` passed.
+- Node self-tests: `180/180` passed.
 - Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply, lookup-style-comfort, harsh repeated-comfort, mechanical tired/fatigue, incomplete-utterance, and `是还想听` gate enabled.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
 - Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
 - Fire/Volcengine partial-ASR LLM start: `llm_started_from_partial: 1` on both standard smoke turns.
-- Fire/Volcengine smoke stop-to-first-audio: `214ms`, `224ms`.
+- Fire/Volcengine smoke stop-to-first-audio: `239ms`, `221ms`.
 - Fire/Volcengine repeated reply failures: `[]`.
 - Fire/Volcengine forbidden lookup/harsh/mechanical comfort failures: `[]`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
-- Fire/Volcengine 8-turn continuous conversation gate: passed with `session_end` reason `user_goodbye`, `memoryRecalled.count: 3`, `memory_candidate.persisted: true`, `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, and late audio `409 session_ended`.
-- Fire/Volcengine 8-turn stop-to-first-audio: `1724ms`, `1893ms`, `1746ms`, `1752ms`, `1729ms`, `1973ms`, `1923ms`, `1895ms`.
+- Fire/Volcengine 8-turn continuous conversation gate: passed with `session_end` reason `user_goodbye`, `memoryRecalled.count: 3`, `memory_candidate.persisted: true`, `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, and late audio `409 session_ended`.
+- Fire/Volcengine 8-turn stop-to-first-audio: `1728ms`, `1803ms`, `5119ms`, `1924ms`, `1721ms`, `1947ms`, `1921ms`, `1809ms`.
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
 - Latest WatchLab barge-in self-test update: continuous-mode abort now captures the old `turn_id` / `generation_id`, stops playback locally, starts barge-in recording before waiting for the `/abort` server ack, and posts the abort in the background. Full `npm run deep:selftest:full` passed after this change; no user-operated Watch test was required.
 - Latest WatchLab state self-test update: continuous-mode runtime now has an explicit `assistantThinking` state between user speech ending and playback becoming active. This separates “server/AI is thinking” from idle waiting and assistant speaking in the scriptable Watch state model and Swift source gate.
 - Latest WatchLab ending-state self-test update: continuous-mode runtime now includes an explicit `ending` state before final `ended` when a server session end is observed. This makes the Watch state model match the planned listening/user-speaking/assistant-thinking/assistant-speaking/idle-waiting/ending/ended lifecycle and blocks auto-listen during session closure.
 - Latest spoken-text quality gate: VoicePipeline strips dangling quote lead-ins such as trailing `主说：`, `他说：`, `经上说：`, and `圣经说：` before emitting assistant text, phrase events, or TTS audio. Standard Fire/Volcengine smoke and 8-turn conversation scripts now also reject assistant text that ends with `:` or `：`.
+- Latest full-session repetition gate: the 8-turn conversation probe now treats `--forbid-identical-consecutive-replies` as a full-session identical-reply ban, not only an adjacent-turn ban. VoicePipeline prompt now lists recent assistant replies and explicitly forbids repeating any recent reply, whole scripture sentence, or full comfort structure.
 
 Latest remote deployment note:
 
@@ -117,12 +118,12 @@ Latest LLM selection benchmark:
 - Fire/Volcengine `/debug/config` after deploying `006347b` reports `arkModel: "doubao-seed-character-251128"` and `arkFallbackModel: ""`.
 - Standard Fire/Volcengine smoke now requires `/debug/config` to match that model/fallback pair via `--expect-ark-model doubao-seed-character-251128 --expect-ark-fallback-model ""`.
 - This is a self-test/model-selection gate only; it does not introduce Watch WebSocket, user-operated Watch validation, or product integration.
-- Standard Fire/Volcengine smoke also forbids identical adjacent assistant replies in the same session via `--forbid-identical-consecutive-replies`.
+- Standard Fire/Volcengine smoke and 8-turn conversation gates forbid identical assistant replies anywhere in the same session via `--forbid-identical-consecutive-replies`.
 - Standard Fire/Volcengine smoke requires every conversation turn to start LLM from usable ASR partial via `--expect-llm-started-from-partial`.
-- The LLM prompt now explicitly quotes the previous assistant reply when present and forbids repeating it, including when the user repeats the same request.
+- The LLM prompt now explicitly quotes recent assistant replies when present and forbids repeating any of them, including when the user repeats the same request.
 - Standard Fire/Volcengine smoke now rejects lookup-style, harsh repeated-comfort, mechanical tired/fatigue, incomplete-utterance, and stale followup replies such as `给你找一句`, `再给你读一句`, `你还想听`, `你还是想听`, `你又想听`, `喊累`, `没说完`, `只说想听`, `是还想听`, `你还是觉得累`, `你又累`, and `你又感到疲惫`.
 - The complete-reply prompt now requires comfort-intent turns to directly承接情绪 instead of opening as a scripture lookup or repeating the user's "想听安慰" request.
-- Standard `deep:selftest:full` now includes an 8-turn Fire/Volcengine continuous conversation gate with memory recall/persist, explicit user-goodbye session end, late-audio rejection, repeated-opening-stem rejection, identical-adjacent-reply rejection, and lookup/harsh/mechanical/incomplete-utterance/stale-followup text rejection.
+- Standard `deep:selftest:full` now includes an 8-turn Fire/Volcengine continuous conversation gate with memory recall/persist, explicit user-goodbye session end, late-audio rejection, repeated-opening-stem rejection, full-session identical-reply rejection, and lookup/harsh/mechanical/incomplete-utterance/stale-followup text rejection.
 - Server memory recall sanitizes lookup-style, harsh, mechanical tired/fatigue, incomplete-utterance, and stale-followup comfort phrases before placing persisted summaries into LLM context.
 - VoicePipeline normalizes lookup-style, harsh repeated-comfort, mechanical tired/fatigue openings, incomplete-utterance misreads, dangling modal particles, and dangling quote lead-ins before emitting assistant text, phrase events, or TTS audio.
 

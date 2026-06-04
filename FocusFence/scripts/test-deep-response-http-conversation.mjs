@@ -426,22 +426,23 @@ export function collectRepeatedOpeningStemFailures(turns = [], { maxRepeats = 0 
 
 export function collectRepeatedConversationReplyFailures(turns = []) {
   const failures = [];
-  let previous = null;
+  const seen = new Map();
   for (const turn of turns || []) {
     const text = String(turn?.text || "").trim();
     const normalizedText = normalizeConversationReplyText(text);
-    if (previous && normalizedText && normalizedText === previous.normalizedText) {
+    const previous = normalizedText ? seen.get(normalizedText) : null;
+    if (previous) {
       failures.push({
         turnID: turn?.turnID || "",
         previousTurnID: previous.turnID,
         repeatedText: text
       });
     }
-    if (normalizedText) {
-      previous = {
+    if (normalizedText && !seen.has(normalizedText)) {
+      seen.set(normalizedText, {
         turnID: turn?.turnID || "",
         normalizedText
-      };
+      });
     }
   }
   return failures;
@@ -539,6 +540,8 @@ Options:
                         Require memory_candidate.persisted=true and a non-empty store.
   --expect-memory-recalled
                         Require session creation to recall persisted memory into context.
+  --forbid-identical-consecutive-replies
+                        Fail if any assistant replies in the same session are identical.
   --forbid-text-pattern <regex>
                         Fail if any turn text or memory summary matches the regex. Repeatable.
   --verbose             Print turn event batches.
