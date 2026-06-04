@@ -6,6 +6,7 @@ struct DeepResponseDebugView: View {
     @State private var status = "Ready"
     @State private var recorder = DeepResponseMicrophoneRecorder()
     @State private var didRunAutorunFixture = false
+    @State private var isWaitingForResponse = false
 
     var body: some View {
         VStack(spacing: 8) {
@@ -98,6 +99,16 @@ struct DeepResponseDebugView: View {
                     Image(systemName: isRecording ? "stop.circle.fill" : "mic.circle.fill")
                 }
                 .buttonStyle(.borderedProminent)
+                .disabled(isWaitingForResponse)
+
+                if client.canAbortHTTPSessionTurn {
+                    Button {
+                        Task { await abortCurrentTurn() }
+                    } label: {
+                        Image(systemName: "hand.raised.fill")
+                    }
+                    .buttonStyle(.bordered)
+                }
             }
         }
         .padding()
@@ -130,7 +141,9 @@ struct DeepResponseDebugView: View {
                 status = "No audio"
                 return
             }
+            isWaitingForResponse = true
             await client.finishHTTPSessionTurn()
+            isWaitingForResponse = false
             status = client.lastError == nil ? "HTTP session done" : "HTTP session failed"
             return
         }
@@ -148,6 +161,12 @@ struct DeepResponseDebugView: View {
         } catch {
             status = error.localizedDescription
         }
+    }
+
+    private func abortCurrentTurn() async {
+        isWaitingForResponse = false
+        await client.abortHTTPSessionTurn()
+        status = client.lastError == nil ? "Aborted" : "Abort failed"
     }
 
     private func runAutorunFixtureIfRequested() async {

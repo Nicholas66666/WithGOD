@@ -33,6 +33,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
     @Published private(set) var lastTurnTotalMs: Int?
     @Published private(set) var lastTurnTiming: DeepResponseTiming?
     @Published private(set) var lastClientTimingText: String?
+    @Published private(set) var canAbortHTTPSessionTurn = false
 
     private var task: URLSessionWebSocketTask?
     private var receiveTask: Task<Void, Never>?
@@ -57,6 +58,8 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private var httpFirstAudioMs: Int?
     private let httpUploadBatchBytes = 32_000
     private var httpSessionPollTask: Task<Void, Error>?
+    private var isAbortingHTTPSessionTurn = false
+    private var canceledHTTPGenerationIDs = Set<String>()
 
     func checkHealth() async {
         do {
@@ -238,6 +241,49 @@ final class DeepResponseRealtimeClient: ObservableObject {
     }
 
     func startHTTPSessionTurn() async throws {
+        let sessionID = try await ensureHTTPSession()
+        httpTurnID = "turn-\(UUID().uuidString)"
+        httpGenerationID = nil
+        httpAudioSeq = 0
+        httpUploadQueue = []
+        httpPendingUploadAudio = Data()
+        httpUploadFailureCount = 0
+        isDrainingHTTPUploads = false
+        httpStopStartedAt = nil
+        httpUploadDrainMs = nil
+        httpInputStopResponseMs = nil
+        httpFirstTextMs = nil
+        httpFirstAudioMs = nil
+        canAbortHTTPSessionTurn = false
+        isAbortingHTTPSessionTurn = false
+        httpSessionPollTask?.cancel()
+        httpSessionPollTask = Task { [weak self] in
+            guard let self else { return }
+            try await self.pollHTTPSessionUntilDone(sessionID: sessionID)
+        }
+        uploadedAudioChunks = 0
+        uploadedAudioBytes = 0
+        uploadedEncodedBytes = 0
+        receivedAudioChunks = 0
+        receivedAudioBytes = 0
+        lastError = nil
+        lastErrorCode = nil
+        lastTurnTranscript = nil
+        lastTurnText = nil
+        lastTurnFirstText = nil
+        lastTurnFollowupText = nil
+        lastTurnTiming = nil
+        lastTurnTotalMs = nil
+        lastClientTimingText = nil
+        connectionStage = "http_session:ready"
+    }
+
+    private func ensureHTTPSession() async throws -> String {
+        if let httpSessionID {
+            connectionStage = "http_session:reuse"
+            return httpSessionID
+        }
+
         connectionStage = "http_session:create"
         var request = URLRequest(url: try Self.httpSessionURL(path: "/deep-response/sessions"))
         request.httpMethod = "POST"
@@ -261,40 +307,9 @@ final class DeepResponseRealtimeClient: ObservableObject {
             ])
         }
         httpSessionID = created.sessionID
-        httpTurnID = "turn-\(UUID().uuidString)"
-        httpGenerationID = nil
-        httpAudioSeq = 0
         httpEventCursor = 0
         httpOutputAudioCursor = 0
-        httpUploadQueue = []
-        httpPendingUploadAudio = Data()
-        httpUploadFailureCount = 0
-        isDrainingHTTPUploads = false
-        httpStopStartedAt = nil
-        httpUploadDrainMs = nil
-        httpInputStopResponseMs = nil
-        httpFirstTextMs = nil
-        httpFirstAudioMs = nil
-        httpSessionPollTask?.cancel()
-        httpSessionPollTask = Task { [weak self] in
-            guard let self else { return }
-            try await self.pollHTTPSessionUntilDone(sessionID: created.sessionID)
-        }
-        uploadedAudioChunks = 0
-        uploadedAudioBytes = 0
-        uploadedEncodedBytes = 0
-        receivedAudioChunks = 0
-        receivedAudioBytes = 0
-        lastError = nil
-        lastErrorCode = nil
-        lastTurnTranscript = nil
-        lastTurnText = nil
-        lastTurnFirstText = nil
-        lastTurnFollowupText = nil
-        lastTurnTiming = nil
-        lastTurnTotalMs = nil
-        lastClientTimingText = nil
-        connectionStage = "http_session:ready"
+        return created.sessionID
     }
 
     func enqueueHTTPSessionAudio(_ audio: Data) {
@@ -428,16 +443,71 @@ final class DeepResponseRealtimeClient: ObservableObject {
             }
             let stopped = try JSONDecoder().decode(DeepResponseHTTPSessionInputStopResponse.self, from: data)
             httpGenerationID = stopped.generationID
+            canAbortHTTPSessionTurn = true
             let inputStopMs = Self.elapsedMs(since: stopStartedAt)
             httpInputStopResponseMs = inputStopMs
             updateHTTPClientTimingText()
             try await httpSessionPollTask?.value
             let doneMs = Self.elapsedMs(since: stopStartedAt)
             updateHTTPClientTimingText(doneMs: doneMs)
+            canAbortHTTPSessionTurn = false
             connectionStage = "http_session:done"
+        } catch is CancellationError {
+            if isAbortingHTTPSessionTurn {
+                canAbortHTTPSessionTurn = false
+                connectionStage = "http_session:aborted"
+            } else {
+                setError("Session: cancelled")
+                connectionStage = "http_session:cancelled"
+            }
         } catch {
             setError("Session: \(Self.describe(error))", error: error)
+            canAbortHTTPSessionTurn = false
             connectionStage = "http_session:fail"
+        }
+    }
+
+    func abortHTTPSessionTurn() async {
+        guard let sessionID = httpSessionID else {
+            return
+        }
+
+        isAbortingHTTPSessionTurn = true
+        canAbortHTTPSessionTurn = false
+        if let httpGenerationID {
+            canceledHTTPGenerationIDs.insert(httpGenerationID)
+        }
+        player.stop()
+        httpSessionPollTask?.cancel()
+        httpSessionPollTask = nil
+        connectionStage = "http_session:abort_local"
+
+        do {
+            var request = URLRequest(url: try Self.httpSessionURL(path: "/deep-response/sessions/\(sessionID)/abort"))
+            request.httpMethod = "POST"
+            request.timeoutInterval = 10
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue("DeepLab-watchOS", forHTTPHeaderField: "X-Deep-Response-Client")
+            let body = DeepResponseHTTPSessionAbortRequest(
+                turnID: httpTurnID ?? "",
+                generationID: httpGenerationID ?? "",
+                reason: "watch_local_abort"
+            )
+            request.httpBody = try JSONEncoder().encode(body)
+            let (_, response) = try await URLSession.shared.data(for: request)
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+            lastHealthStatus = "Abort \(statusCode)"
+            if statusCode == 200 {
+                lastError = nil
+                lastErrorCode = nil
+                connectionStage = "http_session:aborted"
+            } else {
+                lastError = "Abort \(statusCode)"
+                connectionStage = "http_session:abort_\(statusCode)"
+            }
+        } catch {
+            setError("Abort: \(Self.describe(error))", error: error)
+            connectionStage = "http_session:abort_fail"
         }
     }
 
@@ -467,7 +537,11 @@ final class DeepResponseRealtimeClient: ObservableObject {
         var isDone = false
         while !isDone && Date().timeIntervalSince(startedAt) < 120 {
             let eventsURL = try Self.httpSessionURL(path: "/deep-response/sessions/\(sessionID)/events?cursor=\(httpEventCursor)")
-            let audioURL = try Self.httpSessionURL(path: "/deep-response/sessions/\(sessionID)/audio?cursor=\(httpOutputAudioCursor)")
+            var audioPath = "/deep-response/sessions/\(sessionID)/audio?cursor=\(httpOutputAudioCursor)"
+            if let httpGenerationID {
+                audioPath += "&generation_id=\(httpGenerationID)"
+            }
+            let audioURL = try Self.httpSessionURL(path: audioPath)
             async let eventResult = URLSession.shared.data(from: eventsURL)
             async let audioResult = URLSession.shared.data(from: audioURL)
 
@@ -490,6 +564,13 @@ final class DeepResponseRealtimeClient: ObservableObject {
                 var playbackAudio = Data()
                 var playbackSampleRate: Double?
                 for chunk in batch.chunks {
+                    if canceledHTTPGenerationIDs.contains(chunk.generationID) {
+                        continue
+                    }
+                    if let currentGenerationID = httpGenerationID,
+                       chunk.generationID != currentGenerationID {
+                        continue
+                    }
                     guard let data = Data(base64Encoded: chunk.audioBase64), !data.isEmpty else {
                         continue
                     }
@@ -617,6 +698,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
         receiveTask = nil
         httpSessionPollTask?.cancel()
         httpSessionPollTask = nil
+        canAbortHTTPSessionTurn = false
         isIntentionalDisconnect = true
         task?.cancel(with: .goingAway, reason: nil)
         task = nil
@@ -963,6 +1045,12 @@ private struct DeepResponseHTTPSessionInputStopResponse: Decodable {
     let sessionID: String
     let turnID: String
     let generationID: String
+}
+
+private struct DeepResponseHTTPSessionAbortRequest: Encodable {
+    let turnID: String
+    let generationID: String
+    let reason: String
 }
 
 private struct DeepResponseHTTPSessionEventsResponse: Decodable {
