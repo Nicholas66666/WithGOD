@@ -33,6 +33,41 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
   const state = { ...defaultState, ...stateInput };
   const actions = [];
 
+  if (event.type === "view_disappeared") {
+    actions.push("post_end:watch_teardown");
+    actions.push("stop_runtime");
+    if (state.isRecording) {
+      actions.push("stop_recording");
+    }
+    return {
+      state: {
+        ...state,
+        isContinuousMode: false,
+        isRecording: false,
+        isWaitingForResponse: false,
+        isHTTPSessionEnded: false,
+        conversationState: "ended"
+      },
+      actions
+    };
+  }
+
+  if (event.type === "view_appeared") {
+    actions.push("clear_client_diagnostics");
+    return {
+      state: {
+        ...state,
+        isContinuousMode: false,
+        isRecording: false,
+        isWaitingForResponse: false,
+        isHTTPSessionEnded: false,
+        lastError: null,
+        conversationState: "listening"
+      },
+      actions
+    };
+  }
+
   if (event.type === "toggle_continuous") {
     if (!event.enabled && state.isRecording) {
       actions.push("stop_recording");

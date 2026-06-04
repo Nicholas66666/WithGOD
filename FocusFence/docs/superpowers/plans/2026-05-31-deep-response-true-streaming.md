@@ -2088,6 +2088,22 @@ Latest WatchLab reusable-client diagnostics gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This is a WatchLab lifecycle self-test update; no ECS deploy and no user-operated Watch test were required.
 
+Latest WatchLab lifecycle state-machine gate:
+- Strengthened WatchLab lifecycle coverage by moving view appear/disappear behavior into the scriptable continuous-mode state machine, not only Swift source gates.
+- `watch-continuous-state-machine.mjs` now handles `view_disappeared` with `post_end:watch_teardown`, `stop_runtime`, optional `stop_recording`, and final `ended` view state.
+- `watch-continuous-state-machine.mjs` now handles `view_appeared` with `clear_client_diagnostics`, disabled continuous mode, no active recording/waiting, `isHTTPSessionEnded = false`, and `conversationState = "listening"`.
+- Verification:
+  - RED `node --test --test-name-pattern "view (disappear|appear)" scripts/deep-response/lib/watch-continuous-state-machine.test.mjs` first failed because lifecycle events were missing.
+  - `node --test --test-name-pattern "view (disappear|appear)" scripts/deep-response/lib/watch-continuous-state-machine.test.mjs`: `2/2` passed.
+  - `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs scripts/deep-response-integration-gate.test.mjs`: `54/54` passed.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Node self-tests: `211/211` passed.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `215ms`, `219ms`; idle `memoryCandidate.summary: ""`, `closureClean: true`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `207ms`, `204ms`, `197ms`, `200ms`, `208ms`, `222ms`, `201ms`, `204ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This is a WatchLab lifecycle model self-test update; no ECS deploy and no user-operated Watch test were required.
+
 - Unit and server tests:
   - `npm run test:node`
 

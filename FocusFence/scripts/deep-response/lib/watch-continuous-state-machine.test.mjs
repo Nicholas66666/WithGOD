@@ -188,3 +188,44 @@ test("late abort ack after session end does not resume barge-in recording", () =
     "finalize_session_end"
   ]);
 });
+
+test("view disappear ends server session and stops local runtime", () => {
+  const afterDisappear = applyDeepResponseWatchEvent({
+    isContinuousMode: true,
+    isRecording: true,
+    isWaitingForResponse: true,
+    isHTTPSessionEnded: false,
+    lastError: "old error",
+    conversationState: "userSpeaking"
+  }, { type: "view_disappeared" });
+
+  assert.equal(afterDisappear.state.conversationState, "ended");
+  assert.equal(afterDisappear.state.isContinuousMode, false);
+  assert.equal(afterDisappear.state.isRecording, false);
+  assert.equal(afterDisappear.state.isWaitingForResponse, false);
+  assert.equal(afterDisappear.state.isHTTPSessionEnded, false);
+  assert.deepEqual(afterDisappear.actions, [
+    "post_end:watch_teardown",
+    "stop_runtime",
+    "stop_recording"
+  ]);
+});
+
+test("view appear resets reusable debug screen state", () => {
+  const afterAppear = applyDeepResponseWatchEvent({
+    isContinuousMode: true,
+    isRecording: false,
+    isWaitingForResponse: true,
+    isHTTPSessionEnded: true,
+    lastError: "old error",
+    conversationState: "ended"
+  }, { type: "view_appeared" });
+
+  assert.equal(afterAppear.state.conversationState, "listening");
+  assert.equal(afterAppear.state.isContinuousMode, false);
+  assert.equal(afterAppear.state.isRecording, false);
+  assert.equal(afterAppear.state.isWaitingForResponse, false);
+  assert.equal(afterAppear.state.isHTTPSessionEnded, false);
+  assert.equal(afterAppear.state.lastError, null);
+  assert.deepEqual(afterAppear.actions, ["clear_client_diagnostics"]);
+});
