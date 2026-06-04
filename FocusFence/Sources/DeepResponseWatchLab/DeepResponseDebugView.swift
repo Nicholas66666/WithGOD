@@ -133,25 +133,7 @@ struct DeepResponseDebugView: View {
 
     private func toggleMicrophoneTurn() async {
         if isRecording {
-            isRecording = false
-            status = "Finishing"
-            let audio = recorder.stop()
-            guard !audio.isEmpty || client.uploadedAudioChunks > 0 else {
-                status = "No audio"
-                return
-            }
-            isWaitingForResponse = true
-            await client.finishHTTPSessionTurn()
-            isWaitingForResponse = false
-            if isContinuousMode, client.lastError == nil, !client.isHTTPSessionEnded {
-                if client.isHTTPSessionPlaybackActive {
-                    status = "Waiting playback"
-                } else {
-                    await startRecordingTurn(reason: "Auto listening")
-                }
-            } else {
-                status = client.lastError == nil ? "HTTP session done" : "HTTP session failed"
-            }
+            await finishRecordingTurn(reason: "Finishing")
             return
         }
 
@@ -166,14 +148,46 @@ struct DeepResponseDebugView: View {
             status = "Starting session"
             try await client.startHTTPSessionTurn()
             status = reason
-            try await recorder.start { chunk in
-                Task { @MainActor in
-                    client.enqueueHTTPSessionAudio(chunk)
-                }
-            }
+            try await recorder.start(
+                configuration: .init(isEndpointingEnabled: isContinuousMode),
+                onChunk: { chunk in
+                    Task { @MainActor in
+                        client.enqueueHTTPSessionAudio(chunk)
+                    }
+                },
+                onSilence: {
+                    Task { @MainActor in
+                        await finishRecordingTurn(reason: "Auto silence")
+                    }
+                })
             isRecording = true
         } catch {
             status = error.localizedDescription
+        }
+    }
+
+    private func finishRecordingTurn(reason: String) async {
+        guard isRecording else {
+            return
+        }
+        isRecording = false
+        status = reason
+        let audio = recorder.stop()
+        guard !audio.isEmpty || client.uploadedAudioChunks > 0 else {
+            status = "No audio"
+            return
+        }
+        isWaitingForResponse = true
+        await client.finishHTTPSessionTurn()
+        isWaitingForResponse = false
+        if isContinuousMode, client.lastError == nil, !client.isHTTPSessionEnded {
+            if client.isHTTPSessionPlaybackActive {
+                status = "Waiting playback"
+            } else {
+                await startRecordingTurn(reason: "Auto listening")
+            }
+        } else {
+            status = client.lastError == nil ? "HTTP session done" : "HTTP session failed"
         }
     }
 

@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 const debugViewSource = readFileSync("Sources/DeepResponseWatchLab/DeepResponseDebugView.swift", "utf8");
 const realtimeClientSource = readFileSync("Sources/DeepResponseWatchLab/DeepResponseRealtimeClient.swift", "utf8");
 const audioPlayerSource = readFileSync("Sources/DeepResponseWatchLab/DeepResponseAudioPlayer.swift", "utf8");
+const recorderSource = readFileSync("Sources/DeepResponseWatchLab/DeepResponseMicrophoneRecorder.swift", "utf8");
 
 test("DeepResponse Watch debug UI presents assistant reply as one god field", () => {
   assert.match(debugViewSource, /Text\("god: \\\(/);
@@ -48,4 +49,19 @@ test("DeepResponse Watch debug UI has an HTTP continuous auto-listen loop", () =
   assert.match(debugViewSource, /client\.onHTTPSessionPlaybackDrained = \{/);
   assert.match(debugViewSource, /handlePlaybackDrained\(\)/);
   assert.match(debugViewSource, /startRecordingTurn\(reason: "Auto listening"\)/);
+});
+
+test("DeepResponse Watch recorder exposes local silence endpointing hooks", () => {
+  assert.match(recorderSource, /struct Configuration/);
+  assert.match(recorderSource, /isEndpointingEnabled/);
+  assert.match(recorderSource, /endSilenceMilliseconds/);
+  assert.match(recorderSource, /onSilence: \(\(\) -> Void\)\?/);
+  assert.match(recorderSource, /voiceActivityLevel\(in data: Data\)/);
+  assert.match(recorderSource, /emitSilenceIfNeeded\(\)/);
+});
+
+test("DeepResponse Watch continuous mode auto-finishes a turn on recorder silence", () => {
+  assert.match(debugViewSource, /configuration: \.init\(isEndpointingEnabled: isContinuousMode\)/);
+  assert.match(debugViewSource, /onSilence: \{/);
+  assert.match(debugViewSource, /await finishRecordingTurn\(reason: "Auto silence"\)/);
 });

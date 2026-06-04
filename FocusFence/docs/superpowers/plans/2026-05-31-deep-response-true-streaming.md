@@ -10,6 +10,8 @@
 
 **Testing policy:** This plan is self-test first. Do not use user-operated Watch tests as a normal development gate. Exhaust Node tests, provider fixtures, local HTTP harnesses, Fire/Volcengine remote smoke tests, source-level Watch checks, simulator autoruns where available, and watchOS builds before asking the user for anything. User involvement is reserved for rare final experience checks that cannot be simulated, and must be bundled into one clear checklist.
 
+**2026-06-04 correction:** Do not spend implementation time on Watch WebSocket feasibility, fallback, or spike work. The Watch-side transport goal is HTTP only. Development should proceed in self-test mode by default; user-operated Watch testing is not a phase gate.
+
 ---
 
 ## Current Baseline
@@ -35,8 +37,8 @@
   - Watch socket transport is removed from the development path. It is not a fallback, not a spike, and not a blocking dependency for DeepResponse.
   - Provider-side ASR/LLM/TTS are available, but the main path still waits for ASR final before LLM and waits for a complete LLM reply before TTS starts.
   - Current TTS audio itself is chunked/streamed to Watch, but LLM->TTS is not yet a true incremental phrase pipeline.
-  - Full hands-free listening/VAD loop is not implemented.
-  - Goodbye and idle-end flows are not implemented.
+  - Full hands-free listening loop has a source/build gate, including local VAD/silence endpointing, but still needs stronger simulator/script state-machine coverage before final product readiness.
+  - Goodbye and idle-end flows are implemented on the server and covered by smoke tests.
   - Summary/memory candidate persistence is not implemented.
   - Watch installation/launch is sometimes blocked by CoreDevice tunnel instability; do not rely on user-operated Watch testing for normal development progress.
 
@@ -403,7 +405,7 @@ Latest results:
 
 ### Milestone S5: Hands-Free Conversation Loop
 
-Status: partially complete. Server-side goodbye/idle lifecycle, remote smoke self-tests, and Watch automatic return-to-listening source/build gate are complete; VAD/silence endpointing remains.
+Status: partially complete. Server-side goodbye/idle lifecycle, remote smoke self-tests, Watch automatic return-to-listening source/build gate, and local VAD/silence endpointing source/build gate are complete. Remaining work is stronger self-test coverage for the full hands-free state machine and any threshold calibration that can be automated.
 
 Purpose:
 - Move from manual press-to-talk turns toward Xiaozhi-style continuous conversation.
@@ -443,6 +445,9 @@ Completed evidence:
 - Updated `DeepResponseAudioPlayer.stop()` to detach the player node before future playback reprepare, avoiding abort/replay attach crashes.
 - Added `DeepResponseRealtimeClient.onHTTPSessionPlaybackDrained`, playback-active tracking, and `session_end` event handling.
 - Added DeepLab continuous-mode toggle that can automatically start the next HTTP recording turn after assistant playback drains, while stopping the loop on abort or server session end.
+- Added `DeepResponseMicrophoneRecorder.Configuration` with endpointing controls for local silence detection.
+- Added local PCM16 voice-activity measurement and idempotent silence callback emission.
+- Wired DeepLab continuous mode so recorder silence automatically calls `finishRecordingTurn(reason: "Auto silence")`.
 - Verified:
 
 ```bash
@@ -458,8 +463,8 @@ npm run deep:http-smoke:test -- --endpoint http://124.174.96.149:8797 --pcm /pri
 Latest results:
 - `scripts/deep-response-server.test.mjs`: `22/22` passed.
 - `scripts/test-deep-response-http-smoke.test.mjs`: `2/2` passed.
-- `scripts/deep-response-watch-ui.test.mjs`: `7/7` passed.
-- `npm run test:node`: `112/112` passed.
+- `scripts/deep-response-watch-ui.test.mjs`: `9/9` passed.
+- `npm run test:node`: `114/114` passed.
 - `DeepResponseWatchLab` generic watchOS build: `BUILD SUCCEEDED`.
 - Fire/Volcengine deployment: remote `HEAD` at `5f3a0e3`, service `active`, health `200`.
 - Fire/Volcengine smoke: `ok: true`.
@@ -468,8 +473,8 @@ Latest results:
 - idle session ended in `193ms` with reason `idle_timeout`; late audio upload returned `409 session_ended`.
 
 Remaining:
-- Local VAD/silence detection or server-assisted endpointing so user turns can end without a manual tap.
 - Script or simulator-level state-machine checks for listening -> speaking -> assistant -> listening -> ended.
+- Automated VAD threshold calibration with fixture audio/noise cases if source-level endpointing proves too shallow.
 
 ### Milestone S6: Memory/Summary And Product Integration Decision
 

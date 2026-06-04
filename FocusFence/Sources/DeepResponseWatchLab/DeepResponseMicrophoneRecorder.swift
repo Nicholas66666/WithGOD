@@ -2,15 +2,32 @@ import AVFoundation
 import Foundation
 
 final class DeepResponseMicrophoneRecorder {
+    struct Configuration {
+        var isEndpointingEnabled = false
+        var voiceActivityThreshold = 0.012
+        var minimumSpeechMilliseconds = 240
+        var endSilenceMilliseconds = 900
+    }
+
     private let engine = AVAudioEngine()
     private let queue = DispatchQueue(label: "deeplab.microphone-recorder")
     private var converter: AVAudioConverter?
     private var targetFormat: AVAudioFormat?
     private var chunks: [Data] = []
     private var onChunk: ((Data) -> Void)?
+    private var onSilence: (() -> Void)?
+    private var configuration = Configuration()
+    private var recordingStartedAt: Date?
+    private var speechStartedAt: Date?
+    private var lastVoiceAt: Date?
+    private var didEmitSilence = false
     private var isRunning = false
 
-    func start(onChunk: ((Data) -> Void)? = nil) async throws {
+    func start(
+        configuration: Configuration = .init(),
+        onChunk: ((Data) -> Void)? = nil,
+        onSilence: (() -> Void)? = nil
+    ) async throws {
         guard !isRunning else {
             return
         }
@@ -38,6 +55,12 @@ final class DeepResponseMicrophoneRecorder {
         queue.sync {
             chunks = []
             self.onChunk = onChunk
+            self.onSilence = onSilence
+            self.configuration = configuration
+            recordingStartedAt = Date()
+            speechStartedAt = nil
+            lastVoiceAt = nil
+            didEmitSilence = false
         }
         self.converter = converter
         self.targetFormat = targetFormat
@@ -64,6 +87,11 @@ final class DeepResponseMicrophoneRecorder {
         targetFormat = nil
         queue.sync {
             onChunk = nil
+            onSilence = nil
+            recordingStartedAt = nil
+            speechStartedAt = nil
+            lastVoiceAt = nil
+            didEmitSilence = false
         }
         try? AVAudioSession.sharedInstance().setActive(false, options: [])
 
@@ -125,6 +153,60 @@ final class DeepResponseMicrophoneRecorder {
 
         chunks.append(data)
         onChunk?(data)
+        updateEndpointing(with: data)
+    }
+
+    private func updateEndpointing(with data: Data) {
+        guard configuration.isEndpointingEnabled, !didEmitSilence else {
+            return
+        }
+
+        let now = Date()
+        if Self.voiceActivityLevel(in: data) >= configuration.voiceActivityThreshold {
+            if speechStartedAt == nil {
+                speechStartedAt = now
+            }
+            lastVoiceAt = now
+            return
+        }
+
+        guard let speechStartedAt, let lastVoiceAt else {
+            return
+        }
+
+        let speechMilliseconds = now.timeIntervalSince(speechStartedAt) * 1_000
+        let silenceMilliseconds = now.timeIntervalSince(lastVoiceAt) * 1_000
+        if speechMilliseconds >= Double(configuration.minimumSpeechMilliseconds),
+           silenceMilliseconds >= Double(configuration.endSilenceMilliseconds) {
+            emitSilenceIfNeeded()
+        }
+    }
+
+    private func emitSilenceIfNeeded() {
+        guard !didEmitSilence else {
+            return
+        }
+        didEmitSilence = true
+        onSilence?()
+    }
+
+    private static func voiceActivityLevel(in data: Data) -> Double {
+        let sampleCount = data.count / MemoryLayout<Int16>.size
+        guard sampleCount > 0 else {
+            return 0
+        }
+
+        let total = data.withUnsafeBytes { rawBuffer -> Int64 in
+            guard let samples = rawBuffer.bindMemory(to: Int16.self).baseAddress else {
+                return 0
+            }
+            var sum: Int64 = 0
+            for index in 0..<sampleCount {
+                sum += Int64(abs(Int32(samples[index])))
+            }
+            return sum
+        }
+        return Double(total) / Double(sampleCount) / Double(Int16.max)
     }
 }
 
