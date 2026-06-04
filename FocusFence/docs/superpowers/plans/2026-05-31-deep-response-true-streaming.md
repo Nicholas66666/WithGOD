@@ -612,6 +612,32 @@ Validation:
 - Quick Response old flow remains untouched.
 - DeepLab remains independently launchable.
 
+Status update 2026-06-04:
+- Implemented an async in-session `memory_candidate` event after `session_end`.
+- The candidate is generated from bounded session history after the session has ended, marked `persisted: false`, and is not part of the first-audio path.
+- Added server regression coverage proving `memory_candidate` appears after `session_end`, includes the session summary, turn count, end reason, and does not require user-operated Watch input.
+- Extended the HTTP conversation probe with `--expect-memory-candidate`; the script handles `session_end` and `memory_candidate` arriving in the same event batch.
+- Fire/Volcengine remote S6 probe passed:
+  - `session_end` reason: `memory_probe_complete`.
+  - `memory_candidate` seq followed `session_end` seq.
+  - `memory_candidate.persisted`: `false`.
+  - `memory_candidate.turnCount`: `2`.
+  - late audio after end returned `409 session_ended`.
+  - stop-to-first-audio during the same probe: `202ms`, `203ms`.
+- Fire/Volcengine full HTTP smoke after memory candidate change passed:
+  - conversation `ok: true`.
+  - `llm_started_from_partial: 1`.
+  - stop-to-first-audio: `207ms`, `218ms`.
+  - abort stale audio chunks/bytes: `0` / `0`.
+  - idle timeout and late audio rejection passed.
+- Verification:
+  - `node --test scripts/deep-response-server.test.mjs`: `27/27` passed.
+  - `node --test scripts/test-deep-response-http-conversation.test.mjs`: `5/5` passed.
+  - `npm run test:node`: `132/132` passed.
+  - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-volc-build build`: `BUILD SUCCEEDED`.
+  - Remote `node scripts/test-deep-response-http-conversation.mjs --endpoint http://124.174.96.149:8797 --pcm /private/tmp/deep-response-http-speed.pcm --turns 2 --chunk-ms 1000 --upload-sleep-ms 1000 --poll-ms 50 --wait-ms 800 --timeout-ms 120000 --pipeline-mode cascade --end-reason memory_probe_complete --expect-session-end --expect-late-audio-409 --expect-memory-candidate`: passed.
+  - Remote `npm run deep:http-smoke:test -- --endpoint http://124.174.96.149:8797 --pcm /private/tmp/deep-response-http-speed.pcm --turns 2 --chunk-ms 1000 --upload-sleep-ms 1000 --poll-ms 50 --wait-ms 800 --timeout-ms 120000 --observe-ms 3000 --max-stop-to-first-audio-ms 3000 --retries 1 --pipeline-mode cascade`: passed.
+
 Product gate:
 - Only after S1-S5 self-tests pass and any explicitly requested final experience check is acceptable.
 - User approves whether to integrate into old Watch app or keep separate for more Lab testing.

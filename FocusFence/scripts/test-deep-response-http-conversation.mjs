@@ -19,6 +19,7 @@ export function parseHTTPConversationArgs(argv) {
     endReason: "probe_complete",
     expectSessionEnd: false,
     expectLateAudio409: false,
+    expectMemoryCandidate: false,
     verbose: false
   };
 
@@ -58,6 +59,8 @@ export function parseHTTPConversationArgs(argv) {
       args.expectSessionEnd = true;
     } else if (arg === "--expect-late-audio-409") {
       args.expectLateAudio409 = true;
+    } else if (arg === "--expect-memory-candidate") {
+      args.expectMemoryCandidate = true;
     } else if (arg === "--verbose") {
       args.verbose = true;
     } else if (arg === "--help" || arg === "-h") {
@@ -158,12 +161,29 @@ export async function runHTTPConversationProbe(args) {
 
   const ended = await postJSON(buildURL(args.endpoint, `${basePath}/end`), { reason: args.endReason });
   let sessionEnd = null;
+  let memoryCandidate = null;
   if (args.expectSessionEnd) {
     await waitFor(async () => {
       const eventBatch = await fetchJSON(buildURL(args.endpoint, `${basePath}/events?cursor=${eventCursor}${buildWaitQuery(args.waitMs)}`));
       eventCursor = eventBatch.nextCursor;
-      sessionEnd = eventBatch.events.find((event) => event.type === "session_end") || null;
+      ({ sessionEnd, memoryCandidate } = collectSessionLifecycleEvents(eventBatch.events, {
+        endReason: args.endReason,
+        sessionEnd,
+        memoryCandidate
+      }));
       return sessionEnd?.reason === args.endReason;
+    }, { timeoutMs: args.timeoutMs, intervalMs: args.pollMs });
+  }
+  if (args.expectMemoryCandidate && !memoryCandidate) {
+    await waitFor(async () => {
+      const eventBatch = await fetchJSON(buildURL(args.endpoint, `${basePath}/events?cursor=${eventCursor}${buildWaitQuery(args.waitMs)}`));
+      eventCursor = eventBatch.nextCursor;
+      ({ sessionEnd, memoryCandidate } = collectSessionLifecycleEvents(eventBatch.events, {
+        endReason: args.endReason,
+        sessionEnd,
+        memoryCandidate
+      }));
+      return memoryCandidate?.summary;
     }, { timeoutMs: args.timeoutMs, intervalMs: args.pollMs });
   }
 
@@ -195,6 +215,7 @@ export async function runHTTPConversationProbe(args) {
     sessionID,
     ended,
     sessionEnd,
+    memoryCandidate,
     lateAudioRejected,
     elapsedMs: Math.round(performance.now() - startedAt),
     turns
@@ -252,6 +273,21 @@ export function summarizeTurn({
     audioChunks: audioChunks.length,
     timing: timingWithHTTP
   };
+}
+
+export function collectSessionLifecycleEvents(events, {
+  endReason = "",
+  sessionEnd = null,
+  memoryCandidate = null
+} = {}) {
+  for (const event of events || []) {
+    if (event.type === "session_end" && (!endReason || event.reason === endReason)) {
+      sessionEnd = event;
+    } else if (event.type === "memory_candidate" && event.summary) {
+      memoryCandidate = event;
+    }
+  }
+  return { sessionEnd, memoryCandidate };
 }
 
 function buildURL(endpoint, path) {
@@ -328,6 +364,8 @@ Options:
   --expect-session-end  Require a matching session_end event after /end.
   --expect-late-audio-409
                         Verify audio upload after session end returns 409 session_ended.
+  --expect-memory-candidate
+                        Require an async memory_candidate event after session end.
   --verbose             Print turn event batches.
 `);
 }

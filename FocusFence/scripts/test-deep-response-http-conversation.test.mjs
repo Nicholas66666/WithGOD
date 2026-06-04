@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
+  collectSessionLifecycleEvents,
   parseHTTPConversationArgs,
   summarizeTurn
 } from "./test-deep-response-http-conversation.mjs";
@@ -23,13 +24,15 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
     "--turns", "8",
     "--end-reason", "user_goodbye",
     "--expect-session-end",
-    "--expect-late-audio-409"
+    "--expect-late-audio-409",
+    "--expect-memory-candidate"
   ]);
 
   assert.equal(args.turns, 8);
   assert.equal(args.endReason, "user_goodbye");
   assert.equal(args.expectSessionEnd, true);
   assert.equal(args.expectLateAudio409, true);
+  assert.equal(args.expectMemoryCandidate, true);
 });
 
 test("summarizeTurn concatenates streaming text deltas without inserting spaces", () => {
@@ -81,4 +84,18 @@ test("summarizeTurn reports HTTP phrase and audio receive timing", () => {
   assert.equal(summary.timing.http_stop_to_first_phrase_ms, 120);
   assert.equal(summary.timing.http_stop_to_first_audio_ms, 160);
   assert.equal(summary.timing.http_first_audio_after_first_phrase_ms, 40);
+});
+
+test("collectSessionLifecycleEvents keeps memory candidate from same batch as session end", () => {
+  const state = collectSessionLifecycleEvents([
+    { type: "session_end", reason: "memory_probe_complete" },
+    { type: "memory_candidate", summary: "User: tired" }
+  ], {
+    endReason: "memory_probe_complete",
+    sessionEnd: null,
+    memoryCandidate: null
+  });
+
+  assert.equal(state.sessionEnd.reason, "memory_probe_complete");
+  assert.equal(state.memoryCandidate.summary, "User: tired");
 });

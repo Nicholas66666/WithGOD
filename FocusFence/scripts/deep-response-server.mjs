@@ -217,6 +217,8 @@ async function handleHTTPSessionCreate(request, response, { sessions, env = {}, 
       events: [],
       audio: [],
       history: [],
+      memoryCandidates: [],
+      memoryCandidateScheduled: false,
       turnStreams: new Map(),
       nextEventSeq: 0,
       nextAudioSeq: 0,
@@ -953,7 +955,79 @@ function endHTTPSession(session, {
     generationID,
     reason: endedReason
   });
+  scheduleHTTPSessionMemoryCandidate(session, {
+    reason: endedReason,
+    turnID,
+    generationID,
+    recordEvent
+  });
   return true;
+}
+
+function scheduleHTTPSessionMemoryCandidate(session, {
+  reason,
+  turnID = "",
+  generationID = "",
+  recordEvent = () => {}
+} = {}) {
+  if (session.memoryCandidateScheduled || session.history.length === 0) {
+    return false;
+  }
+  session.memoryCandidateScheduled = true;
+  const history = session.history.slice();
+  setTimeout(() => {
+    const candidate = buildHTTPSessionMemoryCandidate(session, {
+      history,
+      reason,
+      turnID,
+      generationID
+    });
+    session.memoryCandidates.push(candidate);
+    pushSessionEvent(session, {
+      type: "memory_candidate",
+      sessionID: session.sessionID,
+      turnID,
+      generationID,
+      reason,
+      summary: candidate.summary,
+      turnCount: candidate.turnCount,
+      persisted: false
+    });
+    recordEvent("http_session_memory_candidate", {
+      sessionID: session.sessionID,
+      reason,
+      turnCount: candidate.turnCount,
+      summaryLength: candidate.summary.length
+    });
+  }, 0);
+  return true;
+}
+
+function buildHTTPSessionMemoryCandidate(session, {
+  history,
+  reason,
+  turnID = "",
+  generationID = ""
+} = {}) {
+  const entries = (history || []).slice(-12);
+  const summary = entries
+    .map((entry) => {
+      const label = entry.role === "assistant" ? "AI" : "User";
+      return `${label}: ${String(entry.content || "").trim()}`;
+    })
+    .filter((line) => !line.endsWith(":"))
+    .join("\n")
+    .slice(0, 1200);
+  return {
+    sessionID: session.sessionID,
+    reason: reason || "session_end",
+    turnID,
+    generationID,
+    summary,
+    turnCount: Math.ceil(entries.length / 2),
+    persisted: false,
+    createdAt: new Date().toISOString()
+  };
 }
 
 function isGoodbyeTranscript(transcript) {

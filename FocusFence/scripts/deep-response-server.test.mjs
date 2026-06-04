@@ -1202,6 +1202,74 @@ test("DeepResponse HTTP session self-tests eight turns with rolling context and 
   }
 });
 
+test("DeepResponse HTTP session writes async memory candidate after session end", async () => {
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async *streamSegmented({ audioChunks }) {
+        const collected = [];
+        for await (const chunk of audioChunks) {
+          collected.push(Buffer.from(chunk).toString("utf8"));
+        }
+        const text = collected.join("");
+        yield { type: "transcript_final", transcript: `用户说${text}` };
+        yield {
+          type: "segment",
+          segment: "first",
+          text: `回应${text}`,
+          audioChunks: [Buffer.from(`audio-${text}`)]
+        };
+        yield { type: "timing", timing: {}, providerMeta: {} };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {});
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+
+    await postBytes(`${base}/audio?turn_id=turn-memory-candidate-1&seq=0`, Buffer.from("今天很累"));
+    await postJSON(`${base}/input-stop`, { turnID: "turn-memory-candidate-1" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "timing" && event.turnID === "turn-memory-candidate-1");
+    });
+
+    await postBytes(`${base}/audio?turn_id=turn-memory-candidate-2&seq=0`, Buffer.from("想被安慰"));
+    await postJSON(`${base}/input-stop`, { turnID: "turn-memory-candidate-2" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "timing" && event.turnID === "turn-memory-candidate-2");
+    });
+
+    await postJSON(`${base}/end`, { reason: "client_end" });
+    const afterEnd = await fetchJSON(`${base}/events?cursor=0`);
+    const sessionEndIndex = afterEnd.events.findIndex((event) => event.type === "session_end");
+    assert(sessionEndIndex >= 0);
+
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "memory_candidate");
+    });
+    const finalEvents = await fetchJSON(`${base}/events?cursor=0`);
+    const memoryIndex = finalEvents.events.findIndex((event) => event.type === "memory_candidate");
+    const memory = finalEvents.events[memoryIndex];
+    assert(memoryIndex > sessionEndIndex);
+    assert.equal(memory.sessionID, created.sessionID);
+    assert.equal(memory.reason, "client_end");
+    assert.equal(memory.turnCount, 2);
+    assert.match(memory.summary, /用户说今天很累/);
+    assert.match(memory.summary, /回应想被安慰/);
+    assert.equal(memory.persisted, false);
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse server chunks HTTP realtime turn PCM before provider pipeline", async () => {
   const seenChunkSizes = [];
   const server = await startDeepResponseServer({
