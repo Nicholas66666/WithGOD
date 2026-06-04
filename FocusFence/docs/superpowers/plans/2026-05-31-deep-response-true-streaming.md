@@ -1138,6 +1138,25 @@ Latest full-smoke memory recall gate:
   - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-smoke-memory-recall-build build`: `BUILD SUCCEEDED`.
 - Development remained self-test only; no user-operated Watch testing was required.
 
+Latest full-smoke memory persistence gate:
+- Added `--expect-memory-persisted` to `scripts/test-deep-response-http-smoke.mjs`.
+- The standard full HTTP smoke can now require both:
+  - persisted JSONL memory recall when a new session starts, and
+  - persisted JSONL memory candidate write after the conversation probe calls `/end`.
+- The full-smoke summary now includes `conversation.memoryCandidate.persisted`, `store`, `turnCount`, and `endReason`.
+- Verification:
+  - RED test first failed with `Unknown argument: --expect-memory-persisted`.
+  - `node --test scripts/test-deep-response-http-smoke.test.mjs scripts/test-deep-response-http-conversation.test.mjs`: `10/10` passed.
+  - `npm run test:node`: `148/148` passed.
+  - Fire/Volcengine full HTTP smoke with `--expect-memory-recalled`, `--expect-memory-persisted`, `--expect-abort-next-turn`, `--idle-goodbye`, `--wait-ms 800`, cascade mode, and forbidden-pattern gates: passed.
+  - Latest full-smoke memory recall: `count: 3`, `store: jsonl`.
+  - Latest full-smoke memory candidate: `persisted: true`, `store: jsonl`, `turnCount: 2`.
+  - Latest full-smoke conversation turns reported `audioDone: true` and `turnDone: true`; stop-to-first-audio `184ms`, `196ms`.
+  - Latest abort stale audio chunks/bytes: `0` / `0`; abort next turn reported `audioDone: true`, `turnDone: true`.
+  - Latest idle goodbye emitted text/audio and late audio was rejected with `409 session_ended`.
+  - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-smoke-memory-persist-build build`: `BUILD SUCCEEDED`.
+- Development remained self-test only; no user-operated Watch testing was required.
+
 ## File Responsibilities
 
 - Modify `scripts/deep-response/protocol/deep-response-protocol.mjs`

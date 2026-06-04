@@ -30,6 +30,7 @@ export function parseHTTPSmokeArgs(argv) {
     pipelineMode: "",
     expectAbortNextTurn: false,
     expectMemoryRecalled: false,
+    expectMemoryPersisted: false,
     forbiddenTextPatterns: [],
     verbose: false
   };
@@ -84,6 +85,8 @@ export function parseHTTPSmokeArgs(argv) {
       args.expectAbortNextTurn = true;
     } else if (arg === "--expect-memory-recalled") {
       args.expectMemoryRecalled = true;
+    } else if (arg === "--expect-memory-persisted") {
+      args.expectMemoryPersisted = true;
     } else if (arg === "--forbid-text-pattern") {
       args.forbiddenTextPatterns.push(argv[index + 1] || "");
       index += 1;
@@ -118,6 +121,7 @@ export async function runHTTPSmokeProbe(args) {
     "--timeout-ms", String(args.timeoutMs),
     ...(args.pipelineMode ? ["--pipeline-mode", args.pipelineMode] : []),
     ...(args.expectMemoryRecalled ? ["--expect-memory-recalled"] : []),
+    ...(args.expectMemoryPersisted ? ["--expect-memory-persisted"] : []),
     ...(args.verbose ? ["--verbose"] : [])
   ]);
   const conversation = await withRetries(() => runHTTPConversationProbe(conversationArgs), {
@@ -179,6 +183,12 @@ export async function runHTTPSmokeProbe(args) {
       memoryRecalled: conversation.memoryRecalled ? {
         count: conversation.memoryRecalled.count,
         store: conversation.memoryRecalled.store
+      } : null,
+      memoryCandidate: conversation.memoryCandidate ? {
+        persisted: conversation.memoryCandidate.persisted,
+        store: conversation.memoryCandidate.store,
+        turnCount: conversation.memoryCandidate.turnCount,
+        endReason: conversation.memoryCandidate.endReason
       } : null,
       turns: conversation.turns.map((turn) => ({
         turnID: turn.turnID,
@@ -401,6 +411,7 @@ Options:
   --pipeline-mode <m>              Optional HTTP session pipeline mode, e.g. cascade.
   --expect-abort-next-turn         Require abort probe to complete another turn in the same session.
   --expect-memory-recalled         Require conversation probe to recall persisted memory into context.
+  --expect-memory-persisted        Require conversation probe to persist a memory candidate after /end.
   --forbid-text-pattern <regex>    Fail if any assistant reply matches this regex. Repeatable.
   --verbose                        Print event details from child probes.
 `);
