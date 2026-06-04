@@ -15,6 +15,7 @@
     "deep:realtime:test": "node scripts/test-deep-response-realtime.mjs",
     "deep:http-session:test": "node scripts/test-deep-response-http-session.mjs",
     "deep:http-conversation:test": "node scripts/test-deep-response-http-conversation.mjs",
+    "deep:http-abort:test": "node scripts/test-deep-response-http-abort.mjs",
     "deep:streaming:provider:test": "node scripts/test-deep-response-streaming-provider.mjs",
     "test:node": "node --test scripts/*.test.mjs scripts/deep-response/**/*.test.mjs"
   },
