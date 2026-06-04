@@ -1372,6 +1372,22 @@ Latest active-state handoff refresh:
   - Nested `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
 - Development remained self-test only; no user-operated Watch testing was required.
 
+Latest obsolete Watch WebSocket spec cleanup:
+- Removed `docs/superpowers/specs/2026-06-03-watch-websocket-audio-runtime-spike-spec.md`.
+- Strengthened `scripts/deep-response-integration-gate.test.mjs` so the workspace cannot retain that obsolete Watch WebSocket spike artifact.
+- Expanded the integration gate file collector to include Markdown files where needed, so stale policy docs are actually covered.
+- Verification:
+  - RED `node --test scripts/deep-response-integration-gate.test.mjs` first failed because the obsolete Watch WebSocket spike spec was present.
+  - `node --test scripts/deep-response-integration-gate.test.mjs`: `8/8` passed.
+  - `npm run deep:selftest:full`: passed.
+  - Nested `npm run test:node`: `147/147` passed.
+  - Nested Fire/Volcengine smoke memory recall: `count: 3`, `store: jsonl`.
+  - Nested Fire/Volcengine smoke stop-to-first-audio: `221ms`, `224ms`.
+  - Nested Fire/Volcengine smoke abort stale audio chunks/bytes: `0` / `0`.
+  - Nested Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
+  - Nested `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
+  - Development remained self-test only; no user-operated Watch testing was required.
+
 ## File Responsibilities
 
 - Modify `scripts/deep-response/providers/doubao-asr.mjs`

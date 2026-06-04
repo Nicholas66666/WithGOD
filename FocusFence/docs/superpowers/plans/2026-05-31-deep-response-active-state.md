@@ -70,10 +70,10 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `146/146` passed.
+- Node self-tests: `147/147` passed.
 - Fire/Volcengine HTTP smoke: passed.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
-- Fire/Volcengine stop-to-first-audio: `193ms`, `202ms`.
+- Fire/Volcengine stop-to-first-audio: `221ms`, `224ms`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.

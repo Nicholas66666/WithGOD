@@ -19,6 +19,9 @@ const forbiddenWatchWebSocketScriptFiles = [
   "scripts/test-deep-response-realtime.mjs",
   "scripts/test-deep-response-realtime.test.mjs"
 ];
+const forbiddenWatchWebSocketDocs = [
+  "docs/superpowers/specs/2026-06-03-watch-websocket-audio-runtime-spike-spec.md"
+];
 const forbiddenQuickResponsePatterns = [
   /DeepResponse/u,
   /DeepLab/u,
@@ -80,6 +83,13 @@ test("DeepResponse self-test suite does not include client-facing WebSocket spik
   assert.deepEqual(forbiddenPresent, []);
 });
 
+test("DeepResponse workspace does not keep obsolete Watch WebSocket spike docs", () => {
+  const trackedDocFiles = collectSourceFiles(["docs/superpowers/specs", "docs/superpowers/plans"]);
+  const forbiddenPresent = forbiddenWatchWebSocketDocs.filter((file) => trackedDocFiles.includes(file));
+
+  assert.deepEqual(forbiddenPresent, []);
+});
+
 test("DeepResponse server exposes HTTP session transport without client-facing WebSocket upgrade", () => {
   assert.doesNotMatch(deepResponseServer, /acceptWebSocketUpgrade|server\.on\("upgrade"|handleRealtimeConnection/u);
   assert.match(deepResponseServer, /handleHTTPSessionCreate/u);
@@ -115,7 +125,7 @@ function collectSourceFilesInto(path, files) {
     }
     return;
   }
-  if (/\.(swift|plist|mjs)$/u.test(path)) {
+  if (/\.(swift|plist|mjs|md)$/u.test(path)) {
     files.push(path);
   }
 }
