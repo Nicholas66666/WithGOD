@@ -109,6 +109,30 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
     };
   }
 
+  if (event.type === "empty_recording") {
+    if (state.isContinuousMode && !state.isHTTPSessionEnded && !state.lastError) {
+      actions.push("start_recording:auto_listening");
+      return {
+        state: {
+          ...state,
+          isRecording: true,
+          isWaitingForResponse: false,
+          conversationState: "userSpeaking"
+        },
+        actions
+      };
+    }
+    return {
+      state: {
+        ...state,
+        isRecording: false,
+        isWaitingForResponse: false,
+        conversationState: state.isHTTPSessionEnded ? "ended" : "listening"
+      },
+      actions
+    };
+  }
+
   if (event.type === "playback_drained") {
     if (state.isHTTPSessionEnded) {
       return {

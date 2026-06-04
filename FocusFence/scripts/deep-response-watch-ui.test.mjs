@@ -67,6 +67,15 @@ test("DeepResponse Watch continuous mode auto-finishes a turn on recorder silenc
   assert.match(debugViewSource, /await finishRecordingTurn\(reason: "Auto silence"\)/);
 });
 
+test("DeepResponse Watch continuous mode resumes after an empty recording", () => {
+  const emptyRecordingStart = debugViewSource.indexOf("guard !audio.isEmpty || client.uploadedAudioChunks > 0 else {");
+  const responseStart = debugViewSource.indexOf("isWaitingForResponse = true", emptyRecordingStart);
+  const emptyRecordingBranch = debugViewSource.slice(emptyRecordingStart, responseStart);
+  assert.match(emptyRecordingBranch, /status = "No audio"/);
+  assert.match(emptyRecordingBranch, /if isContinuousMode,/);
+  assert.match(emptyRecordingBranch, /await startRecordingTurn\(reason: "Auto listening"\)/);
+});
+
 test("DeepResponse Watch lab does not expose Watch WebSocket transport", () => {
   assert.doesNotMatch(realtimeClientSource, /URLSessionWebSocketTask/);
   assert.doesNotMatch(realtimeClientSource, /webSocketTask/);

@@ -46,6 +46,18 @@ test("continuous loop restarts immediately when a turn has no queued playback", 
   assert.deepEqual(result.actions, ["start_recording:auto_listening"]);
 });
 
+test("continuous loop keeps listening after an empty recording", () => {
+  const result = simulateDeepResponseWatchEvents([
+    { type: "toggle_continuous", enabled: true },
+    { type: "recording_started" },
+    { type: "empty_recording" }
+  ]);
+
+  assert.equal(result.state.conversationState, "userSpeaking");
+  assert.equal(result.state.isRecording, true);
+  assert.deepEqual(result.actions, ["start_recording:auto_listening"]);
+});
+
 test("continuous barge-in abort resumes recording after local-first stop", () => {
   const afterAbort = applyDeepResponseWatchEvent({
     isContinuousMode: true,

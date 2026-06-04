@@ -1955,6 +1955,23 @@ Latest WatchLab HTTP-only endpoint gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This is a WatchLab configuration hardening gate only; no ECS deploy and no user-operated Watch test were required.
 
+Latest WatchLab empty-recording recovery gate:
+- Strengthened the hands-free continuous loop for the case where local recording stops with no captured audio and no uploaded chunks.
+- In continuous mode, `finishRecordingTurn()` now keeps the loop alive by immediately starting `Auto listening` instead of dropping to a passive `listening` state.
+- The scriptable Watch state machine now has an `empty_recording` event that mirrors the Swift behavior.
+- Verification:
+  - RED `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs` first failed because `empty_recording` produced no `start_recording:auto_listening` action.
+  - RED `node --test --test-name-pattern "empty recording" scripts/deep-response-watch-ui.test.mjs` then failed because the Swift `No audio` branch still returned to `listening`.
+  - `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs scripts/deep-response-integration-gate.test.mjs`: `44/44` passed.
+  - `npm run test:node`: `201/201` passed.
+  - `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `222ms`, `198ms`; idle `memoryCandidate.summary: ""`, `closureClean: true`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `243ms`, `216ms`, `227ms`, `218ms`, `232ms`, `222ms`, `215ms`, `219ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This is a WatchLab continuous-loop self-test update; no ECS deploy and no user-operated Watch test were required.
+
 - Unit and server tests:
   - `npm run test:node`
 

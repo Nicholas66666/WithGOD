@@ -216,6 +216,12 @@ struct DeepResponseDebugView: View {
         let audio = recorder.stop()
         guard !audio.isEmpty || client.uploadedAudioChunks > 0 else {
             status = "No audio"
+            if isContinuousMode,
+               client.lastError == nil,
+               !client.isHTTPSessionEnded {
+                await startRecordingTurn(reason: "Auto listening")
+                return
+            }
             conversationState = .listening
             return
         }
