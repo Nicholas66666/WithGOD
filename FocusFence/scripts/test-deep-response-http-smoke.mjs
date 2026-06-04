@@ -32,6 +32,7 @@ export function parseHTTPSmokeArgs(argv) {
     expectMemoryRecalled: false,
     expectMemoryPersisted: false,
     expectIdleMemoryPersisted: false,
+    expectLLMStartedFromPartial: false,
     expectArkModel: "",
     expectArkFallbackModel: null,
     forbidIdenticalConsecutiveReplies: false,
@@ -93,6 +94,8 @@ export function parseHTTPSmokeArgs(argv) {
       args.expectMemoryPersisted = true;
     } else if (arg === "--expect-idle-memory-persisted") {
       args.expectIdleMemoryPersisted = true;
+    } else if (arg === "--expect-llm-started-from-partial") {
+      args.expectLLMStartedFromPartial = true;
     } else if (arg === "--expect-ark-model") {
       args.expectArkModel = argv[index + 1] || "";
       index += 1;
@@ -186,10 +189,13 @@ export async function runHTTPSmokeProbe(args) {
   const repeatedReplyFailures = args.forbidIdenticalConsecutiveReplies
     ? collectRepeatedReplyFailures(conversation.turns)
     : [];
+  const partialStartFailures = args.expectLLMStartedFromPartial
+    ? collectPartialStartFailures(conversation.turns)
+    : [];
   const configFailures = collectDebugConfigFailures(debugConfig.body, args);
 
   return {
-    ok: health.ok && debugConfig.ok && conversation.ok && abort.ok && idle.ok && turnFailures.length === 0 && textFailures.length === 0 && repeatedReplyFailures.length === 0 && configFailures.length === 0,
+    ok: health.ok && debugConfig.ok && conversation.ok && abort.ok && idle.ok && turnFailures.length === 0 && textFailures.length === 0 && repeatedReplyFailures.length === 0 && partialStartFailures.length === 0 && configFailures.length === 0,
     endpoint: args.endpoint,
     thresholds: {
       maxStopToFirstAudioMs: args.maxStopToFirstAudioMs,
@@ -260,6 +266,7 @@ export async function runHTTPSmokeProbe(args) {
         audioByteLength: turn.audioByteLength
       })),
       ...configFailures,
+      ...partialStartFailures,
       ...repeatedReplyFailures,
       ...textFailures
     ]
@@ -300,6 +307,20 @@ export function collectForbiddenTextFailures(turns, forbiddenTextPatterns = []) 
           text
         });
       }
+    }
+  }
+  return failures;
+}
+
+export function collectPartialStartFailures(turns = []) {
+  const failures = [];
+  for (const turn of turns) {
+    if (turn?.timing?.llm_started_from_partial !== 1) {
+      failures.push({
+        turnID: turn.turnID,
+        expected: "llm_started_from_partial",
+        actual: turn?.timing?.llm_started_from_partial == null ? "" : String(turn.timing.llm_started_from_partial)
+      });
     }
   }
   return failures;
@@ -519,6 +540,8 @@ Options:
   --expect-memory-recalled         Require conversation probe to recall persisted memory into context.
   --expect-memory-persisted        Require conversation probe to persist a memory candidate after /end.
   --expect-idle-memory-persisted   Require idle timeout probe to persist a memory candidate.
+  --expect-llm-started-from-partial
+                                   Require every conversation turn to start LLM from usable ASR partial.
   --expect-ark-model <model>       Require /debug/config arkModel to match.
   --expect-ark-fallback-model <model>
                                    Require /debug/config arkFallbackModel to match. Use "" for no fallback.

@@ -9,6 +9,7 @@ import { startDeepResponseServer } from "./deep-response-server.mjs";
 import {
   collectDebugConfigFailures,
   collectForbiddenTextFailures,
+  collectPartialStartFailures,
   collectRepeatedReplyFailures,
   parseHTTPSmokeArgs,
   runHTTPIdleProbe
@@ -27,6 +28,7 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
     "--expect-memory-recalled",
     "--expect-memory-persisted",
     "--expect-idle-memory-persisted",
+    "--expect-llm-started-from-partial",
     "--expect-ark-model", "doubao-seed-character-251128",
     "--expect-ark-fallback-model", "",
     "--forbid-identical-consecutive-replies",
@@ -45,6 +47,7 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
   assert.equal(args.expectMemoryRecalled, true);
   assert.equal(args.expectMemoryPersisted, true);
   assert.equal(args.expectIdleMemoryPersisted, true);
+  assert.equal(args.expectLLMStartedFromPartial, true);
   assert.equal(args.expectArkModel, "doubao-seed-character-251128");
   assert.equal(args.expectArkFallbackModel, "");
   assert.equal(args.forbidIdenticalConsecutiveReplies, true);
@@ -81,6 +84,21 @@ test("collectForbiddenTextFailures flags obvious comfort-intent derailments", ()
   assert.deepEqual(failures, [
     { turnID: "turn-1", forbiddenPattern: "大卫.*歌利亚", text: "那我给你讲个轻松的。你知道大卫为什么能打败歌利亚吗？" },
     { turnID: "turn-1", forbiddenPattern: "你知道.*为什么", text: "那我给你讲个轻松的。你知道大卫为什么能打败歌利亚吗？" }
+  ]);
+});
+
+test("collectPartialStartFailures flags turns that waited for ASR final", () => {
+  const failures = collectPartialStartFailures([
+    { turnID: "turn-1", timing: { llm_started_from_partial: 1 } },
+    { turnID: "turn-2", timing: { transcript_final_ms: 4000 } }
+  ]);
+
+  assert.deepEqual(failures, [
+    {
+      turnID: "turn-2",
+      expected: "llm_started_from_partial",
+      actual: ""
+    }
   ]);
 });
 

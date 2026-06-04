@@ -1526,6 +1526,18 @@ Latest Watch continuous-loop state-machine self-test:
   - `npm run deep:selftest:full`: passed; Node `157/157`, Fire/Volcengine smoke passed with stop-to-first-audio `209ms` / `220ms`, repeated reply failures `[]`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
 - Development remained self-test only; no user-operated Watch testing was required.
 
+Latest partial-ASR standard smoke gate:
+- Added `--expect-llm-started-from-partial` to `scripts/test-deep-response-http-smoke.mjs`.
+- Added `collectPartialStartFailures()` so standard smoke fails if any conversation turn lacks `timing.llm_started_from_partial === 1`.
+- Added the new flag to `npm run deep:volc:smoke:full`, making partial-ASR LLM start a canonical Fire/Volcengine regression gate rather than an informational timing field.
+- Verification:
+  - RED `node --test scripts/test-deep-response-http-smoke.test.mjs scripts/package-scripts.test.mjs` first failed because `collectPartialStartFailures` was not exported and the standard smoke command lacked `--expect-llm-started-from-partial`.
+  - `node --test scripts/test-deep-response-http-smoke.test.mjs scripts/package-scripts.test.mjs`: `11/11` passed.
+  - `npm run test:node`: `158/158` passed.
+  - `npm run deep:volc:smoke:full`: passed with both standard conversation turns reporting `llm_started_from_partial: 1`; stop-to-first-audio `208ms` / `204ms`; repeated reply failures `[]`; abort stale audio `0` / `0`.
+  - `npm run deep:selftest:full`: passed; Node `158/158`, Fire/Volcengine smoke passed with both turns reporting `llm_started_from_partial: 1`, stop-to-first-audio `214ms` / `202ms`, repeated reply failures `[]`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
+- Development remained self-test only; no user-operated Watch testing was required.
+
 ## Test Commands
 
 - Unit and server tests:

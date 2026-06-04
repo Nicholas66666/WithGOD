@@ -72,11 +72,12 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `157/157` passed.
+- Node self-tests: `158/158` passed.
 - Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply gate enabled.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
 - Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
-- Fire/Volcengine stop-to-first-audio: `209ms`, `220ms`.
+- Fire/Volcengine partial-ASR LLM start: `llm_started_from_partial: 1` on both standard smoke turns.
+- Fire/Volcengine stop-to-first-audio: `214ms`, `202ms`.
 - Fire/Volcengine repeated reply failures: `[]`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
@@ -103,6 +104,7 @@ Latest LLM selection benchmark:
 - Standard Fire/Volcengine smoke now requires `/debug/config` to match that model/fallback pair via `--expect-ark-model doubao-seed-character-251128 --expect-ark-fallback-model ""`.
 - This is a self-test/model-selection gate only; it does not introduce Watch WebSocket, user-operated Watch validation, or product integration.
 - Standard Fire/Volcengine smoke also forbids identical adjacent assistant replies in the same session via `--forbid-identical-consecutive-replies`.
+- Standard Fire/Volcengine smoke requires every conversation turn to start LLM from usable ASR partial via `--expect-llm-started-from-partial`.
 - The LLM prompt now explicitly quotes the previous assistant reply when present and forbids repeating it, including when the user repeats the same request.
 
 ## Standard Commands
@@ -159,6 +161,7 @@ npm run deep:provider:benchmark -- \
 
 - Mock-provider cascade pipeline with `phrase-chunker`, `tts-queue`, and `VoicePipeline.streamCascadeTurn()`.
 - Real provider cascade harness with Doubao ASR, Ark LLM token streaming, and Doubao TTS streaming.
+- Standard remote partial-ASR regression gate: conversation turns fail smoke if `llm_started_from_partial` is missing.
 - Fire/Volcengine HTTP session cascade.
 - WatchLab HTTP upload, long-poll event pull, HTTP audio pull, local-first abort, and compact diagnostics.
 - Continuous conversation self-test gate: multi-turn context, goodbye intent, idle goodbye, late audio rejection.

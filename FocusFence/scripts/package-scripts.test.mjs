@@ -17,6 +17,7 @@ test("package exposes standard Fire Volcengine DeepResponse full smoke gate", ()
   assert.match(command, /--expect-memory-persisted/);
   assert.match(command, /--expect-idle-memory-persisted/);
   assert.match(command, /--expect-abort-next-turn/);
+  assert.match(command, /--expect-llm-started-from-partial/);
   assert.match(command, /--expect-ark-model doubao-seed-character-251128/);
   assert.match(command, /--expect-ark-fallback-model ''/);
   assert.match(command, /--forbid-identical-consecutive-replies/);
