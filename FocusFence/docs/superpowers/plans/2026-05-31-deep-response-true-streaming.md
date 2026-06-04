@@ -1211,6 +1211,33 @@ Latest integration boundary guard:
   - Latest idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`, `turnCount: 1`.
 - Development remained self-test only; no user-operated Watch testing was required.
 
+Latest standard Fire/Volcengine full-smoke script:
+- Added `npm run deep:volc:smoke:full` as the canonical one-command remote self-test for the current HTTP-only DeepResponse target.
+- The script wraps `deep:http-smoke:test` with the current required gates:
+  - Fire/Volcengine endpoint `http://124.174.96.149:8797`
+  - cascade pipeline mode
+  - long-poll `--wait-ms 800`
+  - memory recall
+  - conversation memory persistence
+  - idle memory persistence
+  - abort next-turn completion
+  - idle goodbye
+  - stale-audio/late-audio checks through the smoke probe
+  - comfort-intent forbidden-pattern checks.
+- Added package-script regression coverage so this command cannot silently drop the required gates.
+- Verification:
+  - RED test first failed because `deep:volc:smoke:full` did not exist.
+  - `node --test scripts/package-scripts.test.mjs`: `1/1` passed.
+  - `npm run deep:volc:smoke:full`: passed against Fire/Volcengine.
+  - Latest standard smoke memory recall: `count: 3`, `store: jsonl`.
+  - Latest standard smoke conversation memory candidate: `persisted: true`, `store: jsonl`, `turnCount: 2`.
+  - Latest standard smoke idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`, `turnCount: 1`.
+  - Latest standard smoke stop-to-first-audio: `201ms`, `193ms`.
+  - Latest abort stale audio chunks/bytes: `0` / `0`; abort next turn reported `audioDone: true`, `turnDone: true`.
+  - `npm run test:node`: `151/151` passed.
+  - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-standard-smoke-script-build build`: `BUILD SUCCEEDED`.
+- Development remained self-test only; no user-operated Watch testing was required.
+
 ## File Responsibilities
 
 - Modify `scripts/deep-response/protocol/deep-response-protocol.mjs`

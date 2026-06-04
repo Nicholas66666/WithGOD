@@ -1,0 +1,24 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+
+const packageJSON = JSON.parse(readFileSync("package.json", "utf8"));
+
+test("package exposes standard Fire Volcengine DeepResponse full smoke gate", () => {
+  const command = packageJSON.scripts?.["deep:volc:smoke:full"] || "";
+
+  assert.match(command, /npm run deep:http-smoke:test --/);
+  assert.match(command, /--endpoint http:\/\/124\.174\.96\.149:8797/);
+  assert.match(command, /--pcm \/private\/tmp\/deep-response-http-speed\.pcm/);
+  assert.match(command, /--pipeline-mode cascade/);
+  assert.match(command, /--wait-ms 800/);
+  assert.match(command, /--idle-goodbye/);
+  assert.match(command, /--expect-memory-recalled/);
+  assert.match(command, /--expect-memory-persisted/);
+  assert.match(command, /--expect-idle-memory-persisted/);
+  assert.match(command, /--expect-abort-next-turn/);
+  assert.match(command, /--forbid-text-pattern '大卫\.\*歌利亚'/);
+  assert.match(command, /--forbid-text-pattern '你知道\.\*为什么'/);
+  assert.match(command, /--forbid-text-pattern '从哪卷书\|哪卷书\.\*开始\|哪句经文\.\*开始'/);
+  assert.match(command, /--forbid-text-pattern '从哪里开始\|想从哪里开始'/);
+});
