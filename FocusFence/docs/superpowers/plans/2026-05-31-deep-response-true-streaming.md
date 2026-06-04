@@ -1752,6 +1752,25 @@ Latest tighter first-audio latency gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This remains HTTP-only and self-tested; no user-operated Watch test is part of this gate.
 
+Latest natural spoken-opening quality gate:
+- Added a self-testable quality gate for meta or awkward spoken openings observed in Fire/Volcengine remote output, including `那来句贴心的。`, `那听这句：`, and `那缓缓神吧。`.
+- `VoicePipeline.streamCascadeTurn()` now normalizes those openings before emitting `assistant_text_delta`, `assistant_phrase`, or TTS audio:
+  - `那来句...` -> `那我轻轻陪你一下。`
+  - `那听这句：` -> `我陪你慢慢缓过来。`
+  - `那缓缓神吧。` -> `那缓一缓吧。`
+- Standard Fire/Volcengine smoke and 8-turn conversation gates now include `--forbid-text-pattern '来句|听这句|缓缓神'`, so remote self-tests fail if this class returns.
+- Verification:
+  - RED `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/package-scripts.test.mjs scripts/test-deep-response-http-conversation.test.mjs` first failed because `VoicePipeline` emitted `那来句贴心的...` / `那听这句...` unchanged and the package scripts still used the narrower forbidden pattern.
+  - `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/package-scripts.test.mjs scripts/test-deep-response-http-conversation.test.mjs`: `42/42` passed.
+  - `npm run test:node`: `189/189` passed.
+  - Fire/Volcengine ECS was updated by `scp`, remote `node --check` passed, service returned `active`, and `/health` returned `{"ok":true,"service":"deep-response","mode":"provider","providerConfigured":true}`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Fire/Volcengine smoke stop-to-first-audio: `227ms`, `224ms`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Fire/Volcengine 8-turn stop-to-first-audio: `1775ms`, `1729ms`, `1773ms`, `1975ms`, `1905ms`, `1937ms`, `1707ms`, `1915ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This remains HTTP-only and self-tested; no user-operated Watch test is part of this gate.
+
 - Unit and server tests:
   - `npm run test:node`
 

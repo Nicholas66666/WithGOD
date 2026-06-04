@@ -587,6 +587,58 @@ test("VoicePipeline streamCascadeTurn normalizes harsh repeated-comfort openings
   assert.deepEqual(ttsTexts, ["我听见你真的累了。", "他必坚固你。"]);
 });
 
+test("VoicePipeline streamCascadeTurn normalizes awkward meta comfort openings before speech", async () => {
+  const ttsTexts = [];
+  const asr = {
+    async *transcribeStream() {
+      yield { type: "transcript_final", transcript: "今天我很累，想听一句安慰。", timing: { transcript_final_ms: 1000 } };
+    }
+  };
+  const llm = {
+    async *streamTokens() {
+      yield { type: "delta", delta: "那来句贴心的。“你们要休息，要知道我是神。”" };
+      yield { type: "delta", delta: "那缓缓神吧。“我的心哪，你当默默无声，专等候神。”" };
+      yield { type: "delta", delta: "那听这句：“你们得力在乎平静安稳。”" };
+      yield { type: "done", timing: { llm_first_token_ms: 100, llm_total_ms: 200 } };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      ttsTexts.push(text);
+      yield { type: "audio_chunk", audioChunk: Buffer.from(`${text}:audio`), sampleRate: 24000 };
+      yield { type: "done", timing: { tts_first_audio_ms: 80 }, connectID: "tts-awkward-normalized" };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20, 30]) });
+  const events = [];
+  for await (const event of pipeline.streamCascadeTurn({
+    audioChunks: [Buffer.from("voice")],
+    turnID: "turn-awkward",
+    generationID: "gen-awkward",
+    maxSpokenReplyChars: 120
+  })) {
+    events.push(event);
+  }
+
+  const text = events
+    .filter((event) => event.type === "assistant_text_delta")
+    .map((event) => event.delta)
+    .join("");
+  assert.match(text, /^那我轻轻陪你一下。/);
+  assert.match(text, /那缓一缓吧。/);
+  assert.match(text, /我陪你慢慢缓过来。/);
+  assert.doesNotMatch(text, /来句|听这句|缓缓神/);
+  assert.deepEqual(ttsTexts, [
+    "那我轻轻陪你一下。",
+    "“你们要休息，要知道我是神。”",
+    "那缓一缓吧。",
+    "“我的心哪，你当默默无声，专等候神。”",
+    "我陪你慢慢缓过来。",
+    "“你们得力在乎平静安稳。”"
+  ]);
+});
+
 test("VoicePipeline streamCascadeTurn normalizes mechanical repeated-tired openings before speech", async () => {
   const ttsTexts = [];
   const asr = {

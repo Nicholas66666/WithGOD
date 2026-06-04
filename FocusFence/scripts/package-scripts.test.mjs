@@ -27,6 +27,7 @@ test("package exposes standard Fire Volcengine DeepResponse full smoke gate", ()
   assert.match(command, /--forbid-text-pattern '从哪卷书\|哪卷书\.\*开始\|哪句经文\.\*开始'/);
   assert.match(command, /--forbid-text-pattern '从哪里开始\|想从哪里开始'/);
   assert.match(command, /--forbid-text-pattern '《\[\^》\]\+》\(\?:里\)\?说\|经上说\|圣经说\|主说\|神说\|耶稣说'/);
+  assert.match(command, /--forbid-text-pattern '来句\|听这句\|缓缓神'/);
 });
 
 test("package exposes standard DeepResponse WatchLab Volcengine build gate", () => {
@@ -61,6 +62,7 @@ test("package exposes standard Fire Volcengine DeepResponse continuous conversat
   assert.match(command, /--max-stop-to-first-audio-ms 2500/);
   assert.match(command, /--forbid-text-pattern '\[:：\]\\s\*\$\|给你\(找\|读\)一句\|再给你\(找\|读\)一句\|再找一句\|你还想听\|你还是想听\|你又想听\|喊累\|没说完\|只说\.\*想听\|是还想听\|你\(\?:今天\)\?还是\(\?:觉得\|有点\)\?累\|你又累\|你又\(\?:觉得\|感到\)\(\?:累\|疲惫\)'/);
   assert.match(command, /--forbid-text-pattern '《\[\^》\]\+》\(\?:里\)\?说\|经上说\|圣经说\|主说\|神说\|耶稣说'/);
+  assert.match(command, /--forbid-text-pattern '来句\|听这句\|缓缓神'/);
 });
 
 test("package exposes a single DeepResponse full self-test gate", () => {
