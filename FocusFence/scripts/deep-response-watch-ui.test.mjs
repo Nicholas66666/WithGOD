@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import test from "node:test";
 import assert from "node:assert/strict";
+import { deepResponseWatchConversationStates } from "./deep-response/lib/watch-continuous-state-machine.mjs";
 
 const debugViewSource = readFileSync("Sources/DeepResponseWatchLab/DeepResponseDebugView.swift", "utf8");
 const realtimeClientSource = readFileSync("Sources/DeepResponseWatchLab/DeepResponseRealtimeClient.swift", "utf8");
@@ -76,7 +77,7 @@ test("DeepResponse Watch lab does not expose Watch WebSocket transport", () => {
 
 test("DeepResponse Watch continuous mode has explicit conversation state transitions", () => {
   assert.match(debugViewSource, /enum DeepResponseConversationState/);
-  for (const state of ["listening", "userSpeaking", "assistantSpeaking", "bargeIn", "idleWaiting", "ended"]) {
+  for (const state of deepResponseWatchConversationStates) {
     assert.match(debugViewSource, new RegExp(`case ${state}`));
   }
   assert.match(debugViewSource, /@State private var conversationState: DeepResponseConversationState = \.listening/);

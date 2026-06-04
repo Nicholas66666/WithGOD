@@ -72,11 +72,11 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `153/153` passed.
+- Node self-tests: `157/157` passed.
 - Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply gate enabled.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
 - Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
-- Fire/Volcengine stop-to-first-audio: `221ms`, `228ms`.
+- Fire/Volcengine stop-to-first-audio: `209ms`, `220ms`.
 - Fire/Volcengine repeated reply failures: `[]`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
@@ -162,6 +162,7 @@ npm run deep:provider:benchmark -- \
 - Fire/Volcengine HTTP session cascade.
 - WatchLab HTTP upload, long-poll event pull, HTTP audio pull, local-first abort, and compact diagnostics.
 - Continuous conversation self-test gate: multi-turn context, goodbye intent, idle goodbye, late audio rejection.
+- Watch continuous-loop state-machine self-test: auto-listen after playback drain, immediate auto-listen without queued playback, barge-in resume, and session-end stop.
 - Memory candidate generation, JSONL persistence, recall, dedupe, and remote probe gates.
 - Quick Response source guard for `Sources/PresenceWatchApp` and `Sources/PresenceApp`.
 - Client-facing DeepResponse WebSocket server path removed.

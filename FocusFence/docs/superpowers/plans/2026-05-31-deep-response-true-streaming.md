@@ -1510,6 +1510,22 @@ Latest HTTP-only self-test policy and repeated-reply gate:
   - Final `npm run deep:selftest:full`: passed; Node `153/153`, Fire/Volcengine smoke passed with stop-to-first-audio `221ms` / `228ms`, repeated reply failures `[]`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
 - Development remained self-test only; no user-operated Watch testing was required.
 
+Latest Watch continuous-loop state-machine self-test:
+- Added `scripts/deep-response/lib/watch-continuous-state-machine.mjs` as a scriptable reducer for the DeepResponseWatchLab continuous conversation rules.
+- Added tests for:
+  - continuous auto-listen after playback drains;
+  - immediate auto-listen when a turn has no queued playback;
+  - barge-in abort resuming recording after local-first stop;
+  - `session_end` preventing any auto-listen restart.
+- Bound `scripts/deep-response-watch-ui.test.mjs` to the reducer's exported conversation state list so Swift enum states and the script model cannot silently diverge.
+- Verification:
+  - RED `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs` first failed because the reducer module did not exist.
+  - RED `node --test scripts/deep-response-watch-ui.test.mjs` first failed because the reducer did not export the shared state list.
+  - `node --test scripts/deep-response-watch-ui.test.mjs scripts/deep-response/lib/watch-continuous-state-machine.test.mjs`: `21/21` passed.
+  - `npm run test:node`: `157/157` passed.
+  - `npm run deep:selftest:full`: passed; Node `157/157`, Fire/Volcengine smoke passed with stop-to-first-audio `209ms` / `220ms`, repeated reply failures `[]`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
+- Development remained self-test only; no user-operated Watch testing was required.
+
 ## Test Commands
 
 - Unit and server tests:
