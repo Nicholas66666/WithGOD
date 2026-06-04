@@ -489,9 +489,9 @@ test("VoicePipeline streamCascadeTurn normalizes lookup-style comfort openings b
 
   const textDeltas = events.filter((event) => event.type === "assistant_text_delta").map((event) => event.delta);
   const phrases = events.filter((event) => event.type === "assistant_phrase").map((event) => event.text);
-  assert.equal(textDeltas[0], "你又累了呀。");
+  assert.equal(textDeltas[0], "我听见你真的累了。");
   assert(phrases.includes("《以赛亚书》里说，那等候耶和华的，必从新得力。"));
-  assert.deepEqual(ttsTexts, ["你又累了呀。", "《以赛亚书》里说，那等候耶和华的，必从新得力。"]);
+  assert.deepEqual(ttsTexts, ["我听见你真的累了。", "《以赛亚书》里说，那等候耶和华的，必从新得力。"]);
   assert.doesNotMatch(textDeltas.join(""), /你还想听/);
 });
 
@@ -531,9 +531,91 @@ test("VoicePipeline streamCascadeTurn normalizes harsh repeated-comfort openings
     .filter((event) => event.type === "assistant_text_delta")
     .map((event) => event.delta)
     .join("");
-  assert.match(text, /^你又累了呀。/);
+  assert.match(text, /^我听见你真的累了。/);
   assert.doesNotMatch(text, /喊累/);
-  assert.deepEqual(ttsTexts, ["你又累了呀。", "《诗篇》里说，他必坚固你。"]);
+  assert.deepEqual(ttsTexts, ["我听见你真的累了。", "《诗篇》里说，他必坚固你。"]);
+});
+
+test("VoicePipeline streamCascadeTurn normalizes mechanical repeated-tired openings before speech", async () => {
+  const ttsTexts = [];
+  const asr = {
+    async *transcribeStream() {
+      yield { type: "transcript_final", transcript: "今天我很累，想听一句安慰。", timing: { transcript_final_ms: 1000 } };
+    }
+  };
+  const llm = {
+    async *streamTokens() {
+      yield { type: "delta", delta: "你今天还是觉得累。《诗篇》说，他会赐下能力，让你重新得力。" };
+      yield { type: "done", timing: { llm_first_token_ms: 100, llm_total_ms: 200 } };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      ttsTexts.push(text);
+      yield { type: "audio_chunk", audioChunk: Buffer.from(`${text}:audio`), sampleRate: 24000 };
+      yield { type: "done", timing: { tts_first_audio_ms: 80 }, connectID: "tts-mechanical-tired-normalized" };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20, 30]) });
+  const events = [];
+  for await (const event of pipeline.streamCascadeTurn({
+    audioChunks: [Buffer.from("voice")],
+    turnID: "turn-1",
+    generationID: "gen-1",
+    maxSpokenReplyChars: 80
+  })) {
+    events.push(event);
+  }
+
+  const text = events
+    .filter((event) => event.type === "assistant_text_delta")
+    .map((event) => event.delta)
+    .join("");
+  assert.match(text, /^我听见你真的累了。/);
+  assert.doesNotMatch(text, /你今天还是觉得累|你又觉得累|你又感到累/);
+  assert.deepEqual(ttsTexts, ["我听见你真的累了。", "《诗篇》说，他会赐下能力，让你重新得力。"]);
+});
+
+test("VoicePipeline streamCascadeTurn normalizes repeated-fatigue variants observed remotely", async () => {
+  const ttsTexts = [];
+  const asr = {
+    async *transcribeStream() {
+      yield { type: "transcript_final", transcript: "今天我很累，想听一句安慰。", timing: { transcript_final_ms: 1000 } };
+    }
+  };
+  const llm = {
+    async *streamTokens() {
+      yield { type: "delta", delta: "你又感到疲惫了。《以赛亚书》里说，神会让你如鹰展翅上腾。" };
+      yield { type: "done", timing: { llm_first_token_ms: 100, llm_total_ms: 200 } };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      ttsTexts.push(text);
+      yield { type: "audio_chunk", audioChunk: Buffer.from(`${text}:audio`), sampleRate: 24000 };
+      yield { type: "done", timing: { tts_first_audio_ms: 80 }, connectID: "tts-fatigue-normalized" };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20, 30]) });
+  const events = [];
+  for await (const event of pipeline.streamCascadeTurn({
+    audioChunks: [Buffer.from("voice")],
+    turnID: "turn-1",
+    generationID: "gen-1",
+    maxSpokenReplyChars: 80
+  })) {
+    events.push(event);
+  }
+
+  const text = events
+    .filter((event) => event.type === "assistant_text_delta")
+    .map((event) => event.delta)
+    .join("");
+  assert.match(text, /^我听见你真的累了。/);
+  assert.doesNotMatch(text, /你又累|你又感到疲惫|你又觉得疲惫/);
+  assert.deepEqual(ttsTexts, ["我听见你真的累了。", "《以赛亚书》里说，神会让你如鹰展翅上腾。"]);
 });
 
 test("VoicePipeline streamCascadeTurn keeps reading LLM while first phrase TTS is active", async () => {

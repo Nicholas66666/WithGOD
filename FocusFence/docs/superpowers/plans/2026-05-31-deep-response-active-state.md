@@ -56,6 +56,7 @@ DeepResponse remains in the independent Lab target.
 
 Latest pushed commits:
 
+- `77a9228` Gate DeepResponse harsh comfort phrasing.
 - `e2cfc5e` Gate DeepResponse continuous conversation self-test.
 - `a9e9884` Gate DeepResponse comfort reply style.
 - `e1652bd` Gate DeepResponse partial ASR streaming.
@@ -77,14 +78,14 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `165/165` passed.
-- Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply, lookup-style-comfort, and harsh repeated-comfort gate enabled.
+- Node self-tests: `167/167` passed.
+- Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply, lookup-style-comfort, harsh repeated-comfort, and mechanical tired/fatigue gate enabled.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
 - Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
 - Fire/Volcengine partial-ASR LLM start: `llm_started_from_partial: 1` on both standard smoke turns.
-- Fire/Volcengine stop-to-first-audio: `165ms`, `200ms`.
+- Fire/Volcengine stop-to-first-audio: `235ms`, `236ms`.
 - Fire/Volcengine repeated reply failures: `[]`.
-- Fire/Volcengine forbidden lookup/harsh comfort failures: `[]`.
+- Fire/Volcengine forbidden lookup/harsh/mechanical comfort failures: `[]`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
 - Fire/Volcengine 8-turn continuous conversation gate: passed with `session_end` reason `user_goodbye`, `memoryRecalled.count: 3`, `memory_candidate.persisted: true`, `forbiddenTextFailures: []`, and late audio `409 session_ended`.
@@ -113,11 +114,11 @@ Latest LLM selection benchmark:
 - Standard Fire/Volcengine smoke also forbids identical adjacent assistant replies in the same session via `--forbid-identical-consecutive-replies`.
 - Standard Fire/Volcengine smoke requires every conversation turn to start LLM from usable ASR partial via `--expect-llm-started-from-partial`.
 - The LLM prompt now explicitly quotes the previous assistant reply when present and forbids repeating it, including when the user repeats the same request.
-- Standard Fire/Volcengine smoke now rejects lookup-style and harsh repeated-comfort replies such as `给你找一句`, `再给你读一句`, `你还想听`, `你还是想听`, `你又想听`, and `喊累`.
+- Standard Fire/Volcengine smoke now rejects lookup-style, harsh repeated-comfort, and mechanical tired/fatigue replies such as `给你找一句`, `再给你读一句`, `你还想听`, `你还是想听`, `你又想听`, `喊累`, `你还是觉得累`, `你又累`, and `你又感到疲惫`.
 - The complete-reply prompt now requires comfort-intent turns to directly承接情绪 instead of opening as a scripture lookup or repeating the user's "想听安慰" request.
-- Standard `deep:selftest:full` now includes an 8-turn Fire/Volcengine continuous conversation gate with memory recall/persist, explicit user-goodbye session end, late-audio rejection, and lookup/harsh comfort text rejection.
-- Server memory recall sanitizes lookup-style and harsh comfort phrases before placing persisted summaries into LLM context.
-- VoicePipeline normalizes lookup-style and harsh repeated-comfort openings before emitting assistant text, phrase events, or TTS audio.
+- Standard `deep:selftest:full` now includes an 8-turn Fire/Volcengine continuous conversation gate with memory recall/persist, explicit user-goodbye session end, late-audio rejection, and lookup/harsh/mechanical comfort text rejection.
+- Server memory recall sanitizes lookup-style, harsh, and mechanical tired/fatigue comfort phrases before placing persisted summaries into LLM context.
+- VoicePipeline normalizes lookup-style, harsh repeated-comfort, and mechanical tired/fatigue openings before emitting assistant text, phrase events, or TTS audio.
 
 ## Standard Commands
 
