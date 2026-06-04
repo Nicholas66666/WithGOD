@@ -36,6 +36,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
     @Published private(set) var lastTurnTotalMs: Int?
     @Published private(set) var lastTurnTiming: DeepResponseTiming?
     @Published private(set) var lastClientTimingText: String?
+    @Published private(set) var lastAbortTimingText: String?
     @Published private(set) var canAbortHTTPSessionTurn = false
     @Published private(set) var isHTTPSessionPlaybackActive = false
     @Published private(set) var isHTTPSessionEnded = false
@@ -56,6 +57,10 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private var httpInputStopResponseMs: Int?
     private var httpFirstTextMs: Int?
     private var httpFirstAudioMs: Int?
+    private var httpAbortStartedAt: Date?
+    private var httpAbortLocalStopMs: Int?
+    private var httpAbortServerStopMs: Int?
+    private var httpStaleAudioAfterAbortCount = 0
     private let httpUploadBatchBytes = 32_000
     private var httpSessionPollTask: Task<Void, Error>?
     private var isAbortingHTTPSessionTurn = false
@@ -263,6 +268,10 @@ final class DeepResponseRealtimeClient: ObservableObject {
         httpInputStopResponseMs = nil
         httpFirstTextMs = nil
         httpFirstAudioMs = nil
+        httpAbortStartedAt = nil
+        httpAbortLocalStopMs = nil
+        httpAbortServerStopMs = nil
+        httpStaleAudioAfterAbortCount = 0
         isHTTPSessionPlaybackActive = false
         isHTTPSessionEnded = false
         canAbortHTTPSessionTurn = false
@@ -286,6 +295,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
         lastTurnTiming = nil
         lastTurnTotalMs = nil
         lastClientTimingText = nil
+        lastAbortTimingText = nil
         connectionStage = "http_session:ready"
     }
 
@@ -483,6 +493,11 @@ final class DeepResponseRealtimeClient: ObservableObject {
             return
         }
 
+        let abortStartedAt = Date()
+        httpAbortStartedAt = abortStartedAt
+        httpAbortLocalStopMs = nil
+        httpAbortServerStopMs = nil
+        httpStaleAudioAfterAbortCount = 0
         isAbortingHTTPSessionTurn = true
         canAbortHTTPSessionTurn = false
         if let httpGenerationID {
@@ -490,6 +505,8 @@ final class DeepResponseRealtimeClient: ObservableObject {
         }
         isHTTPSessionPlaybackActive = false
         player.stop()
+        httpAbortLocalStopMs = Self.elapsedMs(since: abortStartedAt)
+        updateHTTPAbortTimingText()
         httpSessionPollTask?.cancel()
         httpSessionPollTask = nil
         connectionStage = "http_session:abort_local"
@@ -509,6 +526,8 @@ final class DeepResponseRealtimeClient: ObservableObject {
             let (_, response) = try await URLSession.shared.data(for: request)
             let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
             lastHealthStatus = "Abort \(statusCode)"
+            httpAbortServerStopMs = Self.elapsedMs(since: abortStartedAt)
+            updateHTTPAbortTimingText()
             if statusCode == 200 {
                 lastError = nil
                 lastErrorCode = nil
@@ -578,6 +597,8 @@ final class DeepResponseRealtimeClient: ObservableObject {
                 var playbackSampleRate: Double?
                 for chunk in batch.chunks {
                     if canceledHTTPGenerationIDs.contains(chunk.generationID) {
+                        httpStaleAudioAfterAbortCount += 1
+                        updateHTTPAbortTimingText()
                         continue
                     }
                     if let currentGenerationID = httpGenerationID,
@@ -668,6 +689,18 @@ final class DeepResponseRealtimeClient: ObservableObject {
             parts.append("done \(doneMs)")
         }
         lastClientTimingText = parts.isEmpty ? nil : parts.joined(separator: " · ")
+    }
+
+    private func updateHTTPAbortTimingText() {
+        var parts: [String] = []
+        if let httpAbortLocalStopMs {
+            parts.append("local \(httpAbortLocalStopMs)")
+        }
+        if let httpAbortServerStopMs {
+            parts.append("server \(httpAbortServerStopMs)")
+        }
+        parts.append("stale \(httpStaleAudioAfterAbortCount)")
+        lastAbortTimingText = parts.joined(separator: " · ")
     }
 
     private static func appendText(_ current: String?, _ delta: String?) -> String? {

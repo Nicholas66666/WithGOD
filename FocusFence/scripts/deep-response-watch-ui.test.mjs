@@ -106,3 +106,16 @@ test("DeepResponse Watch HTTP polling is low-latency before first audio", () => 
   assert.match(realtimeClientSource, /events\?cursor=\\\(httpEventCursor\)&wait_ms=\\\(waitMilliseconds\)/);
   assert.match(realtimeClientSource, /audio\?cursor=\\\(httpOutputAudioCursor\)&wait_ms=\\\(waitMilliseconds\)/);
 });
+
+test("DeepResponse Watch abort records local-first and stale-audio timing traces", () => {
+  assert.match(realtimeClientSource, /@Published private\(set\) var lastAbortTimingText: String\?/);
+  assert.match(realtimeClientSource, /private var httpAbortStartedAt: Date\?/);
+  assert.match(realtimeClientSource, /private var httpAbortLocalStopMs: Int\?/);
+  assert.match(realtimeClientSource, /private var httpAbortServerStopMs: Int\?/);
+  assert.match(realtimeClientSource, /private var httpStaleAudioAfterAbortCount = 0/);
+  assert.match(realtimeClientSource, /let abortStartedAt = Date\(\)[\s\S]*?player\.stop\(\)[\s\S]*?httpAbortLocalStopMs = Self\.elapsedMs\(since: abortStartedAt\)/);
+  assert.match(realtimeClientSource, /httpAbortServerStopMs = Self\.elapsedMs\(since: abortStartedAt\)/);
+  assert.match(realtimeClientSource, /httpStaleAudioAfterAbortCount \+= 1/);
+  assert.match(realtimeClientSource, /stale \\\(httpStaleAudioAfterAbortCount\)/);
+  assert.match(debugViewSource, /client\.lastAbortTimingText/);
+});

@@ -865,8 +865,6 @@ Completed:
 
 Remaining:
 
-- Simulator/source/build checks for local-first abort behavior.
-- Timing traces for `barge_in_to_local_stop`, `barge_in_to_server_stop`, and `stale_audio_after_abort_count`.
 - Decide whether abort should trigger immediate recording start or remain a separate interrupt button during POC.
 
 Expected effect:
@@ -886,6 +884,24 @@ Product-experience spot check:
 Product gate:
 - Only after Milestone 4 do we discuss hidden entry or product integration.
 - Quick Response remains untouched until explicit approval.
+
+Latest Watch local-first abort timing gate:
+- Added Watch-side abort timing traces in `DeepResponseWatchLab`:
+  - `local <ms>` records elapsed time from abort tap to local `player.stop()`.
+  - `server <ms>` records elapsed time from abort tap to `/abort` response.
+  - `stale <count>` records canceled-generation audio chunks filtered after abort.
+- The Watch client records local stop immediately before canceling the poll task and before the network `/abort` call completes.
+- The compact debug UI displays the abort timing line through `client.lastAbortTimingText`.
+- Added source-level regression coverage proving local-first timing, server timing, stale-audio counting, and UI display fields exist without adding any Watch WebSocket path.
+- Verification:
+  - `node --test scripts/deep-response-watch-ui.test.mjs`: `14/14` passed.
+  - `npm run test:node`: `137/137` passed.
+  - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-volc-build build`: `BUILD SUCCEEDED`.
+  - Fire/Volcengine HTTP cascade smoke with `--wait-ms 800`: passed.
+  - Remote stop-to-first-audio: `215ms`, `212ms`.
+  - Remote abort stale audio chunks/bytes: `0` / `0`.
+  - Remote idle probe: `session_end` reason `idle_timeout`, late audio rejected with `409 session_ended`.
+  - No user-operated Watch testing was required.
 
 ## File Responsibilities
 
