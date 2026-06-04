@@ -200,6 +200,19 @@ test("DeepResponse Watch marks server wait as assistantThinking before playback"
   assert.match(finishFunction, /client\.isHTTPSessionPlaybackActive[\s\S]*?conversationState = \.assistantSpeaking/);
 });
 
+test("DeepResponse Watch enters assistantSpeaking on first streamed audio", () => {
+  assert.match(realtimeClientSource, /var onHTTPSessionFirstAudioReceived: \(\(\) -> Void\)\?/);
+  assert.match(realtimeClientSource, /httpFirstAudioMs = Self\.elapsedMs\(since: stopStartedAt\)[\s\S]*?onHTTPSessionFirstAudioReceived\?\(\)/);
+
+  const appearBlock = debugViewSource.match(/\.onAppear \{[\s\S]*?\n        \}/)?.[0] || "";
+  assert.match(appearBlock, /client\.onHTTPSessionFirstAudioReceived = \{/);
+  assert.match(appearBlock, /handleFirstAudioReceived\(\)/);
+
+  const firstAudioFunction = debugViewSource.match(/private func handleFirstAudioReceived\(\) \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(firstAudioFunction, /isWaitingForResponse = false/);
+  assert.match(firstAudioFunction, /conversationState = \.assistantSpeaking/);
+});
+
 test("DeepResponse Watch simulator autoruns a continuous HTTP fixture loop", () => {
   assert.match(debugViewSource, /DEEP_RESPONSE_AUTORUN_CONTINUOUS_FIXTURE/);
   assert.match(debugViewSource, /runContinuousFixtureLoop\(turns: 3\)/);

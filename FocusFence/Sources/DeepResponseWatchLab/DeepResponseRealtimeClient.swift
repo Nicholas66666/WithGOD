@@ -42,6 +42,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
     @Published private(set) var canAbortHTTPSessionTurn = false
     @Published private(set) var isHTTPSessionPlaybackActive = false
     @Published private(set) var isHTTPSessionEnded = false
+    var onHTTPSessionFirstAudioReceived: (() -> Void)?
     var onHTTPSessionPlaybackDrained: (() -> Void)?
 
     private let player = DeepResponseAudioPlayer()
@@ -721,6 +722,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
                     if httpFirstAudioMs == nil, let stopStartedAt = httpStopStartedAt {
                         httpFirstAudioMs = Self.elapsedMs(since: stopStartedAt)
                         updateHTTPClientTimingText()
+                        onHTTPSessionFirstAudioReceived?()
                     }
                     isHTTPSessionPlaybackActive = true
                     player.enqueuePCM16(playbackAudio, sampleRate: playbackSampleRate ?? 24_000)

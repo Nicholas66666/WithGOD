@@ -34,6 +34,20 @@ test("continuous loop enters assistantThinking after speech before playback star
   assert.deepEqual(result.actions, ["wait_for_playback"]);
 });
 
+test("continuous loop enters assistantSpeaking when first audio arrives", () => {
+  const result = simulateDeepResponseWatchEvents([
+    { type: "toggle_continuous", enabled: true },
+    { type: "recording_started" },
+    { type: "recording_finished", playbackActive: true },
+    { type: "first_audio_received" }
+  ]);
+
+  assert.equal(result.state.conversationState, "assistantSpeaking");
+  assert.equal(result.state.isRecording, false);
+  assert.equal(result.state.isWaitingForResponse, false);
+  assert.deepEqual(result.actions, ["wait_for_playback"]);
+});
+
 test("continuous loop restarts immediately when a turn has no queued playback", () => {
   const result = simulateDeepResponseWatchEvents([
     { type: "toggle_continuous", enabled: true },

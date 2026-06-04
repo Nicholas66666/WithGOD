@@ -138,6 +138,7 @@ struct DeepResponseDebugView: View {
         }
         .padding()
         .onDisappear {
+            client.onHTTPSessionFirstAudioReceived = nil
             client.onHTTPSessionPlaybackDrained = nil
             _ = client.beginEndHTTPSessionRuntime(reason: "watch_teardown")
             client.stopHTTPSessionRuntime()
@@ -153,6 +154,9 @@ struct DeepResponseDebugView: View {
             isContinuousMode = false
             conversationState = .listening
             client.resetDebugViewState()
+            client.onHTTPSessionFirstAudioReceived = {
+                handleFirstAudioReceived()
+            }
             client.onHTTPSessionPlaybackDrained = {
                 handlePlaybackDrained()
             }
@@ -279,6 +283,17 @@ struct DeepResponseDebugView: View {
         Task {
             await startRecordingTurn(reason: "Auto listening")
         }
+    }
+
+    private func handleFirstAudioReceived() {
+        guard isContinuousMode,
+              !isRecording,
+              !client.isHTTPSessionEnded,
+              client.lastError == nil else {
+            return
+        }
+        isWaitingForResponse = false
+        conversationState = .assistantSpeaking
     }
 
     private func abortCurrentTurn() async {

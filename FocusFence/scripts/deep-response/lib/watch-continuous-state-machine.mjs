@@ -206,6 +206,31 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
     };
   }
 
+  if (event.type === "first_audio_received") {
+    if (state.isHTTPSessionEnded) {
+      return {
+        state: {
+          ...state,
+          isRecording: false,
+          conversationState: "ended"
+        },
+        actions
+      };
+    }
+    if (state.conversationState !== "assistantThinking") {
+      return { state, actions };
+    }
+    return {
+      state: {
+        ...state,
+        isRecording: false,
+        isWaitingForResponse: false,
+        conversationState: "assistantSpeaking"
+      },
+      actions
+    };
+  }
+
   if (event.type === "abort_finished") {
     const lastError = event.error ?? state.lastError;
     const isHTTPSessionEnded = Boolean(state.isHTTPSessionEnded || event.sessionEnded);
