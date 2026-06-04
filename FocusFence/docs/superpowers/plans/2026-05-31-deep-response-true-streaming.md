@@ -103,7 +103,7 @@ Latest full self-test update:
 - Added conversation-level `--forbid-text-pattern` support so long continuous probes reject lookup-style, harsh repeated-comfort, and mechanical tired/fatigue replies in turn text and memory summaries, not only in the 2-turn smoke.
 - Added memory recall sanitization for lookup-style, harsh repeated-comfort, and mechanical tired/fatigue phrases before persisted summaries enter LLM context.
 - Added VoicePipeline output normalization so lookup-style, harsh repeated-comfort, and mechanical tired/fatigue openings are corrected before `assistant_text_delta`, `assistant_phrase`, and TTS audio.
-- Latest `npm run deep:selftest:full`: passed; Node `203/203`, nested Fire/Volcengine smoke stop-to-first-audio `221ms` / `220ms`, 8-turn continuous gate `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
+- Latest `npm run deep:selftest:full`: passed; Node `204/204`, nested Fire/Volcengine smoke stop-to-first-audio `218ms` / `216ms`, 8-turn continuous gate `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
 
 ## Next Target: Full Streaming Pipeline
 
@@ -1989,6 +1989,23 @@ Latest WatchLab continuous-off recording gate:
   - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `200ms`, `288ms`, `272ms`, `274ms`, `283ms`, `270ms`, `223ms`, `242ms`.
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This is a WatchLab continuous-loop self-test update; no ECS deploy and no user-operated Watch test were required.
+
+Latest WatchLab teardown cleanup gate:
+- Strengthened DeepLab page lifecycle cleanup so leaving `DeepResponseDebugView` cannot leave local HTTP polling or queued playback active.
+- `DeepResponseDebugView.onDisappear` now calls `client.stopHTTPSessionRuntime()` after removing the playback-drained callback.
+- `DeepResponseRealtimeClient.stopHTTPSessionRuntime()` cancels `httpSessionPollTask`, clears the task reference, stops `player`, clears `isHTTPSessionPlaybackActive`, disables `canAbortHTTPSessionTurn`, and clears `isAbortingHTTPSessionTurn`.
+- Verification:
+  - RED `node --test --test-name-pattern "view teardown" scripts/deep-response-watch-ui.test.mjs` first failed because `onDisappear` only removed the callback and stopped the recorder.
+  - `node --test --test-name-pattern "view teardown" scripts/deep-response-watch-ui.test.mjs`: `1/1` passed.
+  - `node --test scripts/deep-response-watch-ui.test.mjs scripts/deep-response-integration-gate.test.mjs`: `36/36` passed.
+  - `npm run test:node`: `204/204` passed.
+  - `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `218ms`, `216ms`; idle `memoryCandidate.summary: ""`, `closureClean: true`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `219ms`, `228ms`, `223ms`, `224ms`, `232ms`, `231ms`, `224ms`, `226ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This is a WatchLab lifecycle self-test update; no ECS deploy and no user-operated Watch test were required.
 
 - Unit and server tests:
   - `npm run test:node`

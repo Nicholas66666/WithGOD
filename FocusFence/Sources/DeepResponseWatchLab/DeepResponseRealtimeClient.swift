@@ -534,6 +534,15 @@ final class DeepResponseRealtimeClient: ObservableObject {
         await abortTask.value
     }
 
+    func stopHTTPSessionRuntime() {
+        httpSessionPollTask?.cancel()
+        httpSessionPollTask = nil
+        player.stop()
+        isHTTPSessionPlaybackActive = false
+        canAbortHTTPSessionTurn = false
+        isAbortingHTTPSessionTurn = false
+    }
+
     private func finishHTTPSessionAbort(
         sessionID: String,
         abortTurnID: String,

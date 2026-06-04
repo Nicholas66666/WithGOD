@@ -119,6 +119,18 @@ test("DeepResponse Watch session closure stops an active recorder", () => {
   assert.match(markFunction, /conversationState = \.ending[\s\S]*?conversationState = \.ended/);
 });
 
+test("DeepResponse Watch view teardown stops local HTTP session runtime", () => {
+  const disappearBlock = debugViewSource.match(/\.onDisappear \{[\s\S]*?\n        \}/)?.[0] || "";
+  assert.match(disappearBlock, /client\.stopHTTPSessionRuntime\(\)/);
+
+  const cleanupFunction = realtimeClientSource.match(/func stopHTTPSessionRuntime\(\) \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(cleanupFunction, /httpSessionPollTask\?\.cancel\(\)/);
+  assert.match(cleanupFunction, /httpSessionPollTask = nil/);
+  assert.match(cleanupFunction, /player\.stop\(\)/);
+  assert.match(cleanupFunction, /isHTTPSessionPlaybackActive = false/);
+  assert.match(cleanupFunction, /canAbortHTTPSessionTurn = false/);
+});
+
 test("DeepResponse Watch marks server wait as assistantThinking before playback", () => {
   const finishFunction = debugViewSource.match(/private func finishRecordingTurn\(reason: String\) async \{[\s\S]*?\n    \}/)?.[0] || "";
   assert.match(finishFunction, /isWaitingForResponse = true[\s\S]*?conversationState = \.assistantThinking[\s\S]*?await client\.finishHTTPSessionTurn\(\)/);

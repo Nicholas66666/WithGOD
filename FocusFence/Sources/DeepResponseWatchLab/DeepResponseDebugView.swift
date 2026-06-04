@@ -139,6 +139,7 @@ struct DeepResponseDebugView: View {
         .padding()
         .onDisappear {
             client.onHTTPSessionPlaybackDrained = nil
+            client.stopHTTPSessionRuntime()
             if isRecording {
                 _ = recorder.stop()
                 isRecording = false
