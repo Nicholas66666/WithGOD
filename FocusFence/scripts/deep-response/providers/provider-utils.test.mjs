@@ -135,6 +135,62 @@ test("ArkLLMProvider reads full stream when streamFull is true", async (t) => {
   assert.equal(chunksRead, 3);
 });
 
+test("ArkLLMProvider streamTokens yields deltas and final timing", async (t) => {
+  const originalFetch = globalThis.fetch;
+  let requestBody = null;
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  globalThis.fetch = async (_url, options) => {
+    requestBody = JSON.parse(options.body);
+    return {
+      ok: true,
+      body: (async function* stream() {
+        yield Buffer.from("data: {\"choices\":[{\"delta\":{\"content\":\"我听见\"}}]}\n\n");
+        yield Buffer.from("data: {\"choices\":[{\"delta\":{\"content\":\"你真的很累。\"}}]}\n\n");
+        yield Buffer.from("data: [DONE]\n\n");
+      })()
+    };
+  };
+
+  const provider = new ArkLLMProvider({
+    env: {
+      ARK_BASE_URL: "https://ark.example",
+      ARK_API_KEY: "key",
+      ARK_MODEL: "model"
+    },
+    clock: fakeClock([0, 10, 20, 30])
+  });
+
+  const events = [];
+  for await (const event of provider.streamTokens({
+    transcript: "我很累",
+    maxTokens: 24,
+    temperature: 0.2
+  })) {
+    events.push(event);
+  }
+
+  assert.equal(requestBody.stream, true);
+  assert.equal(requestBody.max_tokens, 24);
+  assert.equal(requestBody.temperature, 0.2);
+  assert.deepEqual(events, [
+    { type: "delta", delta: "我听见", elapsedMs: 20 },
+    { type: "delta", delta: "你真的很累。", elapsedMs: 30 },
+    {
+      type: "done",
+      text: "我听见你真的很累。",
+      timing: {
+        llm_request_start_ms: 0,
+        llm_first_token_ms: 10,
+        llm_total_ms: 30
+      },
+      streamChunkCount: 2
+    }
+  ]);
+});
+
 test("ArkLLMProvider sends requested max tokens", async (t) => {
   const originalFetch = globalThis.fetch;
   let requestBody = null;

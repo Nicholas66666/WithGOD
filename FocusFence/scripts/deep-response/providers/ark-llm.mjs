@@ -17,13 +17,66 @@ export class ArkLLMProvider {
     messages,
     firstPhraseExtractor = findSpeakableFirstPhrase
   } = {}) {
-    const startedAt = this.clock();
-    const timing = { llm_request_start_ms: 0 };
     let text = "";
     let firstPhrase = "";
     let first80Chars = "";
     let streamChunkCount = 0;
     const streamChunks = [];
+    let timing = {};
+
+    for await (const event of this.streamTokens({
+      transcript,
+      context,
+      signal,
+      maxTokens,
+      model,
+      baseURL,
+      temperature,
+      messages
+    })) {
+      if (event.type === "done") {
+        timing = event.timing || timing;
+        streamChunkCount = event.streamChunkCount || streamChunkCount;
+        break;
+      }
+      const delta = event.delta || "";
+      streamChunks.push(delta);
+      text += delta;
+      if (!first80Chars && [...text].length >= 80) {
+        first80Chars = [...text].slice(0, 80).join("");
+        timing.llm_first_80_chars_ms ??= event.elapsedMs;
+      }
+      firstPhrase ||= firstPhraseExtractor(text, { minChars });
+      if (firstPhrase && timing.llm_first_phrase_ms === undefined) {
+        timing.llm_first_phrase_ms = event.elapsedMs;
+      }
+      if (firstPhrase && !streamFull && this.env.DEEP_RESPONSE_LLM_STREAM_FULL !== "true") {
+        text = firstPhrase;
+        break;
+      }
+    }
+
+    if (!firstPhrase) {
+      firstPhrase = splitFirstPhrase(text);
+    }
+
+    return { text, firstPhrase, timing, streamChunkCount, streamChunks };
+  }
+
+  async *streamTokens({
+    transcript,
+    context = [],
+    signal,
+    maxTokens = 180,
+    model,
+    baseURL,
+    temperature,
+    messages
+  } = {}) {
+    const startedAt = this.clock();
+    const timing = { llm_request_start_ms: 0 };
+    let text = "";
+    let streamChunkCount = 0;
 
     const requestMessages = messages || [
       { role: "system", content: deepResponseSystemPrompt() },
@@ -56,29 +109,22 @@ export class ArkLLMProvider {
         continue;
       }
       streamChunkCount += 1;
-      streamChunks.push(delta);
       timing.llm_first_token_ms ??= elapsed(this.clock, startedAt);
       text += delta;
-      if (!first80Chars && [...text].length >= 80) {
-        first80Chars = [...text].slice(0, 80).join("");
-        timing.llm_first_80_chars_ms = elapsed(this.clock, startedAt);
-      }
-      firstPhrase ||= firstPhraseExtractor(text, { minChars });
-      if (firstPhrase && timing.llm_first_phrase_ms === undefined) {
-        timing.llm_first_phrase_ms = elapsed(this.clock, startedAt);
-      }
-      if (firstPhrase && !streamFull && this.env.DEEP_RESPONSE_LLM_STREAM_FULL !== "true") {
-        text = firstPhrase;
-        break;
-      }
-    }
-
-    if (!firstPhrase) {
-      firstPhrase = splitFirstPhrase(text);
+      yield {
+        type: "delta",
+        delta,
+        elapsedMs: elapsed(this.clock, startedAt)
+      };
     }
 
     timing.llm_total_ms = elapsed(this.clock, startedAt);
-    return { text, firstPhrase, timing, streamChunkCount, streamChunks };
+    yield {
+      type: "done",
+      text,
+      timing,
+      streamChunkCount
+    };
   }
 }
 

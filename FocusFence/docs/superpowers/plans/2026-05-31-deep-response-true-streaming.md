@@ -220,6 +220,8 @@ Latest local result:
 
 ### Milestone S2: Real Provider Cascade Harness
 
+Status: completed for provider-only cascade harness on branch `codex/deep-response-lab`.
+
 Purpose:
 - Prove Fire/Volcengine ASR + Ark streaming LLM + Doubao streaming TTS can behave like a pipeline.
 
@@ -241,6 +243,35 @@ Acceptance:
 - First phrase and first audio are emitted progressively.
 - Scripted stop-to-first audio target is `<= 1500ms` for at least 2 of 3 turns.
 - If ASR final remains the bottleneck, document exact timing before changing Watch behavior.
+
+Completed evidence:
+- Added `ArkLLMProvider.streamTokens()` and kept `generate()` as fallback/compatibility wrapper.
+- Added `scripts/test-deep-response-cascade-provider.mjs`.
+- Added npm script `deep:cascade:provider:test`.
+- Verified provider credentials and handshakes:
+
+```bash
+npm run deep:provider:check
+```
+
+Latest result:
+- `PASSED 15/15 checks`.
+
+- Verified real provider cascade without Watch:
+
+```bash
+npm run deep:cascade:provider:test -- --pcm /private/tmp/deep-response-http-speed.pcm --turns 3 --replay-interval-ms 20 --phrase-max-chars 24
+```
+
+Latest result:
+- `3/3` turns ok.
+- First phrase/audio were emitted before `turn_done` on every turn.
+- `first_audio_after_transcript_final_ms`: `1112`, `1210`, `1001`.
+- `first_audio_elapsed_ms`: `2157`, `2237`, `1904`.
+
+Timing note:
+- `first_audio_elapsed_ms` is measured from script pipeline start, including fixture replay/upload time.
+- For stop-speaking-to-first-audio estimation, `first_audio_after_transcript_final_ms` is currently the stronger provider-side signal because it measures after ASR final is available.
 
 ### Milestone S3: HTTP Session Cascade On Fire/Volcengine ECS
 
