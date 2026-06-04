@@ -1939,6 +1939,22 @@ Latest remote idle-memory summary gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This remains HTTP-only and completely self-tested; no user-operated Watch test is part of this gate.
 
+Latest WatchLab HTTP-only endpoint gate:
+- Tightened the WatchLab endpoint configuration layer so configured `DeepResponseRealtimeEndpoint` values must use `http` or `https`.
+- Removed the remaining `wss` -> `https` compatibility mapping from `DeepResponseRealtimeClient.httpTransportScheme(for:)`.
+- Source gates now assert that WatchLab preserves `https` for HTTP transport, rejects non-HTTP schemes at endpoint parsing, and does not keep `ws` / `wss` scheme cases.
+- Verification:
+  - RED `node --test scripts/deep-response-watch-lab-config.test.mjs` first failed because the WatchLab client still contained `case "wss"`.
+  - `node --test scripts/deep-response-watch-lab-config.test.mjs scripts/deep-response-watch-ui.test.mjs scripts/deep-response-integration-gate.test.mjs`: `36/36` passed.
+  - `npm run test:node`: `199/199` passed.
+  - `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `230ms`, `216ms`; idle `memoryCandidate.summary: ""`, `closureClean: true`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `231ms`, `228ms`, `227ms`, `230ms`, `229ms`, `226ms`, `231ms`, `225ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This is a WatchLab configuration hardening gate only; no ECS deploy and no user-operated Watch test were required.
+
 - Unit and server tests:
   - `npm run test:node`
 

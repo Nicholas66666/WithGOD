@@ -24,6 +24,9 @@ test("DeepResponseWatchLab is a separate Watch target with its own bundle id and
 
 test("DeepResponseWatchLab preserves HTTPS endpoints for HTTP transport", () => {
   assert(realtimeClient.includes("case \"https\":"));
-  assert(realtimeClient.includes("case \"wss\":"));
   assert(realtimeClient.includes("return \"https\""));
+  assert(!realtimeClient.includes("case \"wss\":"));
+  assert(!realtimeClient.includes("case \"ws\":"));
+  assert.match(realtimeClient, /let scheme = url\.scheme\?\.lowercased\(\)/);
+  assert.match(realtimeClient, /scheme == "http" \|\| scheme == "https"/);
 });

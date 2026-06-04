@@ -759,6 +759,10 @@ final class DeepResponseRealtimeClient: ObservableObject {
            !configured.isEmpty,
            !configured.hasPrefix("$("),
            let url = URL(string: configured) {
+            let scheme = url.scheme?.lowercased()
+            guard scheme == "http" || scheme == "https" else {
+                throw DeepResponseClientError.missingEndpoint
+            }
             return url
         }
         guard let fallback = URL(string: "https://withgod-deep-response.onrender.com") else {
@@ -847,8 +851,6 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private static func httpTransportScheme(for endpoint: URL) -> String {
         switch endpoint.scheme?.lowercased() {
         case "https":
-            return "https"
-        case "wss":
             return "https"
         default:
             return "http"
