@@ -275,6 +275,8 @@ Timing note:
 
 ### Milestone S3: HTTP Session Cascade On Fire/Volcengine ECS
 
+Status: completed for HTTP session cascade smoke on Fire/Volcengine ECS.
+
 Purpose:
 - Prove Watch-compatible HTTP session transport can deliver cascade events/audio remotely.
 
@@ -305,6 +307,44 @@ Acceptance:
 - First audio is produced through the HTTP session path before full reply completion.
 - Abort still reports stale audio chunks/bytes `0` / `0`.
 - No Watch manual testing unless these pass.
+
+Completed evidence:
+- Added session-level `pipelineMode: "cascade"` for `/deep-response/sessions`.
+- Kept current single-reply `streamSegmented()` fallback as default.
+- Added HTTP smoke support for `--pipeline-mode cascade`.
+- Verified locally:
+
+```bash
+npm run test:node
+npm run deep:http-smoke:test -- --endpoint http://127.0.0.1:8899 --pcm /private/tmp/deep-response-http-speed.pcm --turns 1 --chunk-ms 1000 --upload-sleep-ms 1000 --poll-ms 50 --timeout-ms 120000 --observe-ms 2000 --max-stop-to-first-audio-ms 3000 --retries 0 --pipeline-mode cascade
+```
+
+Latest local results:
+- `103/103` Node tests passed.
+- Local HTTP cascade smoke passed.
+- Local stop-to-first audio: `1546ms`.
+- Local abort stale audio chunks/bytes: `0` / `0`.
+
+- Deployed Fire/Volcengine ECS:
+
+```bash
+npm run deep:volc:deploy
+```
+
+Latest deployment:
+- `HEAD is now at 369ad22 Add HTTP session cascade mode`.
+- health `200`.
+
+- Verified remote Fire/Volcengine HTTP cascade:
+
+```bash
+npm run deep:http-smoke:test -- --endpoint http://124.174.96.149:8797 --pcm /private/tmp/deep-response-http-speed.pcm --turns 2 --chunk-ms 1000 --upload-sleep-ms 1000 --poll-ms 50 --timeout-ms 120000 --observe-ms 3000 --max-stop-to-first-audio-ms 3000 --retries 1 --pipeline-mode cascade
+```
+
+Latest remote results:
+- `2/2` cascade turns ok.
+- stop-to-first audio: `1891ms`, `1415ms`.
+- abort stale audio chunks/bytes: `0` / `0`.
 
 ### Milestone S4: Watch Cascade Playback Gate
 
