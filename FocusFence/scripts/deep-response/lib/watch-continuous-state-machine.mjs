@@ -205,6 +205,9 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
   }
 
   if (event.type === "session_end") {
+    if (state.isRecording) {
+      actions.push("stop_recording");
+    }
     actions.push("stop_auto_listen");
     actions.push("finalize_session_end");
     return {

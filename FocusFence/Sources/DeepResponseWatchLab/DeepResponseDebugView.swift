@@ -282,6 +282,9 @@ struct DeepResponseDebugView: View {
     }
 
     private func markSessionEnded() {
+        if isRecording {
+            _ = recorder.stop()
+        }
         isRecording = false
         isWaitingForResponse = false
         conversationState = .ending

@@ -95,6 +95,13 @@ test("DeepResponse Watch marks session closure as ending before ended", () => {
   assert.match(debugViewSource, /conversationState = \.ending[\s\S]*?conversationState = \.ended/);
 });
 
+test("DeepResponse Watch session closure stops an active recorder", () => {
+  const markFunction = debugViewSource.match(/private func markSessionEnded\(\) \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(markFunction, /if isRecording \{[\s\S]*?_ = recorder\.stop\(\)/);
+  assert.match(markFunction, /isRecording = false/);
+  assert.match(markFunction, /conversationState = \.ending[\s\S]*?conversationState = \.ended/);
+});
+
 test("DeepResponse Watch marks server wait as assistantThinking before playback", () => {
   const finishFunction = debugViewSource.match(/private func finishRecordingTurn\(reason: String\) async \{[\s\S]*?\n    \}/)?.[0] || "";
   assert.match(finishFunction, /isWaitingForResponse = true[\s\S]*?conversationState = \.assistantThinking[\s\S]*?await client\.finishHTTPSessionTurn\(\)/);

@@ -1873,6 +1873,22 @@ Latest late-abort/session-end and dangling-particle gates:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This remains HTTP-only and completely self-tested; no user-operated Watch test is part of this gate.
 
+Latest Watch active-recorder session-end gate:
+- Strengthened the S5 hands-free lifecycle self-test for the case where continuous mode has already restarted local recording, but the server session closes because of goodbye/idle end or a delayed session-end event.
+- The scriptable Watch state machine now emits `stop_recording` before `stop_auto_listen` and `finalize_session_end` whenever `session_end` is processed while `isRecording` is true.
+- `DeepResponseDebugView.markSessionEnded()` now calls `recorder.stop()` when `isRecording` is true before clearing local state. This makes session closure release the mic/audio session instead of only hiding the recording state.
+- Verification:
+  - RED `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs` first failed because `session_end` while recording did not emit `stop_recording`, and `markSessionEnded()` did not call `recorder.stop()`.
+  - Targeted Watch tests passed after the fix: `31/31`.
+  - `npm run test:node`: `197/197` passed.
+  - `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `224ms`, `238ms`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `222ms`, `214ms`, `217ms`, `209ms`, `232ms`, `221ms`, `216ms`, `220ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This is a WatchLab/state-model self-test update; no server deployment or user-operated Watch test was required.
+
 - Unit and server tests:
   - `npm run test:node`
 
