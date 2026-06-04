@@ -83,7 +83,7 @@ Watch uploads mic chunks over HTTP while user speaks
 
 Important distinction:
 
-- Current deployed path: streaming transport and chunked TTS playback, but LLM waits for ASR final and TTS waits for complete LLM text.
+- Current deployed path: streaming transport and chunked TTS playback; LLM still waits for ASR final, but LLM tokens now feed a phrase chunker and TTS queue without waiting for complete LLM text.
 - Next path: incremental ASR utterance boundary -> incremental LLM -> phrase chunker -> incremental TTS queue.
 
 Main latency goal:
@@ -228,6 +228,13 @@ Latest local result:
 - `node --test scripts/deep-response-server.test.mjs`: `23/23` passed.
 - `node --test scripts/test-deep-response-http-smoke.test.mjs scripts/test-deep-response-http-conversation.test.mjs scripts/test-deep-response-cascade-provider.test.mjs`: `8/8` passed.
 - `npm run test:node`: `123/123` passed.
+
+Latest Fire/Volcengine deployment:
+- `npm run deep:volc:deploy`: remote `HEAD` at `d017e17`, service `active`, health `200`.
+- `npm run deep:http-smoke:test -- --endpoint http://124.174.96.149:8797 --pcm /private/tmp/deep-response-http-speed.pcm --turns 2 --chunk-ms 1000 --upload-sleep-ms 1000 --poll-ms 50 --timeout-ms 120000 --observe-ms 3000 --max-stop-to-first-audio-ms 3000 --retries 1 --pipeline-mode cascade`: passed.
+- Remote stop-to-first-audio: `2408ms`, `1730ms`.
+- Remote abort stale audio chunks/bytes: `0` / `0`.
+- Remote idle lifecycle: session ended in `195ms` with reason `idle_timeout`; late audio upload returned `409 session_ended`.
 
 ### Milestone S2: Real Provider Cascade Harness
 
