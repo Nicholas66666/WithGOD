@@ -40,9 +40,9 @@ POC 的目标不是先做完整产品，而是验证在真实 Apple Watch 场景
 - 长时间没有用户输入时，AI 可以先轻声确认一次，随后温和告别并关闭 session。
 - 用户明确说“拜拜”“好了”“先这样”“结束吧”等结束意图时，AI 应完成简短告别并关闭 session。
 - Watch / iPhone / server 的分工由实测指标决定，但首版 POC 不把 iPhone 放进核心实时链路。
-- 开发过程尽可能用本地电脑、脚本、模拟器完成验证；只有必须验证 Watch 真机麦克风、网络、播放、功耗或佩戴体验时，才要求人工配合真机测试。
+- 开发过程采用自测试模式：优先用本地电脑、脚本、模拟器、watchOS build、源码级检查和 Fire/Volcengine 远端 smoke 完成验证；用户人工 Watch 测试不作为开发阶段门槛。
 - Phase 1 可以使用固定音频/echo audio，但必须做得很薄，只作为 Watch/server 双向音频、播放、打断、旧音频丢弃的通道验收，不发展成另一条产品路线。
-- Watch 端公网 HTTPS/HTTP streaming 是主线必验项；WebSocket 只作为隔离 feasibility spike，不作为 Deep Response 主流程依赖。
+- Watch 端公网 HTTPS/HTTP streaming 是唯一主线 transport；不再规划 Watch WebSocket spike、fallback 或对照路线。
 
 ## 非目标
 
@@ -126,7 +126,7 @@ Dedicated Realtime Voice Server 承担：
 
 ### Watch Transport Decision
 
-Watch 端 primary transport 使用 HTTP，而不是 WebSocket。
+Watch 端 transport 固定使用 HTTP，而不是 WebSocket。
 
 原因：
 
@@ -134,7 +134,7 @@ Watch 端 primary transport 使用 HTTP，而不是 WebSocket。
 - 我们已经在真实 Watch + Render 上多次观察到 WSS `-1001`、`-999`、upgrade/receive 不稳定。
 - Deep Response 的主线目标是持续会话体验，不应依赖 watchOS 真机风险较高的 low-level networking。
 - Watch 到 server 可以用 HTTP 上传 audio chunks，用 HTTP/SSE/chunked/polling 拉取事件和 audio chunks，用 POST `/abort` 完成打断。
-- Server 到 Doubao ASR/TTS 仍可使用 WebSocket。这个 provider-side WebSocket 运行在 Node server，不受 Watch networking 限制。
+- Server 到 Doubao ASR/TTS 仍可使用 provider 要求的 streaming 协议。这个 provider-side 连接运行在 Node server，不属于 Watch transport。
 
 Watch transport 主线：
 
@@ -147,9 +147,9 @@ POST /deep-response/sessions/{session_id}/abort
 POST /deep-response/sessions/{session_id}/end
 ```
 
-`/events` 可按平台实测选择 SSE、chunked JSONL 或短轮询。`/audio` 可按实测选择 chunked PCM response、range-like pull 或短轮询 chunk pull。POC 优先选择 watchOS 真机最稳定、可观测性最高的 HTTP 形态。
+`/events` 可按平台实测选择 SSE、chunked JSONL 或短轮询。`/audio` 可按实测选择 chunked PCM response、range-like pull 或短轮询 chunk pull。POC 优先选择 watchOS 稳定、可观测性最高的 HTTP 形态。
 
-WebSocket 不删除，但降级为独立 spike。除非真机 spike 明确通过，否则不能把 Deep Response 主流程改回 Watch WebSocket。
+Watch WebSocket 不再作为本 POC 的候选、spike、fallback 或比较路线。后续开发不为 Watch 端设计、实现或验证 WebSocket transport。
 
 ## Volcengine / Doubao Provider Preparation
 
@@ -334,23 +334,23 @@ Required provider timing:
 
 ### 开发验证优先级
 
-开发过程中优先使用自动化和本地环境验证：
+开发过程默认采用自测试模式，优先使用自动化和本地环境验证：
 
 1. Node 脚本模拟 Watch HTTP session client。
 2. 固定 PCM fixture 模拟用户说话。
 3. 本地 server timing trace。
 4. watchOS 模拟器验证 UI 状态和协议处理。
-5. 只有在无法由本地环境证明时，才进入 Watch 真机人工测试。
+5. watchOS generic build、源码级回归测试和可脚本化 runtime harness。
+6. 公网 Fire/Volcengine server 自测，覆盖真实 provider、部署网络和 timing trace。
 
-必须真机验证的内容：
+不把用户人工操作 Watch 作为开发阶段门槛。需要物理设备特性的内容只作为后期产品体验 spot check，且必须在自动化、脚本、远端 smoke、源码检查和 watchOS build 全部通过后才考虑。
 
-- Watch 麦克风持续采集稳定性。
-- Watch HTTPS/HTTP streaming 直连公网 server 稳定性。
-- Watch speaker / AirPods 流式播放。
-- 佩戴状态下的打断体验。
-- 5-10 分钟 Deep Response 电量和发热。
+物理设备 spot check 只记录自动化无法证明的体验事实：
 
-不应把每次开发迭代都绑定到人工真机测试。真机测试应集中在阶段验收点。
+- 佩戴状态下的麦克风、播放、打断体感。
+- AirPods / Watch speaker 主观播放质量。
+- 长时间佩戴的电量、发热、连接状态。
+- 这些结果不作为常规开发推进前置条件。
 
 ### Watch
 
@@ -1317,42 +1317,27 @@ Phase 2 必须拆成可独立验收的小阶段：
 
 1. 本地 Node server + 脚本 client：最快验证协议、队列、timing 和 provider。
 2. 本地 Node server + watchOS 模拟器：验证 Watch UI/runtime 基本逻辑。
-3. 公网 HTTPS server + Watch 真机：验证真实网络、麦克风、播放和功耗。
+3. 公网 HTTPS server + 自动化 smoke / watchOS build / 可脚本化 runtime harness：验证真实 provider、部署网络、协议和 timing。
+4. 可选物理 Watch spot check：只在自动化无法覆盖产品体感时使用。
 
 不建议第一步直接上公网再修所有细节。
 
 原因：
 
 - 协议、队列、timing、first phrase、server abort 都可以本地快速迭代。
-- 每次真机安装和人工测试成本高，应该留给本地无法证明的环节。
+- 每次真机安装和人工测试成本高，不能作为日常开发门槛。
 - 公网环境会混入部署、证书、域名、网络抖动问题，过早引入会降低定位效率。
 
 公网 HTTP streaming 是必经验收，不是可选项。只是在本地自动化通过后再进入。
 
 执行原则：
 
-- 本地和模拟器能验证的，不要求人工真机测试。
-- 真机测试只安排在阶段验收点。
+- 本地、远端脚本、模拟器、源码检查和 build 能验证的，不要求人工真机测试。
+- 用户人工 Watch 测试不作为阶段验收点；只作为用户明确要求时的产品体验 spot check。
 - 公网 HTTP streaming 只在本地协议、队列、timing 和模拟器基本逻辑通过后进入。
-- 如果公网/真机失败，先用 timing trace 判断是部署网络问题还是业务链路问题，再决定是否回到本地复现。
+- 如果公网自测失败，先用 timing trace 判断是部署网络问题还是业务链路问题，再决定是否回到本地复现。
 
 ## 测试脚本
-
-### WebSocket Feasibility Spike
-
-WebSocket 不属于 Watch 主线 transport。只有当 HTTP 路线被实测证明无法达到首响或打断目标时，才允许做独立 WebSocket feasibility spike。
-
-spike 约束：
-
-1. 只测试 Watch 真机 WSS binary echo/audio，不接 ASR、LLM、TTS。
-2. 建立 WebSocket 前配置并激活 `AVAudioSession`。
-3. 配置 Watch audio background mode。
-4. 模拟器结果不算验收。
-5. 必须在真实 Watch 上连续 3-5 分钟稳定收发 binary chunk。
-6. 必须验证 local-first abort 和旧 `generation_id` 音频丢弃。
-7. spike 失败不得阻塞 HTTP 主线。
-
-只有 spike 全部通过，才能把 Watch WebSocket 重新列入候选 transport。即使 spike 通过，也必须和 HTTP streaming 在同等真机条件下比较首响、打断、功耗和断线恢复后再决策。
 
 ### 固定音频回放
 
@@ -1364,7 +1349,9 @@ server 需要支持用本地 wav/pcm 文件模拟 Watch audio stream：
 - 强情绪。
 - 插话打断。
 
-### Watch 真机测试
+### 可选物理 Watch Spot Check
+
+默认不要求用户人工配合测试。只有当自动化和远端自测全部通过、且需要确认真实佩戴体感时，才可安排一次集中 spot check。
 
 每组至少记录：
 

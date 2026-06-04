@@ -2,7 +2,7 @@
 
 import { createServer } from "node:http";
 import crypto from "node:crypto";
-import { appendFile } from "node:fs/promises";
+import { appendFile, readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { inflateSync } from "node:zlib";
 
@@ -208,6 +208,7 @@ async function handleHTTPSessionCreate(request, response, { sessions, env = {}, 
     const pipelineMode = body.pipelineMode === "cascade" ? "cascade" : "";
     const idleTimeoutMs = Number(body.idleTimeoutMs || envNumber(process.env.DEEP_RESPONSE_SESSION_IDLE_TIMEOUT_MS, 0));
     const idleGoodbye = Boolean(body.idleGoodbye || truthyEnv(process.env.DEEP_RESPONSE_SESSION_IDLE_GOODBYE));
+    const recalledMemory = await loadHTTPSessionMemoryContext(env);
     const session = {
       sessionID,
       state: "listening",
@@ -221,7 +222,7 @@ async function handleHTTPSessionCreate(request, response, { sessions, env = {}, 
       audioByTurn: new Map(),
       events: [],
       audio: [],
-      history: [],
+      history: recalledMemory.context,
       memoryCandidates: [],
       memoryCandidateScheduled: false,
       turnStreams: new Map(),
@@ -237,10 +238,19 @@ async function handleHTTPSessionCreate(request, response, { sessions, env = {}, 
       state: session.state,
       sampleRate: session.sampleRate
     });
+    if (recalledMemory.count > 0) {
+      pushSessionEvent(session, {
+        type: "memory_recalled",
+        sessionID,
+        count: recalledMemory.count,
+        store: "jsonl"
+      });
+    }
     recordEvent("http_session_created", {
       sessionID,
       sampleRate: session.sampleRate,
       pipelineMode,
+      memoryRecallCount: recalledMemory.count,
       remoteAddress: request.socket.remoteAddress || "unknown",
       userAgent: request.headers["user-agent"] || ""
     });
@@ -251,7 +261,8 @@ async function handleHTTPSessionCreate(request, response, { sessions, env = {}, 
       sampleRate: session.sampleRate,
       idleTimeoutMs: session.idleTimeoutMs,
       idleGoodbye: session.idleGoodbye,
-      pipelineMode
+      pipelineMode,
+      memoryRecallCount: recalledMemory.count
     });
   } catch (error) {
     sendJSON(response, 400, {
@@ -259,6 +270,58 @@ async function handleHTTPSessionCreate(request, response, { sessions, env = {}, 
       error: error instanceof Error ? error.message : String(error)
     });
   }
+}
+
+async function loadHTTPSessionMemoryContext(env = {}) {
+  const jsonlPath = env?.DEEP_RESPONSE_MEMORY_JSONL_PATH || process.env.DEEP_RESPONSE_MEMORY_JSONL_PATH || "";
+  if (!jsonlPath) {
+    return { count: 0, context: [] };
+  }
+  const recallLimit = clampNumber(
+    Number(env?.DEEP_RESPONSE_MEMORY_RECALL_LIMIT || process.env.DEEP_RESPONSE_MEMORY_RECALL_LIMIT || 3),
+    0,
+    8
+  );
+  if (recallLimit <= 0) {
+    return { count: 0, context: [] };
+  }
+  let text = "";
+  try {
+    text = await readFile(jsonlPath, "utf8");
+  } catch {
+    return { count: 0, context: [] };
+  }
+  const summaries = text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .map((line) => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        return null;
+      }
+    })
+    .filter((row) => row && typeof row.summary === "string" && row.summary.trim())
+    .slice(-recallLimit)
+    .map((row) => row.summary.trim().slice(0, 600));
+  if (summaries.length === 0) {
+    return { count: 0, context: [] };
+  }
+  return {
+    count: summaries.length,
+    context: [{
+      role: "system",
+      content: `可参考的过往记忆（只在有帮助时用于理解用户，不要机械复述）：\n${summaries.map((summary) => `- ${summary}`).join("\n\n")}`.slice(0, 1800)
+    }]
+  };
+}
+
+function clampNumber(value, min, max) {
+  if (!Number.isFinite(value)) {
+    return min;
+  }
+  return Math.max(min, Math.min(max, value));
 }
 
 function handleHTTPSessionRoute(request, response, options) {
@@ -1176,7 +1239,9 @@ function buildHTTPSessionMemoryCandidate(session, {
   turnID = "",
   generationID = ""
 } = {}) {
-  const entries = (history || []).slice(-12);
+  const entries = (history || [])
+    .filter((entry) => entry?.role === "user" || entry?.role === "assistant")
+    .slice(-12);
   const summary = entries
     .map((entry) => {
       const label = entry.role === "assistant" ? "AI" : "User";

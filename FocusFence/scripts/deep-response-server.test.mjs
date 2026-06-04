@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { deflateSync } from "node:zlib";
@@ -1461,6 +1461,90 @@ test("DeepResponse HTTP session can persist memory candidate to JSONL", async ()
     assert.equal(persisted.reason, "memory_persist_probe");
     assert.equal(persisted.persisted, true);
     assert.match(persisted.summary, /需要被记住/);
+  } finally {
+    await server.close();
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("DeepResponse HTTP session recalls recent persisted JSONL memory into new sessions", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "deep-response-memory-recall-"));
+  const memoryPath = join(tempDir, "memory.jsonl");
+  writeFileSync(memoryPath, [
+    JSON.stringify({
+      sessionID: "old-session",
+      reason: "client_end",
+      summary: "User: 我以前说过我怕晚上一个人。\nAI: 我会记得你夜里容易害怕。",
+      turnCount: 1,
+      persisted: true,
+      createdAt: "2026-06-04T00:00:00.000Z"
+    }),
+    JSON.stringify({
+      sessionID: "recent-session",
+      reason: "client_end",
+      summary: "User: 我最近说过工作压力很大。\nAI: 我会记得你需要被温柔提醒慢下来。",
+      turnCount: 1,
+      persisted: true,
+      createdAt: "2026-06-04T01:00:00.000Z"
+    })
+  ].join("\n") + "\n", "utf8");
+
+  const seenContexts = [];
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    env: {
+      DEEP_RESPONSE_MEMORY_JSONL_PATH: memoryPath,
+      DEEP_RESPONSE_MEMORY_RECALL_LIMIT: "1"
+    },
+    createPipeline: () => ({
+      async *streamSegmented({ audioChunks, context }) {
+        for await (const _chunk of audioChunks) {
+          // Drain upload stream before replying.
+        }
+        seenContexts.push(context);
+        yield { type: "transcript_final", transcript: "今天还是有压力" };
+        yield {
+          type: "segment",
+          segment: "first",
+          text: "我记得你最近压力很大。",
+          audioChunks: [Buffer.from("memory-recall-audio")]
+        };
+        yield { type: "timing", timing: {}, providerMeta: {} };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {});
+    assert.equal(created.memoryRecallCount, 1);
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+
+    await postBytes(`${base}/audio?turn_id=turn-memory-recall&seq=0`, Buffer.from("pressure"));
+    await postJSON(`${base}/input-stop`, { turnID: "turn-memory-recall" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "timing" && event.turnID === "turn-memory-recall");
+    });
+
+    assert.equal(seenContexts.length, 1);
+    assert.equal(seenContexts[0].length, 1);
+    assert.equal(seenContexts[0][0].role, "system");
+    assert.match(seenContexts[0][0].content, /可参考的过往记忆/);
+    assert.match(seenContexts[0][0].content, /工作压力很大/);
+    assert.doesNotMatch(seenContexts[0][0].content, /怕晚上一个人/);
+
+    await postJSON(`${base}/end`, { reason: "memory_recall_probe" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "memory_candidate");
+    });
+    const events = await fetchJSON(`${base}/events?cursor=0`);
+    const memory = events.events.find((event) => event.type === "memory_candidate");
+    assert.doesNotMatch(memory.summary, /可参考的过往记忆/);
   } finally {
     await server.close();
     rmSync(tempDir, { recursive: true, force: true });

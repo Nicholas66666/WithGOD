@@ -41,7 +41,7 @@
   - Current TTS audio itself is chunked/streamed to Watch, and the local LLM->phrase->TTS queue is no longer blocked by waiting for a complete LLM reply.
   - Full hands-free listening loop has a source/build gate, including local VAD/silence endpointing, but still needs stronger simulator/script state-machine coverage before final product readiness.
   - Goodbye and idle-end flows are implemented on the server and covered by smoke tests.
-  - Summary/memory candidate persistence is not implemented.
+  - Summary/memory candidate JSONL persistence is implemented, and new HTTP sessions can recall bounded recent JSONL memory into LLM context.
   - Watch installation/launch is sometimes blocked by CoreDevice tunnel instability; do not rely on user-operated Watch testing for normal development progress.
   - Development mode is now explicitly self-test first. A real Watch test is only a product-experience spot check after local/server/simulator/source/build checks pass.
 
@@ -730,6 +730,31 @@ S6 memory persistence update 2026-06-04:
   - Remote JSONL tail confirmed a persisted row for session `drs_a76b0b0064d046dd98df9bf113915bb8`.
 - Integration remains blocked by the explicit integration gate until user approval; this update does not touch Quick Response.
 
+S6 memory recall update 2026-06-04:
+- Added bounded JSONL memory recall at HTTP session creation using the existing `DEEP_RESPONSE_MEMORY_JSONL_PATH`.
+- New sessions load recent persisted memory candidates into one `system` context message:
+  - default recall limit: `3`
+  - hard cap: `8`
+  - optional override: `DEEP_RESPONSE_MEMORY_RECALL_LIMIT`
+- Session creation response now includes `memoryRecallCount`.
+- Session event stream emits `memory_recalled` when persisted memory was loaded.
+- Memory recall is best-effort: missing files or invalid JSONL lines do not block session creation.
+- Memory recall is not re-persisted as user text: `buildHTTPSessionMemoryCandidate()` now filters persisted summaries to `user` / `assistant` messages only.
+- Verification:
+  - RED test first failed because `memoryRecallCount` was missing.
+  - Targeted GREEN test passed after implementation: `DeepResponse HTTP session recalls recent persisted JSONL memory into new sessions`.
+  - `node --test scripts/deep-response-server.test.mjs`: `31/31` passed.
+  - `npm run test:node`: `142/142` passed.
+  - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-memory-recall-build build`: `BUILD SUCCEEDED`.
+  - Fire/Volcengine session create returned `memoryRecallCount: 1`.
+  - Fire/Volcengine events included `memory_recalled` with `count: 1`, `store: "jsonl"`.
+  - Fire/Volcengine HTTP cascade smoke with idle goodbye and forbidden-pattern gates passed.
+  - Remote stop-to-first-audio remained fast: `183ms`, `202ms`.
+  - Remote abort stale audio chunks/bytes stayed `0` / `0`.
+  - Remote idle goodbye emitted text/audio and late audio was rejected with `409 session_ended`.
+- Development remained self-test only; no user-operated Watch testing was required.
+- Integration remains blocked by the explicit integration gate until user approval; this update does not touch Quick Response.
+
 Product gate:
 - Only after S1-S5 self-tests pass and any explicitly requested final experience check is acceptable.
 - User approves whether to integrate into old Watch app or keep separate for more Lab testing.
@@ -759,7 +784,7 @@ The implementation must preserve these hard boundaries:
 - Old Quick Response flow is untouched.
 - DeepLab remains the active test package until explicit product integration approval.
 - Watch transport is HTTP only.
-- Do not reintroduce Watch socket transport work unless the product goal is explicitly changed in a future plan.
+- Do not reintroduce Watch socket transport work.
 - iPhone is not in the realtime path.
 - `http-turn-v2` remains as fallback and regression baseline.
 
