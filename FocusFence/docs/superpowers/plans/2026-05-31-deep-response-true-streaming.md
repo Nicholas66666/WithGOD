@@ -177,6 +177,8 @@ Main latency goal:
 
 ### Milestone S1: Scripted Cascade With Mock Providers
 
+Status: completed on branch `codex/deep-response-lab` after adding mock-provider cascade units.
+
 Purpose:
 - Prove the orchestration works before touching real providers or Watch.
 
@@ -200,6 +202,21 @@ Acceptance:
 - First `audio_chunk` appears before final assistant text is complete.
 - Abort cancels TTS queue and no stale generation audio is yielded.
 - No Watch manual testing.
+
+Completed evidence:
+- Created `scripts/deep-response/pipeline/phrase-chunker.mjs`.
+- Created `scripts/deep-response/pipeline/tts-queue.mjs`.
+- Added `VoicePipeline.streamCascadeTurn()` for mock ASR/LLM/TTS cascade.
+- Verified:
+
+```bash
+node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/deep-response/pipeline/phrase-chunker.test.mjs scripts/deep-response/pipeline/tts-queue.test.mjs scripts/deep-response-server.test.mjs
+node --test scripts/deep-response-watch-ui.test.mjs scripts/test-deep-response-streaming-provider.test.mjs scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/deep-response/pipeline/phrase-chunker.test.mjs scripts/deep-response/pipeline/tts-queue.test.mjs scripts/deep-response-server.test.mjs
+```
+
+Latest local result:
+- `30/30` S1 required tests passed.
+- `34/34` related DeepResponse regression tests passed.
 
 ### Milestone S2: Real Provider Cascade Harness
 

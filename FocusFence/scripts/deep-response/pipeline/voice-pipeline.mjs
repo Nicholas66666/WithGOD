@@ -1,3 +1,6 @@
+import { createPhraseChunker } from "./phrase-chunker.mjs";
+import { streamTTSQueue } from "./tts-queue.mjs";
+
 export class VoicePipeline {
   constructor({ asr, llm, tts, firstPhraseMode = "llm", clock = performance.now.bind(performance) }) {
     this.asr = asr;
@@ -138,6 +141,148 @@ export class VoicePipeline {
       maxTokens: 96,
       temperature: 0.2
     });
+  }
+
+  async *streamCascadeTurn({
+    audioChunks,
+    context = [],
+    signal,
+    turnID,
+    generationID,
+    phraseMaxChars
+  } = {}) {
+    const startedAt = this.clock();
+    const asrResult = await this.streamCascadeASR({ audioChunks, signal });
+    for (const event of asrResult.events) {
+      yield event;
+    }
+
+    const phraseChunker = createPhraseChunker({ maxChars: phraseMaxChars });
+    let llmTiming = {};
+    let assistantText = "";
+
+    for await (const event of this.llm.streamTokens({
+      transcript: asrResult.transcript,
+      context,
+      messages: buildCompleteReplyMessages(asrResult.transcript, context),
+      signal
+    })) {
+      if (signal?.aborted) {
+        yield { type: "turn_aborted", turnID, generationID };
+        return;
+      }
+
+      if (event.type === "done") {
+        llmTiming = event.timing || llmTiming;
+        continue;
+      }
+
+      const delta = event.delta || event.text || "";
+      if (!delta) {
+        continue;
+      }
+
+      assistantText += delta;
+      yield {
+        type: "assistant_text_delta",
+        turnID,
+        generationID,
+        delta
+      };
+
+      for (const phrase of phraseChunker.push(delta)) {
+        yield* this.streamCascadePhrase({ phrase, turnID, generationID, signal });
+      }
+    }
+
+    for (const phrase of phraseChunker.flush()) {
+      yield* this.streamCascadePhrase({ phrase, turnID, generationID, signal });
+    }
+
+    const timing = {
+      ...asrResult.timing,
+      ...llmTiming,
+      voice_pipeline_total_ms: Math.round(this.clock() - startedAt)
+    };
+
+    yield {
+      type: "timing",
+      turnID,
+      generationID,
+      timing
+    };
+    yield {
+      type: "turn_done",
+      turnID,
+      generationID,
+      transcript: asrResult.transcript,
+      assistantText
+    };
+  }
+
+  async streamCascadeASR({ audioChunks, signal } = {}) {
+    if (typeof this.asr.transcribeStream !== "function") {
+      const asrResult = await this.asr.transcribe(toAsyncIterable(audioChunks), { signal });
+      return {
+        transcript: asrResult.transcript || "",
+        timing: asrResult.timing || {},
+        connectID: asrResult.connectID,
+        events: [{
+          type: "transcript_final",
+          transcript: asrResult.transcript || ""
+        }]
+      };
+    }
+
+    const events = [];
+    let transcript = "";
+    let timing = {};
+    let connectID;
+    for await (const event of this.asr.transcribeStream(toAsyncIterable(audioChunks), { signal })) {
+      if ((event.type === "transcript_partial" || event.type === "transcript_delta") && event.transcript) {
+        transcript = event.transcript;
+        timing = { ...timing, ...(event.timing || {}) };
+        events.push({
+          type: "transcript_partial",
+          transcript
+        });
+      } else if (event.type === "transcript_final") {
+        transcript = event.transcript || transcript;
+        timing = { ...timing, ...(event.timing || {}) };
+        connectID = event.connectID || connectID;
+        events.push({
+          type: "transcript_final",
+          transcript
+        });
+      }
+    }
+
+    return { transcript, timing, connectID, events };
+  }
+
+  async *streamCascadePhrase({ phrase, turnID, generationID, signal }) {
+    yield {
+      type: "assistant_phrase",
+      turnID,
+      generationID,
+      phraseIndex: phrase.index,
+      text: phrase.text,
+      reason: phrase.reason
+    };
+
+    for await (const event of streamTTSQueue(this.tts, {
+      turnID,
+      generationID,
+      phrases: [{ index: phrase.index, text: phrase.text }],
+      signal
+    })) {
+      if (event.type === "audio_chunk" || event.type === "tts_queue_aborted") {
+        yield event;
+      }
+      if (event.type === "tts_queue_aborted") {
+        return;
+      }
+    }
   }
 
   async generateFirstPhrase({ transcript, context = [], signal } = {}) {
