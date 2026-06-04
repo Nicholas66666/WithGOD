@@ -152,51 +152,71 @@ export class VoicePipeline {
     phraseMaxChars
   } = {}) {
     const startedAt = this.clock();
-    const asrResult = await this.streamCascadeASR({ audioChunks, signal });
-    for (const event of asrResult.events) {
-      yield event;
-    }
-
     const phraseChunker = createPhraseChunker({ maxChars: phraseMaxChars });
     const outputQueue = createAsyncQueue();
     const phraseQueue = createAsyncQueue();
+    let asrTiming = {};
+    let asrConnectID;
+    let currentTranscript = "";
+    let finalTranscript = "";
     let llmTiming = {};
+    let llmTask = null;
     let assistantText = "";
     let aborted = false;
+    let llmStartedFromPartial = false;
 
-    const llmTask = (async () => {
-      try {
-        for await (const event of this.llm.streamTokens({
-          transcript: asrResult.transcript,
-          context,
-          messages: buildCompleteReplyMessages(asrResult.transcript, context),
-          signal
-        })) {
-          if (signal?.aborted) {
-            aborted = true;
-            outputQueue.push({ type: "turn_aborted", turnID, generationID });
-            return;
+    const startLLM = (transcript, { source = "final" } = {}) => {
+      if (llmTask) {
+        return llmTask;
+      }
+      const llmTranscript = String(transcript || "");
+      llmStartedFromPartial = source === "partial";
+      llmTask = (async () => {
+        try {
+          for await (const event of this.llm.streamTokens({
+            transcript: llmTranscript,
+            context,
+            messages: buildCompleteReplyMessages(llmTranscript, context),
+            signal
+          })) {
+            if (signal?.aborted) {
+              aborted = true;
+              outputQueue.push({ type: "turn_aborted", turnID, generationID });
+              return;
+            }
+
+            if (event.type === "done") {
+              llmTiming = event.timing || llmTiming;
+              continue;
+            }
+
+            const delta = event.delta || event.text || "";
+            if (!delta) {
+              continue;
+            }
+
+            assistantText += delta;
+            outputQueue.push({
+              type: "assistant_text_delta",
+              turnID,
+              generationID,
+              delta
+            });
+
+            for (const phrase of phraseChunker.push(delta)) {
+              outputQueue.push({
+                type: "assistant_phrase",
+                turnID,
+                generationID,
+                phraseIndex: phrase.index,
+                text: phrase.text,
+                reason: phrase.reason
+              });
+              phraseQueue.push({ index: phrase.index, text: phrase.text });
+            }
           }
 
-          if (event.type === "done") {
-            llmTiming = event.timing || llmTiming;
-            continue;
-          }
-
-          const delta = event.delta || event.text || "";
-          if (!delta) {
-            continue;
-          }
-
-          assistantText += delta;
-          outputQueue.push({
-            type: "assistant_text_delta",
-            turnID,
-            generationID,
-            delta
-          });
-
-          for (const phrase of phraseChunker.push(delta)) {
+          for (const phrase of phraseChunker.flush()) {
             outputQueue.push({
               type: "assistant_phrase",
               turnID,
@@ -207,21 +227,55 @@ export class VoicePipeline {
             });
             phraseQueue.push({ index: phrase.index, text: phrase.text });
           }
+        } finally {
+          phraseQueue.close();
         }
+      })();
+      return llmTask;
+    };
 
-        for (const phrase of phraseChunker.flush()) {
+    const asrTask = (async () => {
+      if (typeof this.asr.transcribeStream !== "function") {
+        const asrResult = await this.asr.transcribe(toAsyncIterable(audioChunks), { signal });
+        finalTranscript = asrResult.transcript || "";
+        asrTiming = asrResult.timing || {};
+        asrConnectID = asrResult.connectID;
+        outputQueue.push({
+          type: "transcript_final",
+          transcript: finalTranscript
+        });
+        startLLM(finalTranscript, { source: "final" });
+        return;
+      }
+
+      for await (const event of this.asr.transcribeStream(toAsyncIterable(audioChunks), { signal })) {
+        if ((event.type === "transcript_partial" || event.type === "transcript_delta") && event.transcript) {
+          currentTranscript = event.transcript;
+          asrTiming = { ...asrTiming, ...(event.timing || {}) };
           outputQueue.push({
-            type: "assistant_phrase",
-            turnID,
-            generationID,
-            phraseIndex: phrase.index,
-            text: phrase.text,
-            reason: phrase.reason
+            type: "transcript_partial",
+            transcript: currentTranscript
           });
-          phraseQueue.push({ index: phrase.index, text: phrase.text });
+          if (!llmTask && shouldSpeakFromPartial(currentTranscript)) {
+            startLLM(currentTranscript, { source: "partial" });
+          }
+        } else if (event.type === "transcript_final") {
+          finalTranscript = event.transcript || currentTranscript;
+          currentTranscript = finalTranscript;
+          asrTiming = { ...asrTiming, ...(event.timing || {}) };
+          asrConnectID = event.connectID || asrConnectID;
+          outputQueue.push({
+            type: "transcript_final",
+            transcript: finalTranscript
+          });
+          if (!llmTask) {
+            startLLM(finalTranscript, { source: "final" });
+          }
         }
-      } finally {
-        phraseQueue.close();
+      }
+
+      if (!llmTask && currentTranscript) {
+        startLLM(currentTranscript, { source: "partial" });
       }
     })();
 
@@ -244,12 +298,17 @@ export class VoicePipeline {
 
     const finalTask = (async () => {
       try {
+        await asrTask;
+        if (!llmTask) {
+          phraseQueue.close();
+        }
         await llmTask;
         await ttsTask;
         if (!aborted && !signal?.aborted) {
           const timing = {
-            ...asrResult.timing,
+            ...asrTiming,
             ...llmTiming,
+            ...(llmStartedFromPartial ? { llm_started_from_partial: 1 } : {}),
             voice_pipeline_total_ms: Math.round(this.clock() - startedAt)
           };
 
@@ -263,7 +322,7 @@ export class VoicePipeline {
             type: "turn_done",
             turnID,
             generationID,
-            transcript: asrResult.transcript,
+            transcript: finalTranscript || currentTranscript,
             assistantText
           });
         }
@@ -647,10 +706,10 @@ function buildTemplateFirstPhrase(transcript) {
 
 function shouldSpeakFromPartial(transcript) {
   const text = String(transcript || "").replace(/\s+/g, "");
-  if (text.length < 4) {
+  if (text.length < 7) {
     return false;
   }
-  return text.length >= 8 || /(累|疲惫|害怕|恐惧|焦虑|孤单|孤独|羞耻|内疚|开心|感恩|平安)/u.test(text);
+  return text.length >= 10 || /(累|疲惫|害怕|恐惧|焦虑|孤单|孤独|羞耻|内疚|开心|感恩|平安)/u.test(text);
 }
 
 function findCompleteFirstPhrase(text, { minChars = 8 } = {}) {

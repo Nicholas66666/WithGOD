@@ -585,7 +585,8 @@ function selectHTTPSessionEvents(session, cursor) {
 function selectHTTPSessionAudio(session, cursor, generationID) {
   return session.audio
     .filter((chunk) => chunk.seq >= cursor)
-    .filter((chunk) => !generationID || chunk.generationID === generationID);
+    .filter((chunk) => !generationID || chunk.generationID === generationID)
+    .filter((chunk) => !session.canceledGenerations.has(chunk.generationID));
 }
 
 async function runHTTPSessionPipeline({

@@ -889,6 +889,58 @@ test("DeepResponse HTTP session abort drops stale generation audio", async () =>
   }
 });
 
+test("DeepResponse HTTP session audio pull hides already-buffered audio after abort", async () => {
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async *streamCascadeTurn() {
+        yield {
+          type: "audio_chunk",
+          turnID: "turn-buffered-stale",
+          generationID: "gen-buffered-stale",
+          phraseIndex: 0,
+          audioIndex: 0,
+          audioChunk: Buffer.from("buffered-stale-audio"),
+          sampleRate: 24000
+        };
+        yield { type: "timing", timing: {} };
+        yield { type: "turn_done", transcript: "abort me", assistantText: "stale" };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {
+      pipelineMode: "cascade"
+    });
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+    await postJSON(`${base}/input-stop`, {
+      turnID: "turn-buffered-stale",
+      generationID: "gen-buffered-stale"
+    });
+    await waitFor(async () => {
+      const audio = await fetchJSON(`${base}/audio?cursor=0&generation_id=gen-buffered-stale`);
+      return audio.chunks.length === 1;
+    });
+
+    const aborted = await postJSON(`${base}/abort`, {
+      turnID: "turn-buffered-stale",
+      generationID: "gen-buffered-stale",
+      reason: "barge_in"
+    });
+    assert.equal(aborted.ok, true);
+
+    const audioAfterAbort = await fetchJSON(`${base}/audio?cursor=0&generation_id=gen-buffered-stale`);
+    assert.equal(audioAfterAbort.chunks.length, 0);
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse HTTP session supports multiple turns and explicit end", async () => {
   const seenTurns = [];
   const server = await startDeepResponseServer({

@@ -462,6 +462,80 @@ test("VoicePipeline streamCascadeTurn keeps reading LLM while first phrase TTS i
   assert(remainingEvents.some((event) => event.type === "audio_chunk" && event.phraseIndex === 1));
 });
 
+test("VoicePipeline streamCascadeTurn starts LLM from usable partial transcript before ASR final", async () => {
+  let releaseASRFinal;
+  const asrFinalGate = new Promise((resolve) => {
+    releaseASRFinal = resolve;
+  });
+  const llmTranscripts = [];
+  const asr = {
+    async *transcribeStream() {
+      yield { type: "transcript_partial", transcript: "今天我真的很累" };
+      await asrFinalGate;
+      yield { type: "transcript_final", transcript: "今天我真的很累，想听一句安慰。", timing: { transcript_final_ms: 1400 } };
+    }
+  };
+  const llm = {
+    async *streamTokens({ transcript }) {
+      llmTranscripts.push(transcript);
+      yield { type: "delta", delta: "我听见你很累。" };
+      yield { type: "done", timing: { llm_first_token_ms: 120, llm_total_ms: 260 } };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      yield { type: "audio_chunk", audioChunk: Buffer.from(`${text}:audio`), sampleRate: 24000 };
+      yield { type: "done", timing: { tts_first_audio_ms: 70 } };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20, 30]) });
+  const iterator = pipeline.streamCascadeTurn({
+    audioChunks: [Buffer.from("voice")],
+    turnID: "turn-partial",
+    generationID: "gen-partial"
+  })[Symbol.asyncIterator]();
+
+  assert.deepEqual((await iterator.next()).value, {
+    type: "transcript_partial",
+    transcript: "今天我真的很累"
+  });
+
+  assert.deepEqual((await iterator.next()).value, {
+    type: "assistant_text_delta",
+    turnID: "turn-partial",
+    generationID: "gen-partial",
+    delta: "我听见你很累。"
+  });
+  assert.equal((await iterator.next()).value.type, "assistant_phrase");
+  const firstAudio = await iterator.next();
+  assert.equal(firstAudio.value.type, "audio_chunk");
+  assert.equal(firstAudio.value.audioChunk.toString("utf8"), "我听见你很累。:audio");
+  assert.deepEqual(llmTranscripts, ["今天我真的很累"]);
+
+  const pendingAfterAudio = iterator.next();
+  const beforeFinal = await Promise.race([
+    pendingAfterAudio.then(() => "yielded"),
+    delay(10).then(() => "waiting")
+  ]);
+  assert.equal(beforeFinal, "waiting");
+
+  releaseASRFinal();
+  const firstAfterFinal = await pendingAfterAudio;
+  const remainingEvents = [];
+  remainingEvents.push(firstAfterFinal.value);
+  for await (const event of iterator) {
+    remainingEvents.push(event);
+  }
+  assert(remainingEvents.some(
+    (event) => event.type === "transcript_final" && event.transcript === "今天我真的很累，想听一句安慰。"
+  ));
+  const done = remainingEvents.find((event) => event.type === "turn_done");
+  assert.equal(done.transcript, "今天我真的很累，想听一句安慰。");
+  const timing = remainingEvents.find((event) => event.type === "timing");
+  assert.equal(timing.timing.llm_started_from_partial, 1);
+});
+
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

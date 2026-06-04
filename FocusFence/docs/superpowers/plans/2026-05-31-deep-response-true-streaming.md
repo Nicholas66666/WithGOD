@@ -27,7 +27,7 @@
     - TTS: one synthesis stream for the complete reply.
     - Watch UI shows one `god:` reply, no `first:` / `more:` fields.
 - Latest branch: `codex/deep-response-lab`.
-- Latest pushed commit after single-reply pipeline: `d4640de Use single DeepResponse reply pipeline`.
+- Latest pushed commit after HTTP long-poll optimization: `d72329a Add DeepResponse HTTP long polling`.
 - Current DeepLab HTTP session baseline:
   - Watch client reuses one HTTP session across repeated mic turns.
   - Server stores short-term session context and uses it for following turns.
@@ -37,7 +37,7 @@
 - True streaming is still not complete:
   - Watch socket transport is removed from the development path. It is not a fallback, not a spike, and not a blocking dependency for DeepResponse.
   - Provider-side ASR/LLM/TTS are available, and local cascade now streams LLM tokens into phrase chunks while TTS runs concurrently in phrase order.
-  - The main remaining streaming bottleneck is that LLM still waits for ASR final before starting; partial-ASR utterance-boundary triggering is not implemented.
+  - Partial-ASR utterance-boundary triggering is implemented in cascade mode: when a usable ASR partial is available, LLM/TTS can start before ASR final.
   - Current TTS audio itself is chunked/streamed to Watch, and the local LLM->phrase->TTS queue is no longer blocked by waiting for a complete LLM reply.
   - Full hands-free listening loop has a source/build gate, including local VAD/silence endpointing, but still needs stronger simulator/script state-machine coverage before final product readiness.
   - Goodbye and idle-end flows are implemented on the server and covered by smoke tests.
@@ -492,6 +492,26 @@ Latest HTTP long-poll optimization:
 - Remote stop-to-first-audio with long-poll: `1039ms`, `1088ms`.
 - Remote HTTP stop-to-first-phrase with long-poll: `992ms`, `983ms`.
 - Remote HTTP first-audio-after-first-phrase with long-poll: `46ms`, `105ms`.
+- Remote abort stale audio chunks/bytes: `0` / `0`.
+- Remote idle probe: `session_end` reason `idle_timeout`, late audio rejected with `409 session_ended`.
+- Validation mode remains self-test first; no user-operated Watch test is required for this milestone update.
+
+Latest partial-ASR cascade optimization:
+- `VoicePipeline.streamCascadeTurn()` now starts LLM token streaming from a usable ASR partial transcript before ASR final, while still emitting final transcript and using final transcript for `turn_done`.
+- Added a mock-provider test proving assistant text, phrase, and first audio can be emitted before ASR final is released.
+- Tightened partial-start threshold so very short fragments do not start LLM too early.
+- Fixed `/audio` pull to hide already-buffered audio for canceled generations, preserving local-first abort semantics after partial-ASR can create audio before input-stop/abort.
+- Added server regression test for buffered stale audio after abort.
+- `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs`: `8/8` passed.
+- `node --test scripts/deep-response-server.test.mjs`: `26/26` passed.
+- `npm run test:node`: `130/130` passed.
+- `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-volc-build build`: `BUILD SUCCEEDED`.
+- Fire/Volcengine ECS was updated by direct SSH file sync and `systemctl restart deep-response`; `/health` returned provider mode with `providerConfigured: true`.
+- Fire/Volcengine HTTP cascade smoke with `--wait-ms 800`: passed.
+- Remote turns reported `llm_started_from_partial: 1`.
+- Remote stop-to-first-audio after partial-ASR: `240ms`, `228ms`.
+- Remote HTTP stop-to-first-phrase after partial-ASR: `93ms`, `87ms`.
+- Remote HTTP first-audio-after-first-phrase after partial-ASR: `147ms`, `141ms`.
 - Remote abort stale audio chunks/bytes: `0` / `0`.
 - Remote idle probe: `session_end` reason `idle_timeout`, late audio rejected with `409 session_ended`.
 - Validation mode remains self-test first; no user-operated Watch test is required for this milestone update.
