@@ -694,6 +694,7 @@ test("VoicePipeline streamCascadeTurn normalizes repeated-fatigue variants obser
   const llm = {
     async *streamTokens() {
       yield { type: "delta", delta: "你又感到疲惫了。《以赛亚书》里说，神会让你如鹰展翅上腾。" };
+      yield { type: "delta", delta: "今天你又累了，我陪着你。主必赐你安息。" };
       yield { type: "done", timing: { llm_first_token_ms: 100, llm_total_ms: 200 } };
     }
   };
@@ -721,8 +722,13 @@ test("VoicePipeline streamCascadeTurn normalizes repeated-fatigue variants obser
     .map((event) => event.delta)
     .join("");
   assert.match(text, /^我听见你真的累了。/);
-  assert.doesNotMatch(text, /你又累|你又感到疲惫|你又觉得疲惫/);
-  assert.deepEqual(ttsTexts, ["我听见你真的累了。", "神会让你如鹰展翅上腾。"]);
+  assert.doesNotMatch(text, /今天你又累|你又累|你又感到疲惫|你又觉得疲惫/);
+  assert.deepEqual(ttsTexts, [
+    "我听见你真的累了。",
+    "神会让你如鹰展翅上腾。",
+    "我听见你真的累了。我陪着你。",
+    "主必赐你安息。"
+  ]);
 });
 
 test("VoicePipeline streamCascadeTurn rotates overused opening stems from context before speech", async () => {

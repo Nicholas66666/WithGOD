@@ -57,6 +57,7 @@ test("package exposes standard Fire Volcengine DeepResponse continuous conversat
   assert.match(command, /--expect-late-audio-409/);
   assert.match(command, /--expect-memory-recalled/);
   assert.match(command, /--expect-memory-persisted/);
+  assert.match(command, /--expect-llm-started-from-partial/);
   assert.match(command, /--forbid-identical-consecutive-replies/);
   assert.match(command, /--max-assistant-reply-chars 48/);
   assert.match(command, /--min-assistant-reply-chars 8/);

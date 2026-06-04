@@ -22,6 +22,7 @@ export function parseHTTPConversationArgs(argv) {
     expectMemoryCandidate: false,
     expectMemoryPersisted: false,
     expectMemoryRecalled: false,
+    expectLLMStartedFromPartial: false,
     forbidIdenticalConsecutiveReplies: false,
     maxOpeningStemRepeats: 0,
     maxAssistantReplyChars: 0,
@@ -74,6 +75,8 @@ export function parseHTTPConversationArgs(argv) {
       args.expectMemoryCandidate = true;
     } else if (arg === "--expect-memory-recalled") {
       args.expectMemoryRecalled = true;
+    } else if (arg === "--expect-llm-started-from-partial") {
+      args.expectLLMStartedFromPartial = true;
     } else if (arg === "--forbid-identical-consecutive-replies") {
       args.forbidIdenticalConsecutiveReplies = true;
     } else if (arg === "--max-opening-stem-repeats") {
@@ -276,6 +279,12 @@ export async function runHTTPConversationProbe(args) {
   if (stopToFirstAudioFailures.length > 0) {
     throw new Error(`Stop-to-first-audio failures: ${JSON.stringify(stopToFirstAudioFailures, null, 2)}`);
   }
+  const partialStartFailures = args.expectLLMStartedFromPartial
+    ? collectConversationPartialStartFailures(turns)
+    : [];
+  if (partialStartFailures.length > 0) {
+    throw new Error(`Conversation partial-start failures: ${JSON.stringify(partialStartFailures, null, 2)}`);
+  }
 
   let lateAudioRejected = null;
   if (args.expectLateAudio409) {
@@ -313,6 +322,7 @@ export async function runHTTPConversationProbe(args) {
     longReplyFailures,
     shortReplyFailures,
     stopToFirstAudioFailures,
+    partialStartFailures,
     lateAudioRejected,
     elapsedMs: Math.round(performance.now() - startedAt),
     turns
@@ -545,6 +555,16 @@ export function collectStopToFirstAudioFailures(turns = [], { maxMs = 0 } = {}) 
   return failures;
 }
 
+export function collectConversationPartialStartFailures(turns = []) {
+  return (turns || [])
+    .filter((turn) => turn?.timing?.llm_started_from_partial !== 1)
+    .map((turn) => ({
+      turnID: turn?.turnID || "",
+      expected: "llm_started_from_partial",
+      actual: turn?.timing?.llm_started_from_partial == null ? "" : String(turn.timing.llm_started_from_partial)
+    }));
+}
+
 function normalizeConversationReplyText(text) {
   return String(text || "").replace(/\s+/g, "").trim();
 }
@@ -641,6 +661,8 @@ Options:
                         Require memory_candidate.persisted=true and a non-empty store.
   --expect-memory-recalled
                         Require session creation to recall persisted memory into context.
+  --expect-llm-started-from-partial
+                        Require every conversation turn to start LLM from usable ASR partial.
   --forbid-identical-consecutive-replies
                         Fail if any assistant replies in the same session are identical.
   --max-assistant-reply-chars <n>

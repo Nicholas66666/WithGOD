@@ -1805,6 +1805,24 @@ Latest realtime-upload 8-turn latency gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This remains HTTP-only and self-tested; no user-operated Watch test is part of this gate.
 
+Latest 8-turn partial-ASR and repeated-fatigue gate:
+- Standard Fire/Volcengine 8-turn continuous conversation now includes `--expect-llm-started-from-partial`, so the canonical multi-turn gate fails if any turn waits for ASR final instead of starting LLM from a usable ASR partial.
+- Added `collectConversationPartialStartFailures()` to the conversation probe and package-script coverage requiring the flag in `deep:volc:conversation:full`.
+- During full self-test, the tightened 8-turn gate surfaced a remote repeated-fatigue phrasing regression: `今天你又累了，我陪着你。主必赐你安息。`
+- `VoicePipeline.streamCascadeTurn()` now normalizes `今天你又累了...` and related `今天你又觉得/感到累/疲惫...` variants before emitting assistant text, phrase events, or TTS audio.
+- Verification:
+  - RED `node --test scripts/test-deep-response-http-conversation.test.mjs scripts/package-scripts.test.mjs` first failed because the conversation probe did not export `collectConversationPartialStartFailures()` and `deep:volc:conversation:full` lacked `--expect-llm-started-from-partial`.
+  - RED `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs` then failed because `今天你又累了...` was emitted unchanged.
+  - `node --test scripts/test-deep-response-http-conversation.test.mjs scripts/package-scripts.test.mjs`: `18/18` passed.
+  - `npm run test:node`: `190/190` passed.
+  - Fire/Volcengine ECS was updated by `scp`, remote `node --check` passed, service returned `active`, and `/health` returned `{"ok":true,"service":"deep-response","mode":"provider","providerConfigured":true}`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `225ms`, `217ms`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `166ms`, `180ms`, `177ms`, `180ms`, `187ms`, `179ms`, `183ms`, `194ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This remains HTTP-only and self-tested; no user-operated Watch test is part of this gate.
+
 - Unit and server tests:
   - `npm run test:node`
 

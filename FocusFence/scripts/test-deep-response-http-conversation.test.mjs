@@ -9,6 +9,7 @@ import {
   collectLongConversationReplyFailures,
   collectShortConversationReplyFailures,
   collectStopToFirstAudioFailures,
+  collectConversationPartialStartFailures,
   parseHTTPConversationArgs,
   summarizeTurn
 } from "./test-deep-response-http-conversation.mjs";
@@ -34,6 +35,7 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
     "--expect-memory-candidate",
     "--expect-memory-persisted",
     "--expect-memory-recalled",
+    "--expect-llm-started-from-partial",
     "--forbid-identical-consecutive-replies",
     "--max-opening-stem-repeats", "2",
     "--max-assistant-reply-chars", "48",
@@ -49,12 +51,34 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
   assert.equal(args.expectMemoryCandidate, true);
   assert.equal(args.expectMemoryPersisted, true);
   assert.equal(args.expectMemoryRecalled, true);
+  assert.equal(args.expectLLMStartedFromPartial, true);
   assert.equal(args.forbidIdenticalConsecutiveReplies, true);
   assert.equal(args.maxOpeningStemRepeats, 2);
   assert.equal(args.maxAssistantReplyChars, 48);
   assert.equal(args.minAssistantReplyChars, 8);
   assert.equal(args.maxStopToFirstAudioMs, 3500);
   assert.deepEqual(args.forbiddenTextPatterns, ["[:：]\\s*$|你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|是还想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)"]);
+});
+
+test("collectConversationPartialStartFailures flags turns that waited for ASR final", () => {
+  const failures = collectConversationPartialStartFailures([
+    { turnID: "turn-1", timing: { llm_started_from_partial: 1 } },
+    { turnID: "turn-2", timing: { llm_started_from_partial: 0 } },
+    { turnID: "turn-3", timing: {} }
+  ]);
+
+  assert.deepEqual(failures, [
+    {
+      turnID: "turn-2",
+      expected: "llm_started_from_partial",
+      actual: "0"
+    },
+    {
+      turnID: "turn-3",
+      expected: "llm_started_from_partial",
+      actual: ""
+    }
+  ]);
 });
 
 test("summarizeTurn concatenates streaming text deltas without inserting spaces", () => {
