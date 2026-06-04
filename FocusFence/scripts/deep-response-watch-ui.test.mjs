@@ -119,3 +119,10 @@ test("DeepResponse Watch abort records local-first and stale-audio timing traces
   assert.match(realtimeClientSource, /stale \\\(httpStaleAudioAfterAbortCount\)/);
   assert.match(debugViewSource, /client\.lastAbortTimingText/);
 });
+
+test("DeepResponse Watch continuous abort resumes recording as barge-in", () => {
+  const abortFunction = debugViewSource.match(/private func abortCurrentTurn\(\) async \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(debugViewSource, /let shouldResumeListening = isContinuousMode/);
+  assert.doesNotMatch(abortFunction, /isContinuousMode = false/);
+  assert.match(debugViewSource, /await client\.abortHTTPSessionTurn\(\)[\s\S]*?if shouldResumeListening,[\s\S]*?!client\.isHTTPSessionEnded[\s\S]*?await startRecordingTurn\(reason: "Barge-in recording"\)/);
+});

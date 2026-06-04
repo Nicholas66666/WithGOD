@@ -983,7 +983,7 @@ Completed:
 
 Remaining:
 
-- Decide whether abort should trigger immediate recording start or remain a separate interrupt button during POC.
+- None for the current self-test gate. In continuous Lab mode, abort now resumes the next recording turn immediately after local/server abort succeeds.
 
 Expected effect:
 - While AI is speaking, user can start speaking and old audio stops quickly.
@@ -1019,6 +1019,24 @@ Latest Watch local-first abort timing gate:
   - Remote stop-to-first-audio: `215ms`, `212ms`.
   - Remote abort stale audio chunks/bytes: `0` / `0`.
   - Remote idle probe: `session_end` reason `idle_timeout`, late audio rejected with `409 session_ended`.
+  - No user-operated Watch testing was required.
+
+Latest Watch continuous barge-in resume gate:
+- Changed DeepLab continuous mode so tapping abort during assistant playback keeps continuous mode active and starts a new recording turn after local-first abort succeeds.
+- Non-continuous abort still ends in the listening state.
+- Added source-level regression coverage proving:
+  - `abortCurrentTurn()` captures `shouldResumeListening = isContinuousMode`.
+  - continuous abort no longer sets `isContinuousMode = false`.
+  - successful continuous abort calls `startRecordingTurn(reason: "Barge-in recording")`.
+- Verification:
+  - RED source test first failed because `abortCurrentTurn()` disabled continuous mode.
+  - `node --test scripts/deep-response-watch-ui.test.mjs`: `15/15` passed.
+  - `npm run test:node`: `144/144` passed.
+  - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-bargein-resume-build build`: `BUILD SUCCEEDED`.
+  - Fire/Volcengine HTTP cascade smoke with `--wait-ms 800`, idle goodbye, and forbidden-pattern gates passed.
+  - Remote stop-to-first-audio: `196ms`, `192ms`.
+  - Remote abort stale audio chunks/bytes: `0` / `0`.
+  - Remote idle goodbye emitted text/audio and late audio was rejected with `409 session_ended`.
   - No user-operated Watch testing was required.
 
 ## File Responsibilities

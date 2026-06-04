@@ -237,12 +237,18 @@ struct DeepResponseDebugView: View {
     }
 
     private func abortCurrentTurn() async {
+        let shouldResumeListening = isContinuousMode
         isWaitingForResponse = false
-        isContinuousMode = false
         conversationState = .bargeIn
         await client.abortHTTPSessionTurn()
-        status = client.lastError == nil ? "Aborted" : "Abort failed"
-        conversationState = .listening
+        if shouldResumeListening,
+           client.lastError == nil,
+           !client.isHTTPSessionEnded {
+            await startRecordingTurn(reason: "Barge-in recording")
+        } else {
+            status = client.lastError == nil ? "Aborted" : "Abort failed"
+            conversationState = client.isHTTPSessionEnded ? .ended : .listening
+        }
     }
 
     private func runAutorunFixtureIfRequested() async {
