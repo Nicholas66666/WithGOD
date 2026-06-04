@@ -29,7 +29,7 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
     "--expect-memory-candidate",
     "--expect-memory-persisted",
     "--expect-memory-recalled",
-    "--forbid-text-pattern", "你还想听|你还是想听|你又想听"
+    "--forbid-text-pattern", "你还想听|你还是想听|你又想听|喊累"
   ]);
 
   assert.equal(args.turns, 8);
@@ -39,7 +39,7 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
   assert.equal(args.expectMemoryCandidate, true);
   assert.equal(args.expectMemoryPersisted, true);
   assert.equal(args.expectMemoryRecalled, true);
-  assert.deepEqual(args.forbiddenTextPatterns, ["你还想听|你还是想听|你又想听"]);
+  assert.deepEqual(args.forbiddenTextPatterns, ["你还想听|你还是想听|你又想听|喊累"]);
 });
 
 test("summarizeTurn concatenates streaming text deltas without inserting spaces", () => {
@@ -138,25 +138,32 @@ test("collectForbiddenConversationTextFailures flags turn text and memory summar
   const failures = collectForbiddenConversationTextFailures({
     turns: [
       { turnID: "turn-1", text: "我听见你真的累了。" },
-      { turnID: "turn-2", text: "你还想听安慰的话呀。《诗篇》里说，神是我们的避难所。" }
+      { turnID: "turn-2", text: "你还想听安慰的话呀。《诗篇》里说，神是我们的避难所。" },
+      { turnID: "turn-3", text: "你还在喊累呀。《诗篇》里说，神是我们的力量。" }
     ],
     memoryCandidate: {
-      summary: "User: 今天我累\nAI: 你还是想听安慰的话呀。"
+      summary: "User: 今天我累\nAI: 你还是想听安慰的话呀。\nAI: 你还在喊累呀。"
     }
-  }, ["你还想听|你还是想听|你又想听"]);
+  }, ["你还想听|你还是想听|你又想听|喊累"]);
 
   assert.deepEqual(failures, [
     {
       source: "turn",
       turnID: "turn-2",
-      forbiddenPattern: "你还想听|你还是想听|你又想听",
+      forbiddenPattern: "你还想听|你还是想听|你又想听|喊累",
       text: "你还想听安慰的话呀。《诗篇》里说，神是我们的避难所。"
+    },
+    {
+      source: "turn",
+      turnID: "turn-3",
+      forbiddenPattern: "你还想听|你还是想听|你又想听|喊累",
+      text: "你还在喊累呀。《诗篇》里说，神是我们的力量。"
     },
     {
       source: "memory_candidate",
       turnID: "",
-      forbiddenPattern: "你还想听|你还是想听|你又想听",
-      text: "User: 今天我累\nAI: 你还是想听安慰的话呀。"
+      forbiddenPattern: "你还想听|你还是想听|你又想听|喊累",
+      text: "User: 今天我累\nAI: 你还是想听安慰的话呀。\nAI: 你还在喊累呀。"
     }
   ]);
 });

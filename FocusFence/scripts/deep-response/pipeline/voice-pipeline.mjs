@@ -782,6 +782,7 @@ function countSpokenChars(text) {
 function normalizeAssistantPhraseText(text) {
   return String(text || "")
     .replace(/^你(?:还|还是|又)?想听安慰(?:的话)?呀?[，。]?/u, "你又累了呀。")
+    .replace(/^你还在喊累呀?[，。]?/u, "你又累了呀。")
     .trim();
 }
 

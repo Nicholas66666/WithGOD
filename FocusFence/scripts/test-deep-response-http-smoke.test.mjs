@@ -34,7 +34,7 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
     "--forbid-identical-consecutive-replies",
     "--forbid-text-pattern", "大卫.*歌利亚",
     "--forbid-text-pattern", "你知道.*为什么",
-    "--forbid-text-pattern", "给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听"
+    "--forbid-text-pattern", "给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听|喊累"
   ]);
 
   assert.equal(args.pcmPath, "fixtures/speech.pcm");
@@ -55,7 +55,7 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
   assert.deepEqual(args.forbiddenTextPatterns, [
     "大卫.*歌利亚",
     "你知道.*为什么",
-    "给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听"
+    "给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听|喊累"
   ]);
 });
 
@@ -97,24 +97,30 @@ test("collectForbiddenTextFailures flags lookup-style comfort replies", () => {
     { turnID: "turn-1", text: "那我再给你找一句。《耶利米书》里说，神会赐你平安。" },
     { turnID: "turn-2", text: "你还想听的话，我们可以继续看一节经文。" },
     { turnID: "turn-3", text: "你还是想听安慰的话呀。《诗篇》里说，神是我们的避难所。" },
-    { turnID: "turn-4", text: "我听见你真的很累，我们先慢慢停一下。" }
-  ], ["给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听"]);
+    { turnID: "turn-4", text: "你还在喊累呀。《诗篇》里说，他是你的力量。" },
+    { turnID: "turn-5", text: "我听见你真的很累，我们先慢慢停一下。" }
+  ], ["给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听|喊累"]);
 
   assert.deepEqual(failures, [
     {
       turnID: "turn-1",
-      forbiddenPattern: "给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听",
+      forbiddenPattern: "给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听|喊累",
       text: "那我再给你找一句。《耶利米书》里说，神会赐你平安。"
     },
     {
       turnID: "turn-2",
-      forbiddenPattern: "给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听",
+      forbiddenPattern: "给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听|喊累",
       text: "你还想听的话，我们可以继续看一节经文。"
     },
     {
       turnID: "turn-3",
-      forbiddenPattern: "给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听",
+      forbiddenPattern: "给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听|喊累",
       text: "你还是想听安慰的话呀。《诗篇》里说，神是我们的避难所。"
+    },
+    {
+      turnID: "turn-4",
+      forbiddenPattern: "给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听|喊累",
+      text: "你还在喊累呀。《诗篇》里说，他是你的力量。"
     }
   ]);
 });

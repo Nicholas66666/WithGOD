@@ -1275,7 +1275,7 @@ function sanitizeHTTPSessionMemorySummary(summary) {
 }
 
 function isLookupStyleComfortLine(line) {
-  return /给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听/u.test(String(line || ""));
+  return /给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听|喊累/u.test(String(line || ""));
 }
 
 function isGoodbyeTranscript(transcript) {

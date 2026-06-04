@@ -74,7 +74,7 @@ npm run deep:http-smoke:test -- \
   --forbid-identical-consecutive-replies \
   --forbid-text-pattern '大卫.*歌利亚' \
   --forbid-text-pattern '你知道.*为什么' \
-  --forbid-text-pattern '给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听' \
+  --forbid-text-pattern '给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听|喊累' \
   --forbid-text-pattern '从哪卷书|哪卷书.*开始|哪句经文.*开始' \
   --forbid-text-pattern '从哪里开始|想从哪里开始'
 ```
@@ -85,7 +85,7 @@ Latest remote smoke result:
 - two-turn conversation in one session passed
 - stop-to-first-audio on Fire/Volcengine HTTP cascade: `212ms`, `222ms`
 - LLM started from usable ASR partial on both standard turns: `llm_started_from_partial: 1`
-- forbidden lookup-style comfort failures: `[]`
+- forbidden lookup/harsh comfort failures: `[]`
 - repeated adjacent assistant reply failures: `[]`
 - abort stale audio chunks/bytes: `0` / `0`
 - abort-next-turn same-session probe passed with transcript/text/audio in the following turn
@@ -99,10 +99,10 @@ Latest full self-test update:
   - `npm run deep:volc:conversation:full`
   - `npm run deep:watchlab:build:volc`
 - The 8-turn Fire/Volcengine continuous gate verifies one HTTP session across 8 turns, `memory_recalled`, persisted `memory_candidate`, explicit `/end` with reason `user_goodbye`, late audio `409 session_ended`, and `forbiddenTextFailures: []`.
-- Added conversation-level `--forbid-text-pattern` support so long continuous probes reject lookup-style comfort replies in turn text and memory summaries, not only in the 2-turn smoke.
-- Added memory recall sanitization for lookup-style comfort phrases before persisted summaries enter LLM context.
-- Added VoicePipeline output normalization so lookup-style comfort openings are corrected before `assistant_text_delta`, `assistant_phrase`, and TTS audio.
-- Latest `npm run deep:selftest:full`: passed; Node `164/164`, nested Fire/Volcengine smoke stop-to-first-audio `200ms` / `184ms`, 8-turn continuous gate `forbiddenTextFailures: []`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
+- Added conversation-level `--forbid-text-pattern` support so long continuous probes reject lookup-style and harsh repeated-comfort replies in turn text and memory summaries, not only in the 2-turn smoke.
+- Added memory recall sanitization for lookup-style and harsh repeated-comfort phrases before persisted summaries enter LLM context.
+- Added VoicePipeline output normalization so lookup-style and harsh repeated-comfort openings are corrected before `assistant_text_delta`, `assistant_phrase`, and TTS audio.
+- Latest `npm run deep:selftest:full`: passed; Node `165/165`, nested Fire/Volcengine smoke stop-to-first-audio `165ms` / `200ms`, 8-turn continuous gate `forbiddenTextFailures: []`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
 
 ## Next Target: Full Streaming Pipeline
 

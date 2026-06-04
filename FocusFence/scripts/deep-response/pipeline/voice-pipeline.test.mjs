@@ -495,6 +495,47 @@ test("VoicePipeline streamCascadeTurn normalizes lookup-style comfort openings b
   assert.doesNotMatch(textDeltas.join(""), /你还想听/);
 });
 
+test("VoicePipeline streamCascadeTurn normalizes harsh repeated-comfort openings before speech", async () => {
+  const ttsTexts = [];
+  const asr = {
+    async *transcribeStream() {
+      yield { type: "transcript_final", transcript: "今天我很累，想听一句安慰。", timing: { transcript_final_ms: 1000 } };
+    }
+  };
+  const llm = {
+    async *streamTokens() {
+      yield { type: "delta", delta: "你还在喊累呀。《诗篇》里说，他必坚固你。" };
+      yield { type: "done", timing: { llm_first_token_ms: 100, llm_total_ms: 200 } };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      ttsTexts.push(text);
+      yield { type: "audio_chunk", audioChunk: Buffer.from(`${text}:audio`), sampleRate: 24000 };
+      yield { type: "done", timing: { tts_first_audio_ms: 80 }, connectID: "tts-harsh-normalized" };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20, 30]) });
+  const events = [];
+  for await (const event of pipeline.streamCascadeTurn({
+    audioChunks: [Buffer.from("voice")],
+    turnID: "turn-1",
+    generationID: "gen-1",
+    maxSpokenReplyChars: 80
+  })) {
+    events.push(event);
+  }
+
+  const text = events
+    .filter((event) => event.type === "assistant_text_delta")
+    .map((event) => event.delta)
+    .join("");
+  assert.match(text, /^你又累了呀。/);
+  assert.doesNotMatch(text, /喊累/);
+  assert.deepEqual(ttsTexts, ["你又累了呀。", "《诗篇》里说，他必坚固你。"]);
+});
+
 test("VoicePipeline streamCascadeTurn keeps reading LLM while first phrase TTS is active", async () => {
   let releaseFirstTTSDone;
   const firstTTSDoneGate = new Promise((resolve) => {
