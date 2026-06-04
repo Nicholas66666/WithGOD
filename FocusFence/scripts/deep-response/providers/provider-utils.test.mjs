@@ -165,6 +165,51 @@ test("ArkLLMProvider sends requested max tokens", async (t) => {
   assert.equal(requestBody.max_tokens, 48);
 });
 
+test("ArkLLMProvider sends custom messages and generation options", async (t) => {
+  const originalFetch = globalThis.fetch;
+  let requestBody = null;
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  globalThis.fetch = async (_url, options) => {
+    requestBody = JSON.parse(options.body);
+    return {
+      ok: true,
+      body: (async function* stream() {
+        yield Buffer.from("data: {\"choices\":[{\"delta\":{\"content\":\"我听见你今天真的很累。\"}}]}\n\n");
+      })()
+    };
+  };
+
+  const provider = new ArkLLMProvider({
+    env: {
+      ARK_BASE_URL: "https://ark.example",
+      ARK_API_KEY: "key",
+      ARK_MODEL: "default-model"
+    }
+  });
+  const messages = [
+    { role: "system", content: "custom system" },
+    { role: "user", content: "custom user" }
+  ];
+
+  const result = await provider.generate({
+    transcript: "ignored when messages are provided",
+    messages,
+    model: "custom-model",
+    temperature: 0.1,
+    maxTokens: 32,
+    firstPhraseExtractor: (text) => (text.includes("。") ? text : "")
+  });
+
+  assert.deepEqual(requestBody.messages, messages);
+  assert.equal(requestBody.model, "custom-model");
+  assert.equal(requestBody.temperature, 0.1);
+  assert.equal(requestBody.max_tokens, 32);
+  assert.equal(result.firstPhrase, "我听见你今天真的很累。");
+});
+
 test("buildDoubaoTTSEventRequest emits binary event frame with session id and JSON payload", () => {
   const frame = buildDoubaoTTSEventRequest({
     event: TTS_EVENTS.StartSession,

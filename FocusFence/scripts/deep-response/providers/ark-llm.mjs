@@ -4,13 +4,33 @@ export class ArkLLMProvider {
     this.clock = clock;
   }
 
-  async generate({ transcript, context = [], signal, streamFull = false, maxTokens = 180, minChars = 14 } = {}) {
+  async generate({
+    transcript,
+    context = [],
+    signal,
+    streamFull = false,
+    maxTokens = 180,
+    minChars = 14,
+    model,
+    baseURL,
+    temperature,
+    messages,
+    firstPhraseExtractor = findSpeakableFirstPhrase
+  } = {}) {
     const startedAt = this.clock();
-    const timing = {};
+    const timing = { llm_request_start_ms: 0 };
     let text = "";
     let firstPhrase = "";
+    let first80Chars = "";
+    let streamChunkCount = 0;
+    const streamChunks = [];
 
-    const response = await fetch(`${this.env.ARK_BASE_URL.replace(/\/$/, "")}/chat/completions`, {
+    const requestMessages = messages || [
+      { role: "system", content: deepResponseSystemPrompt() },
+      ...context,
+      { role: "user", content: transcript }
+    ];
+    const response = await fetch(`${(baseURL || this.env.ARK_BASE_URL).replace(/\/$/, "")}/chat/completions`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${this.env.ARK_API_KEY}`,
@@ -18,15 +38,11 @@ export class ArkLLMProvider {
       },
       signal,
       body: JSON.stringify({
-        model: this.env.ARK_MODEL,
+        model: model || this.env.ARK_MODEL,
         stream: true,
-        temperature: 0.4,
+        temperature: Number(temperature ?? 0.4),
         max_tokens: maxTokens,
-        messages: [
-          { role: "system", content: deepResponseSystemPrompt() },
-          ...context,
-          { role: "user", content: transcript }
-        ]
+        messages: requestMessages
       })
     });
 
@@ -39,9 +55,15 @@ export class ArkLLMProvider {
       if (!delta) {
         continue;
       }
+      streamChunkCount += 1;
+      streamChunks.push(delta);
       timing.llm_first_token_ms ??= elapsed(this.clock, startedAt);
       text += delta;
-      firstPhrase ||= findSpeakableFirstPhrase(text, { minChars });
+      if (!first80Chars && [...text].length >= 80) {
+        first80Chars = [...text].slice(0, 80).join("");
+        timing.llm_first_80_chars_ms = elapsed(this.clock, startedAt);
+      }
+      firstPhrase ||= firstPhraseExtractor(text, { minChars });
       if (firstPhrase && timing.llm_first_phrase_ms === undefined) {
         timing.llm_first_phrase_ms = elapsed(this.clock, startedAt);
       }
@@ -55,7 +77,8 @@ export class ArkLLMProvider {
       firstPhrase = splitFirstPhrase(text);
     }
 
-    return { text, firstPhrase, timing };
+    timing.llm_total_ms = elapsed(this.clock, startedAt);
+    return { text, firstPhrase, timing, streamChunkCount, streamChunks };
   }
 }
 
