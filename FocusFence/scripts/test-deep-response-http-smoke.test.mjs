@@ -11,6 +11,7 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
   const args = parseHTTPSmokeArgs([
     "--pcm", "fixtures/speech.pcm",
     "--pipeline-mode", "cascade",
+    "--wait-ms", "750",
     "--retries", "0",
     "--idle-timeout-ms", "50",
     "--idle-observe-ms", "1000"
@@ -18,6 +19,7 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
 
   assert.equal(args.pcmPath, "fixtures/speech.pcm");
   assert.equal(args.pipelineMode, "cascade");
+  assert.equal(args.waitMs, 750);
   assert.equal(args.retries, 0);
   assert.equal(args.idleTimeoutMs, 50);
   assert.equal(args.idleObserveMs, 1000);

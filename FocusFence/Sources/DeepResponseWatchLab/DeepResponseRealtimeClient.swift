@@ -15,6 +15,8 @@ enum DeepResponseClientError: LocalizedError {
 final class DeepResponseRealtimeClient: ObservableObject {
     private static let httpFastPollNanoseconds: UInt64 = 40_000_000
     private static let httpSteadyPollNanoseconds: UInt64 = 120_000_000
+    private static let httpFastPollWaitMilliseconds = 800
+    private static let httpSteadyPollWaitMilliseconds = 250
 
     @Published private(set) var lastError: String?
     @Published private(set) var lastErrorCode: String?
@@ -546,8 +548,9 @@ final class DeepResponseRealtimeClient: ObservableObject {
         let startedAt = Date()
         var isDone = false
         while !isDone && Date().timeIntervalSince(startedAt) < 120 {
-            let eventsURL = try Self.httpSessionURL(path: "/deep-response/sessions/\(sessionID)/events?cursor=\(httpEventCursor)")
-            var audioPath = "/deep-response/sessions/\(sessionID)/audio?cursor=\(httpOutputAudioCursor)"
+            let waitMilliseconds = Self.httpPollWaitMilliseconds(hasReceivedFirstAudio: httpFirstAudioMs != nil)
+            let eventsURL = try Self.httpSessionURL(path: "/deep-response/sessions/\(sessionID)/events?cursor=\(httpEventCursor)&wait_ms=\(waitMilliseconds)")
+            var audioPath = "/deep-response/sessions/\(sessionID)/audio?cursor=\(httpOutputAudioCursor)&wait_ms=\(waitMilliseconds)"
             if let httpGenerationID {
                 audioPath += "&generation_id=\(httpGenerationID)"
             }
@@ -612,6 +615,10 @@ final class DeepResponseRealtimeClient: ObservableObject {
 
     private static func httpPollDelayNanoseconds(hasReceivedFirstAudio: Bool) -> UInt64 {
         hasReceivedFirstAudio ? httpSteadyPollNanoseconds : httpFastPollNanoseconds
+    }
+
+    private static func httpPollWaitMilliseconds(hasReceivedFirstAudio: Bool) -> Int {
+        hasReceivedFirstAudio ? httpSteadyPollWaitMilliseconds : httpFastPollWaitMilliseconds
     }
 
     private func handleHTTPSessionEvent(_ event: DeepResponseHTTPSessionEvent) {

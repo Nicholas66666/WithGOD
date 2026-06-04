@@ -547,6 +547,107 @@ test("DeepResponse HTTP session streams cascade phrase and audio events", async 
   }
 });
 
+test("DeepResponse HTTP session events endpoint long-polls until new events arrive", async () => {
+  let releasePhrase;
+  const phraseGate = new Promise((resolve) => {
+    releasePhrase = resolve;
+  });
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async *streamCascadeTurn() {
+        await phraseGate;
+        yield {
+          type: "assistant_phrase",
+          turnID: "turn-long-poll",
+          generationID: "gen-long-poll",
+          phraseIndex: 0,
+          text: "我听见你。",
+          reason: "punctuation"
+        };
+        yield { type: "timing", timing: { voice_pipeline_total_ms: 1 } };
+        yield { type: "turn_done", transcript: "", assistantText: "我听见你。" };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {
+      pipelineMode: "cascade"
+    });
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+    const initial = await fetchJSON(`${base}/events?cursor=0`);
+    await postJSON(`${base}/input-stop`, { turnID: "turn-long-poll", generationID: "gen-long-poll" });
+    const beforePhrase = await fetchJSON(`${base}/events?cursor=${initial.nextCursor}`);
+    assert(!beforePhrase.events.some((event) => event.type === "assistant_phrase"));
+
+    const startedAt = Date.now();
+    const pendingEvents = fetchJSON(`${base}/events?cursor=${beforePhrase.nextCursor}&wait_ms=500`);
+    await sleep(50);
+    releasePhrase();
+    const batch = await pendingEvents;
+
+    assert(Date.now() - startedAt >= 40);
+    assert(batch.events.some((event) => event.type === "assistant_phrase" && event.text === "我听见你。"));
+  } finally {
+    await server.close();
+  }
+});
+
+test("DeepResponse HTTP session audio endpoint long-polls until new audio arrives", async () => {
+  let releaseAudio;
+  const audioGate = new Promise((resolve) => {
+    releaseAudio = resolve;
+  });
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async *streamCascadeTurn() {
+        await audioGate;
+        yield {
+          type: "audio_chunk",
+          turnID: "turn-audio-long-poll",
+          generationID: "gen-audio-long-poll",
+          phraseIndex: 0,
+          audioIndex: 0,
+          audioChunk: Buffer.from("long-poll-audio"),
+          sampleRate: 24000
+        };
+        yield { type: "timing", timing: { voice_pipeline_total_ms: 1 } };
+        yield { type: "turn_done", transcript: "", assistantText: "" };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {
+      pipelineMode: "cascade"
+    });
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+    await postJSON(`${base}/input-stop`, { turnID: "turn-audio-long-poll", generationID: "gen-audio-long-poll" });
+
+    const startedAt = Date.now();
+    const pendingAudio = fetchJSON(`${base}/audio?cursor=0&generation_id=gen-audio-long-poll&wait_ms=500`);
+    await sleep(50);
+    releaseAudio();
+    const batch = await pendingAudio;
+
+    assert(Date.now() - startedAt >= 40);
+    assert.equal(batch.chunks.length, 1);
+    assert.equal(Buffer.from(batch.chunks[0].audioBase64, "base64").toString("utf8"), "long-poll-audio");
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse HTTP session starts provider audio consumption before input stop", async () => {
   let firstChunkSeenAt = 0;
   let inputStopPostedAt = 0;
@@ -1191,6 +1292,10 @@ async function waitFor(predicate, { timeoutMs = 2_000 } = {}) {
     await new Promise((resolve) => setTimeout(resolve, 20));
   }
   throw new Error("waitFor timeout");
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function fetchJSON(url) {

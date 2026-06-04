@@ -13,6 +13,7 @@ export function parseHTTPConversationArgs(argv) {
     chunkMs: 1000,
     uploadSleepMs: null,
     pollMs: 50,
+    waitMs: 800,
     timeoutMs: 90_000,
     pipelineMode: "",
     endReason: "probe_complete",
@@ -40,6 +41,9 @@ export function parseHTTPConversationArgs(argv) {
       index += 1;
     } else if (arg === "--poll-ms") {
       args.pollMs = Number(argv[index + 1] || args.pollMs);
+      index += 1;
+    } else if (arg === "--wait-ms") {
+      args.waitMs = Number(argv[index + 1] || args.waitMs);
       index += 1;
     } else if (arg === "--timeout-ms") {
       args.timeoutMs = Number(argv[index + 1] || args.timeoutMs);
@@ -113,7 +117,7 @@ export async function runHTTPConversationProbe(args) {
     const audioChunks = [];
 
     await waitFor(async () => {
-      const eventBatch = await fetchJSON(buildURL(args.endpoint, `${basePath}/events?cursor=${eventCursor}`));
+      const eventBatch = await fetchJSON(buildURL(args.endpoint, `${basePath}/events?cursor=${eventCursor}${buildWaitQuery(args.waitMs)}`));
       eventCursor = eventBatch.nextCursor;
       const eventReceivedAtMs = Math.round(performance.now() - turnStartedAt);
       const turnEvents = eventBatch.events.filter((event) => event.turnID === turnID || event.type === "session_ready");
@@ -124,7 +128,7 @@ export async function runHTTPConversationProbe(args) {
         }
       }
 
-      const audioBatch = await fetchJSON(buildURL(args.endpoint, `${basePath}/audio?cursor=${audioCursor}`));
+      const audioBatch = await fetchJSON(buildURL(args.endpoint, `${basePath}/audio?cursor=${audioCursor}${buildWaitQuery(args.waitMs)}`));
       audioCursor = audioBatch.nextCursor;
       const turnAudio = audioBatch.chunks.filter((chunk) => chunk.generationID === generationID);
       if (firstAudioAt == null && turnAudio.length > 0) {
@@ -156,7 +160,7 @@ export async function runHTTPConversationProbe(args) {
   let sessionEnd = null;
   if (args.expectSessionEnd) {
     await waitFor(async () => {
-      const eventBatch = await fetchJSON(buildURL(args.endpoint, `${basePath}/events?cursor=${eventCursor}`));
+      const eventBatch = await fetchJSON(buildURL(args.endpoint, `${basePath}/events?cursor=${eventCursor}${buildWaitQuery(args.waitMs)}`));
       eventCursor = eventBatch.nextCursor;
       sessionEnd = eventBatch.events.find((event) => event.type === "session_end") || null;
       return sessionEnd?.reason === args.endReason;
@@ -255,6 +259,10 @@ function buildURL(endpoint, path) {
   return `${base}${path}`;
 }
 
+function buildWaitQuery(waitMs) {
+  return Number(waitMs) > 0 ? `&wait_ms=${Math.round(Number(waitMs))}` : "";
+}
+
 async function postJSON(url, body) {
   const response = await fetch(url, {
     method: "POST",
@@ -313,6 +321,7 @@ Options:
   --upload-sleep-ms <ms>
                         Sleep after each upload. Default: chunk-ms. Use 0 for network drain timing.
   --poll-ms <ms>        Poll interval for events/audio. Default: 50
+  --wait-ms <ms>        Server long-poll wait for events/audio. Default: 800
   --timeout-ms <ms>     Probe timeout. Default: 90000
   --pipeline-mode <m>   Optional HTTP session pipeline mode, e.g. cascade.
   --end-reason <reason> Reason sent to /end after all turns. Default: probe_complete

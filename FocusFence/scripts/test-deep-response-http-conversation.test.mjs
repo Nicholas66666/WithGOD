@@ -9,10 +9,12 @@ import {
 test("parseHTTPConversationArgs accepts cascade pipeline mode", () => {
   const args = parseHTTPConversationArgs([
     "--pcm", "fixtures/speech.pcm",
-    "--pipeline-mode", "cascade"
+    "--pipeline-mode", "cascade",
+    "--wait-ms", "750"
   ]);
 
   assert.equal(args.pipelineMode, "cascade");
+  assert.equal(args.waitMs, 750);
 });
 
 test("parseHTTPConversationArgs accepts session-end validation options", () => {

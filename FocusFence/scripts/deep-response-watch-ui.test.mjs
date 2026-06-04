@@ -99,5 +99,10 @@ test("DeepResponse Watch simulator autoruns a continuous HTTP fixture loop", () 
 test("DeepResponse Watch HTTP polling is low-latency before first audio", () => {
   assert.match(realtimeClientSource, /private static let httpFastPollNanoseconds: UInt64 = 40_000_000/);
   assert.match(realtimeClientSource, /private static let httpSteadyPollNanoseconds: UInt64 = 120_000_000/);
+  assert.match(realtimeClientSource, /private static let httpFastPollWaitMilliseconds = 800/);
+  assert.match(realtimeClientSource, /private static let httpSteadyPollWaitMilliseconds = 250/);
   assert.match(realtimeClientSource, /Self\.httpPollDelayNanoseconds\(hasReceivedFirstAudio: httpFirstAudioMs != nil\)/);
+  assert.match(realtimeClientSource, /Self\.httpPollWaitMilliseconds\(hasReceivedFirstAudio: httpFirstAudioMs != nil\)/);
+  assert.match(realtimeClientSource, /events\?cursor=\\\(httpEventCursor\)&wait_ms=\\\(waitMilliseconds\)/);
+  assert.match(realtimeClientSource, /audio\?cursor=\\\(httpOutputAudioCursor\)&wait_ms=\\\(waitMilliseconds\)/);
 });

@@ -19,6 +19,7 @@ export function parseHTTPSmokeArgs(argv) {
     chunkMs: 1000,
     uploadSleepMs: null,
     pollMs: 50,
+    waitMs: 800,
     timeoutMs: 90_000,
     observeMs: 3_000,
     idleTimeoutMs: 150,
@@ -48,6 +49,9 @@ export function parseHTTPSmokeArgs(argv) {
       index += 1;
     } else if (arg === "--poll-ms") {
       args.pollMs = Number(argv[index + 1] || args.pollMs);
+      index += 1;
+    } else if (arg === "--wait-ms") {
+      args.waitMs = Number(argv[index + 1] || args.waitMs);
       index += 1;
     } else if (arg === "--timeout-ms") {
       args.timeoutMs = Number(argv[index + 1] || args.timeoutMs);
@@ -97,6 +101,7 @@ export async function runHTTPSmokeProbe(args) {
     "--chunk-ms", String(args.chunkMs),
     "--upload-sleep-ms", String(args.uploadSleepMs ?? args.chunkMs),
     "--poll-ms", String(args.pollMs),
+    "--wait-ms", String(args.waitMs),
     "--timeout-ms", String(args.timeoutMs),
     ...(args.pipelineMode ? ["--pipeline-mode", args.pipelineMode] : []),
     ...(args.verbose ? ["--verbose"] : [])
@@ -144,6 +149,7 @@ export async function runHTTPSmokeProbe(args) {
     thresholds: {
       maxStopToFirstAudioMs: args.maxStopToFirstAudioMs,
       pipelineMode: args.pipelineMode,
+      waitMs: args.waitMs,
       idleTimeoutMs: args.idleTimeoutMs
     },
     health,

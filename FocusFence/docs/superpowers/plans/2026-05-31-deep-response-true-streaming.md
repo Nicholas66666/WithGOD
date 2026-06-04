@@ -476,6 +476,26 @@ Latest Watch HTTP polling optimization:
 - Remote HTTP first-audio-after-first-phrase: `251ms`, `340ms`.
 - Timing implication: Watch client first-audio polling is now less likely to add avoidable delay; remaining larger variance is still provider first-phrase generation.
 
+Latest HTTP long-poll optimization:
+- Added `wait_ms` support to HTTP session `/events` and `/audio` pull endpoints. Existing no-`wait_ms` clients keep immediate short-poll behavior.
+- `DeepResponseWatchLab` now sends `wait_ms=800` before first audio and `wait_ms=250` after first audio while staying HTTP-only.
+- Node conversation/smoke scripts now accept and pass `--wait-ms`, defaulting to `800`, so remote self-tests cover the same HTTP pull mode as Watch.
+- Added server tests proving events/audio requests remain pending until a new event/audio chunk arrives.
+- Added Watch source gate proving events/audio URLs include `wait_ms`.
+- `node --test scripts/deep-response-server.test.mjs`: `25/25` passed.
+- `node --test scripts/deep-response-watch-ui.test.mjs`: `13/13` passed.
+- `node --test scripts/test-deep-response-http-conversation.test.mjs scripts/test-deep-response-http-smoke.test.mjs`: `6/6` passed.
+- `npm run test:node`: `128/128` passed.
+- `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-volc-build build`: `BUILD SUCCEEDED`.
+- Fire/Volcengine ECS was updated by direct SSH file sync and `systemctl restart deep-response`; `/health` returned provider mode with `providerConfigured: true`.
+- Fire/Volcengine HTTP cascade smoke with `--wait-ms 800`: passed.
+- Remote stop-to-first-audio with long-poll: `1039ms`, `1088ms`.
+- Remote HTTP stop-to-first-phrase with long-poll: `992ms`, `983ms`.
+- Remote HTTP first-audio-after-first-phrase with long-poll: `46ms`, `105ms`.
+- Remote abort stale audio chunks/bytes: `0` / `0`.
+- Remote idle probe: `session_end` reason `idle_timeout`, late audio rejected with `409 session_ended`.
+- Validation mode remains self-test first; no user-operated Watch test is required for this milestone update.
+
 ### Milestone S5: Hands-Free Conversation Loop
 
 Status: complete for the self-test gate. Server-side goodbye/idle lifecycle, remote smoke self-tests, Watch automatic return-to-listening source/build gate, local VAD/silence endpointing source/build gate, VAD fixture calibration, explicit Watch conversation state source gate, simulator-only continuous HTTP fixture autorun source gate, local 8-turn rolling-context/goodbye self-test, and remote 8-turn session-end probe are complete.

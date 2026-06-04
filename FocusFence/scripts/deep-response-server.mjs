@@ -278,11 +278,11 @@ function handleHTTPSessionRoute(request, response, options) {
     return;
   }
   if (request.method === "GET" && route.action === "events") {
-    handleHTTPSessionEvents(response, { ...options, session });
+    void handleHTTPSessionEvents(response, { ...options, session });
     return;
   }
   if (request.method === "GET" && route.action === "audio") {
-    handleHTTPSessionAudioPull(response, { ...options, session });
+    void handleHTTPSessionAudioPull(response, { ...options, session });
     return;
   }
 
@@ -517,10 +517,10 @@ function ensureHTTPSessionTurnStream({
   return turnStream;
 }
 
-function handleHTTPSessionEvents(response, { url, session, recordEvent = () => {} }) {
-  maybeEndIdleHTTPSession(session, { recordEvent });
+async function handleHTTPSessionEvents(response, { url, session, recordEvent = () => {} }) {
   const cursor = Number(url.searchParams.get("cursor") || 0);
-  const selected = session.events.filter((event) => event.seq >= cursor);
+  const waitMs = parseHTTPSessionWaitMs(url);
+  const selected = await waitForHTTPSessionEvents(session, cursor, waitMs, { recordEvent });
   const nextCursor = selected.length > 0 ? selected.at(-1).seq + 1 : cursor;
   sendJSON(response, 200, {
     ok: true,
@@ -531,13 +531,11 @@ function handleHTTPSessionEvents(response, { url, session, recordEvent = () => {
   });
 }
 
-function handleHTTPSessionAudioPull(response, { url, session }) {
-  maybeEndIdleHTTPSession(session);
+async function handleHTTPSessionAudioPull(response, { url, session, recordEvent = () => {} }) {
   const cursor = Number(url.searchParams.get("cursor") || 0);
   const generationID = url.searchParams.get("generation_id") || "";
-  const selected = session.audio
-    .filter((chunk) => chunk.seq >= cursor)
-    .filter((chunk) => !generationID || chunk.generationID === generationID);
+  const waitMs = parseHTTPSessionWaitMs(url);
+  const selected = await waitForHTTPSessionAudio(session, cursor, generationID, waitMs, { recordEvent });
   const nextCursor = selected.length > 0 ? selected.at(-1).seq + 1 : cursor;
   sendJSON(response, 200, {
     ok: true,
@@ -546,6 +544,48 @@ function handleHTTPSessionAudioPull(response, { url, session }) {
     nextCursor,
     chunks: selected
   });
+}
+
+function parseHTTPSessionWaitMs(url) {
+  const raw = Number(url.searchParams.get("wait_ms") || 0);
+  if (!Number.isFinite(raw) || raw <= 0) {
+    return 0;
+  }
+  return Math.min(Math.round(raw), 1_000);
+}
+
+async function waitForHTTPSessionEvents(session, cursor, waitMs, { recordEvent = () => {} } = {}) {
+  const startedAt = Date.now();
+  while (true) {
+    maybeEndIdleHTTPSession(session, { recordEvent });
+    const selected = selectHTTPSessionEvents(session, cursor);
+    if (selected.length > 0 || Date.now() - startedAt >= waitMs) {
+      return selected;
+    }
+    await sleep(Math.min(20, waitMs - (Date.now() - startedAt)));
+  }
+}
+
+async function waitForHTTPSessionAudio(session, cursor, generationID, waitMs, { recordEvent = () => {} } = {}) {
+  const startedAt = Date.now();
+  while (true) {
+    maybeEndIdleHTTPSession(session, { recordEvent });
+    const selected = selectHTTPSessionAudio(session, cursor, generationID);
+    if (selected.length > 0 || Date.now() - startedAt >= waitMs) {
+      return selected;
+    }
+    await sleep(Math.min(20, waitMs - (Date.now() - startedAt)));
+  }
+}
+
+function selectHTTPSessionEvents(session, cursor) {
+  return session.events.filter((event) => event.seq >= cursor);
+}
+
+function selectHTTPSessionAudio(session, cursor, generationID) {
+  return session.audio
+    .filter((chunk) => chunk.seq >= cursor)
+    .filter((chunk) => !generationID || chunk.generationID === generationID);
 }
 
 async function runHTTPSessionPipeline({
