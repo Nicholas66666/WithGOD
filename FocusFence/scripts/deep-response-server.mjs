@@ -142,6 +142,7 @@ export async function startDeepResponseServer({
     if (request.method === "POST" && url.pathname === "/deep-response/sessions") {
       handleHTTPSessionCreate(request, response, {
         sessions: httpSessions,
+        env,
         recordEvent
       });
       return;
@@ -199,16 +200,19 @@ export async function startDeepResponseServer({
   };
 }
 
-async function handleHTTPSessionCreate(request, response, { sessions, recordEvent = () => {} }) {
+async function handleHTTPSessionCreate(request, response, { sessions, env = {}, recordEvent = () => {} }) {
   try {
     const body = await readJSONBody(request);
     const sessionID = body.sessionID || `drs_${crypto.randomUUID().replaceAll("-", "")}`;
     const pipelineMode = body.pipelineMode === "cascade" ? "cascade" : "";
+    const idleTimeoutMs = Number(body.idleTimeoutMs || envNumber(process.env.DEEP_RESPONSE_SESSION_IDLE_TIMEOUT_MS, 0));
     const session = {
       sessionID,
       state: "listening",
       pipelineMode,
       sampleRate: Number(body.sampleRate || 16000),
+      idleTimeoutMs: Number.isFinite(idleTimeoutMs) && idleTimeoutMs > 0 ? idleTimeoutMs : 0,
+      lastActivityAt: Date.now(),
       audioByTurn: new Map(),
       events: [],
       audio: [],
@@ -238,6 +242,7 @@ async function handleHTTPSessionCreate(request, response, { sessions, recordEven
       sessionID,
       state: session.state,
       sampleRate: session.sampleRate,
+      idleTimeoutMs: session.idleTimeoutMs,
       pipelineMode
     });
   } catch (error) {
@@ -294,6 +299,11 @@ async function handleHTTPSessionAudio(request, response, options) {
     audioReplayIntervalMs,
     recordEvent = () => {}
   } = options;
+  if (session.state === "ended") {
+    sendJSON(response, 409, { ok: false, sessionID: session.sessionID, error: "session_ended" });
+    return;
+  }
+  session.lastActivityAt = Date.now();
   const encodedBody = await readRequestBody(request);
   const encoding = String(request.headers["content-encoding"] || "").toLowerCase();
   const body = encoding === "deflate" ? inflateSync(encodedBody) : encodedBody;
@@ -337,10 +347,15 @@ async function handleHTTPSessionAudio(request, response, options) {
 
 async function handleHTTPSessionInputStop(request, response, options) {
   const { session, recordEvent = () => {} } = options;
+  if (session.state === "ended") {
+    sendJSON(response, 409, { ok: false, sessionID: session.sessionID, error: "session_ended" });
+    return;
+  }
   const body = await readJSONBody(request);
   const turnID = body.turnID || "turn-1";
   const generationID = body.generationID || `gen_${crypto.randomUUID().replaceAll("-", "")}`;
   session.state = "assistant_thinking";
+  session.lastActivityAt = Date.now();
   session.activeGenerations.add(generationID);
   pushSessionEvent(session, {
     type: "input_stop",
@@ -398,6 +413,7 @@ async function handleHTTPSessionAbort(request, response, { session, recordEvent 
     session.activeGenerations.delete(generationID);
   }
   session.state = "listening";
+  session.lastActivityAt = Date.now();
   pushSessionEvent(session, {
     type: "abort",
     sessionID: session.sessionID,
@@ -422,16 +438,7 @@ async function handleHTTPSessionAbort(request, response, { session, recordEvent 
 
 async function handleHTTPSessionEnd(request, response, { session, recordEvent = () => {} }) {
   const body = await readJSONBody(request);
-  session.state = "ended";
-  pushSessionEvent(session, {
-    type: "session_end",
-    sessionID: session.sessionID,
-    reason: body.reason || "client_end"
-  });
-  recordEvent("http_session_end", {
-    sessionID: session.sessionID,
-    reason: body.reason || "client_end"
-  });
+  endHTTPSession(session, { reason: body.reason || "client_end", recordEvent });
   sendJSON(response, 200, {
     ok: true,
     sessionID: session.sessionID,
@@ -510,7 +517,8 @@ function ensureHTTPSessionTurnStream({
   return turnStream;
 }
 
-function handleHTTPSessionEvents(response, { url, session }) {
+function handleHTTPSessionEvents(response, { url, session, recordEvent = () => {} }) {
+  maybeEndIdleHTTPSession(session, { recordEvent });
   const cursor = Number(url.searchParams.get("cursor") || 0);
   const selected = session.events.filter((event) => event.seq >= cursor);
   const nextCursor = selected.length > 0 ? selected.at(-1).seq + 1 : cursor;
@@ -524,6 +532,7 @@ function handleHTTPSessionEvents(response, { url, session }) {
 }
 
 function handleHTTPSessionAudioPull(response, { url, session }) {
+  maybeEndIdleHTTPSession(session);
   const cursor = Number(url.searchParams.get("cursor") || 0);
   const generationID = url.searchParams.get("generation_id") || "";
   const selected = session.audio
@@ -664,6 +673,10 @@ async function runHTTPSessionPipeline({
   });
   session.activeGenerations.delete(generationID);
   session.state = "listening";
+  session.lastActivityAt = Date.now();
+  if (isGoodbyeTranscript(result.transcript)) {
+    endHTTPSession(session, { reason: "user_goodbye_intent", turnID, generationID, recordEvent });
+  }
   recordEvent("http_session_complete", {
     sessionID: session.sessionID,
     turnID,
@@ -811,6 +824,10 @@ async function runHTTPSessionStreamedPipeline({
   });
   session.activeGenerations.delete(eventGenerationID);
   session.state = "listening";
+  session.lastActivityAt = Date.now();
+  if (isGoodbyeTranscript(transcript)) {
+    endHTTPSession(session, { reason: "user_goodbye_intent", turnID, generationID: eventGenerationID, recordEvent });
+  }
   recordEvent("http_session_complete", {
     sessionID: session.sessionID,
     turnID,
@@ -855,6 +872,55 @@ function appendSessionHistory(session, { transcript, assistantText }) {
   if (session.history.length > 12) {
     session.history = session.history.slice(-12);
   }
+}
+
+function maybeEndIdleHTTPSession(session, { recordEvent = () => {} } = {}) {
+  if (session.state !== "listening" || !session.idleTimeoutMs || session.activeGenerations.size > 0) {
+    return false;
+  }
+  if (Date.now() - Number(session.lastActivityAt || 0) < session.idleTimeoutMs) {
+    return false;
+  }
+  endHTTPSession(session, { reason: "idle_timeout", recordEvent });
+  return true;
+}
+
+function endHTTPSession(session, {
+  reason,
+  turnID = "",
+  generationID = "",
+  recordEvent = () => {}
+} = {}) {
+  if (session.state === "ended") {
+    return false;
+  }
+  const endedReason = reason || "client_end";
+  session.state = "ended";
+  session.endedReason = endedReason;
+  session.lastActivityAt = Date.now();
+  session.activeGenerations.clear();
+  pushSessionEvent(session, {
+    type: "session_end",
+    sessionID: session.sessionID,
+    turnID,
+    generationID,
+    reason: endedReason
+  });
+  recordEvent("http_session_end", {
+    sessionID: session.sessionID,
+    turnID,
+    generationID,
+    reason: endedReason
+  });
+  return true;
+}
+
+function isGoodbyeTranscript(transcript) {
+  const text = String(transcript || "").trim();
+  if (!text) {
+    return false;
+  }
+  return /(拜拜|再见|不聊了|先这样|结束(对话|会话)?|bye|goodbye)/i.test(text);
 }
 
 function pushAssistantSegment(session, { turnID, generationID, segment, text, audioChunks }) {
@@ -1287,6 +1353,11 @@ function sendJSON(response, statusCode, body) {
     "Cache-Control": "no-store"
   });
   response.end(JSON.stringify(body));
+}
+
+function envNumber(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
 }
 
 async function readRequestBody(request) {

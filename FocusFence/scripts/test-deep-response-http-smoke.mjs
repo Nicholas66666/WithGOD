@@ -21,6 +21,8 @@ export function parseHTTPSmokeArgs(argv) {
     pollMs: 50,
     timeoutMs: 90_000,
     observeMs: 3_000,
+    idleTimeoutMs: 150,
+    idleObserveMs: 2_000,
     maxStopToFirstAudioMs: 3_000,
     retries: 2,
     pipelineMode: "",
@@ -52,6 +54,12 @@ export function parseHTTPSmokeArgs(argv) {
       index += 1;
     } else if (arg === "--observe-ms") {
       args.observeMs = Number(argv[index + 1] || args.observeMs);
+      index += 1;
+    } else if (arg === "--idle-timeout-ms") {
+      args.idleTimeoutMs = Number(argv[index + 1] || args.idleTimeoutMs);
+      index += 1;
+    } else if (arg === "--idle-observe-ms") {
+      args.idleObserveMs = Number(argv[index + 1] || args.idleObserveMs);
       index += 1;
     } else if (arg === "--max-stop-to-first-audio-ms") {
       args.maxStopToFirstAudioMs = Number(argv[index + 1] || args.maxStopToFirstAudioMs);
@@ -111,6 +119,15 @@ export async function runHTTPSmokeProbe(args) {
     attempts: args.retries + 1,
     label: "abort"
   });
+  const idle = await withRetries(() => runHTTPIdleProbe({
+    endpoint: args.endpoint,
+    idleTimeoutMs: args.idleTimeoutMs,
+    idleObserveMs: args.idleObserveMs,
+    pollMs: args.pollMs
+  }), {
+    attempts: args.retries + 1,
+    label: "idle"
+  });
 
   const turnFailures = conversation.turns.filter((turn) => {
     return !turn.transcript
@@ -122,11 +139,12 @@ export async function runHTTPSmokeProbe(args) {
   });
 
   return {
-    ok: health.ok && conversation.ok && abort.ok && turnFailures.length === 0,
+    ok: health.ok && conversation.ok && abort.ok && idle.ok && turnFailures.length === 0,
     endpoint: args.endpoint,
     thresholds: {
       maxStopToFirstAudioMs: args.maxStopToFirstAudioMs,
-      pipelineMode: args.pipelineMode
+      pipelineMode: args.pipelineMode,
+      idleTimeoutMs: args.idleTimeoutMs
     },
     health,
     conversation: {
@@ -153,6 +171,7 @@ export async function runHTTPSmokeProbe(args) {
       staleAudioBytes: abort.staleAudioBytes,
       eventTypes: abort.eventTypes
     },
+    idle,
     failures: turnFailures.map((turn) => ({
       turnID: turn.turnID,
       stopToFirstAudioMs: turn.stopToFirstAudioMs,
@@ -161,6 +180,50 @@ export async function runHTTPSmokeProbe(args) {
       audioChunks: turn.audioChunks,
       audioByteLength: turn.audioByteLength
     }))
+  };
+}
+
+export async function runHTTPIdleProbe({ endpoint, idleTimeoutMs = 150, idleObserveMs = 2_000, pollMs = 50 }) {
+  const created = await postJSON(buildURL(endpoint, "/deep-response/sessions"), {
+    sampleRate: 16_000,
+    idleTimeoutMs
+  });
+  const basePath = `/deep-response/sessions/${encodeURIComponent(created.sessionID)}`;
+  let eventCursor = 0;
+  const events = [];
+  const startedAt = performance.now();
+  while (performance.now() - startedAt < idleObserveMs) {
+    const eventBatch = await fetchJSON(buildURL(endpoint, `${basePath}/events?cursor=${eventCursor}`));
+    eventCursor = eventBatch.nextCursor;
+    events.push(...eventBatch.events);
+    if (events.some((event) => event.type === "session_end" && event.reason === "idle_timeout")) {
+      break;
+    }
+    await sleep(pollMs);
+  }
+
+  const rejected = await fetch(buildURL(endpoint, `${basePath}/audio?turn_id=turn-after-idle&seq=0`), {
+    method: "POST",
+    headers: { "Content-Type": "application/octet-stream" },
+    body: Buffer.from("late")
+  });
+  let rejectedBody = null;
+  try {
+    rejectedBody = await rejected.json();
+  } catch {
+    rejectedBody = await rejected.text();
+  }
+
+  const sawIdleEnd = events.some((event) => event.type === "session_end" && event.reason === "idle_timeout");
+  return {
+    ok: sawIdleEnd && rejected.status === 409 && rejectedBody?.error === "session_ended",
+    sessionID: created.sessionID,
+    elapsedMs: Math.round(performance.now() - startedAt),
+    idleTimeoutMs,
+    rejectedStatus: rejected.status,
+    rejectedBody,
+    eventTypes: events.map((event) => event.type),
+    endReason: events.find((event) => event.type === "session_end")?.reason || ""
   };
 }
 
@@ -217,6 +280,8 @@ Options:
   --poll-ms <ms>                   Poll interval for events/audio. Default: 50
   --timeout-ms <ms>                Conversation timeout. Default: 90000
   --observe-ms <ms>                Abort stale-audio observation window. Default: 3000
+  --idle-timeout-ms <ms>           Idle timeout used by the self-test session. Default: 150
+  --idle-observe-ms <ms>           How long to wait for idle timeout. Default: 2000
   --max-stop-to-first-audio-ms <ms>
                                    Fail if any turn exceeds this stop-to-first-audio budget. Default: 3000
   --retries <n>                    Retry each top-level probe after transient network failures. Default: 2

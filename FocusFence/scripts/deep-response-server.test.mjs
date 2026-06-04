@@ -848,6 +848,81 @@ test("DeepResponse HTTP session supports multiple turns and explicit end", async
   }
 });
 
+test("DeepResponse HTTP session ends automatically after goodbye intent", async () => {
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async *streamSegmented() {
+        yield { type: "transcript_final", transcript: "好了，拜拜" };
+        yield {
+          type: "segment",
+          segment: "first",
+          text: "愿你平安，我们下次再聊。",
+          audioChunks: [Buffer.from("goodbye-audio")]
+        };
+        yield { type: "timing", timing: {}, providerMeta: {} };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {});
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+    await postBytes(`${base}/audio?turn_id=turn-goodbye&seq=0`, Buffer.from("bye"));
+    await postJSON(`${base}/input-stop`, { turnID: "turn-goodbye" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "session_end" && event.reason === "user_goodbye_intent");
+    });
+
+    const rejected = await fetch(`${base}/audio?turn_id=turn-after-goodbye&seq=0`, {
+      method: "POST",
+      headers: { "Content-Type": "application/octet-stream" },
+      body: Buffer.from("late")
+    });
+    assert.equal(rejected.status, 409);
+    const body = await rejected.json();
+    assert.equal(body.error, "session_ended");
+  } finally {
+    await server.close();
+  }
+});
+
+test("DeepResponse HTTP session emits idle timeout end without user-operated Watch input", async () => {
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {
+      idleTimeoutMs: 20
+    });
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "session_end" && event.reason === "idle_timeout");
+    }, { timeoutMs: 1_000, intervalMs: 25 });
+
+    const rejected = await fetch(`${base}/audio?turn_id=turn-after-idle&seq=0`, {
+      method: "POST",
+      headers: { "Content-Type": "application/octet-stream" },
+      body: Buffer.from("late")
+    });
+    assert.equal(rejected.status, 409);
+    const body = await rejected.json();
+    assert.equal(body.error, "session_ended");
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse HTTP session passes prior turns as LLM context", async () => {
   const seenContexts = [];
   const server = await startDeepResponseServer({
