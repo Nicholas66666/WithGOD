@@ -1,0 +1,1491 @@
+{
+  "generated_at": "2026-05-31T05:11:47.092Z",
+  "candidates": [
+    {
+      "provider": "ark",
+      "model": "doubao-seed-character-251128",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 601,
+        "first_token_p90": 601,
+        "first_phrase_p50": 771,
+        "first_phrase_p90": 771,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 67,
+      "rejection_reasons": [
+        "first_token_latency"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-1-6-flash-250615",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 1030,
+        "first_token_p90": 1030,
+        "first_phrase_p50": 1085,
+        "first_phrase_p90": 1085,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 60,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-1-5-pro-32k-character-250715",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 998,
+        "first_token_p90": 998,
+        "first_phrase_p50": 1146,
+        "first_phrase_p90": 1146,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 59,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-1-5-pro-32k-250115",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 915,
+        "first_token_p90": 915,
+        "first_phrase_p50": 1444,
+        "first_phrase_p90": 1444,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 53,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-2-0-lite-260215",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 1
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-2-0-pro-260215",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 1
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-1-5-lite-32k-250115",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-1-5-vision-pro-32k-250115",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-1-6-250615",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 4228,
+        "first_token_p90": 4228,
+        "first_phrase_p50": 4405,
+        "first_phrase_p90": 4405,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-1-6-vision-250815",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-1-6-flash-250828",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 1703,
+        "first_token_p90": 1703,
+        "first_phrase_p50": 1763,
+        "first_phrase_p90": 1763,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "glm-4-5-air-20250728",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "qwen3-8b-20250429",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "qwen3-32b-20250429",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "qwen2-5-72b-20240919",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-translation-250915",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-smart-router-250928",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-1-6-251015",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 1
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-code-preview-251028",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "qwen3-0-6b-20250429",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "qwen3-14b-20250429",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "deepseek-v3-2-251201",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 1713,
+        "first_token_p90": 1713,
+        "first_phrase_p50": 2124,
+        "first_phrase_p90": 2124,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "glm-4-7-251222",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 1
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-1-8-251228",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 1
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-2-0-mini-260215",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 4431,
+        "first_token_p90": 4431,
+        "first_phrase_p50": 4467,
+        "first_phrase_p90": 4467,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-2-0-code-preview-260215",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 1
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-2-0-mini-260428",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 2953,
+        "first_token_p90": 2953,
+        "first_phrase_p50": 2981,
+        "first_phrase_p90": 2981,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-2-0-lite-260428",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 1
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "deepseek-v4-pro-260425",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 1
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "deepseek-v4-flash-260425",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 2656,
+        "first_token_p90": 2656,
+        "first_phrase_p50": 2820,
+        "first_phrase_p90": 2820,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency"
+      ]
+    }
+  ],
+  "rejected_models": [
+    {
+      "provider": "ark",
+      "model": "doubao-seed-character-251128",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 601,
+        "first_token_p90": 601,
+        "first_phrase_p50": 771,
+        "first_phrase_p90": 771,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 67,
+      "rejection_reasons": [
+        "first_token_latency"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-1-6-flash-250615",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 1030,
+        "first_token_p90": 1030,
+        "first_phrase_p50": 1085,
+        "first_phrase_p90": 1085,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 60,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-1-5-pro-32k-character-250715",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 998,
+        "first_token_p90": 998,
+        "first_phrase_p50": 1146,
+        "first_phrase_p90": 1146,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 59,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-1-5-pro-32k-250115",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 915,
+        "first_token_p90": 915,
+        "first_phrase_p50": 1444,
+        "first_phrase_p90": 1444,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 53,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-2-0-lite-260215",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 1
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-2-0-pro-260215",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 1
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-1-5-lite-32k-250115",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-1-5-vision-pro-32k-250115",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-1-6-250615",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 4228,
+        "first_token_p90": 4228,
+        "first_phrase_p50": 4405,
+        "first_phrase_p90": 4405,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-1-6-vision-250815",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-1-6-flash-250828",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 1703,
+        "first_token_p90": 1703,
+        "first_phrase_p50": 1763,
+        "first_phrase_p90": 1763,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "glm-4-5-air-20250728",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "qwen3-8b-20250429",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "qwen3-32b-20250429",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "qwen2-5-72b-20240919",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-translation-250915",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-smart-router-250928",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-1-6-251015",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 1
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-code-preview-251028",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "qwen3-0-6b-20250429",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "qwen3-14b-20250429",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "deepseek-v3-2-251201",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 1713,
+        "first_token_p90": 1713,
+        "first_phrase_p50": 2124,
+        "first_phrase_p90": 2124,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "glm-4-7-251222",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 1
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-1-8-251228",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 1
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-2-0-mini-260215",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 4431,
+        "first_token_p90": 4431,
+        "first_phrase_p50": 4467,
+        "first_phrase_p90": 4467,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-2-0-code-preview-260215",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 1
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-2-0-mini-260428",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 2953,
+        "first_token_p90": 2953,
+        "first_phrase_p50": 2981,
+        "first_phrase_p90": 2981,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-2-0-lite-260428",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 1
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "deepseek-v4-pro-260425",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 1,
+        "stream_error_count": 1,
+        "timeout_count": 1
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "deepseek-v4-flash-260425",
+      "prompt_variant": "A",
+      "sample_count": 1,
+      "gates": {
+        "first_token_p50": 2656,
+        "first_token_p90": 2656,
+        "first_phrase_p50": 2820,
+        "first_phrase_p90": 2820,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency"
+      ]
+    }
+  ],
+  "recommendation": {
+    "primary_model": "",
+    "primary_provider": "",
+    "fallback_model": "",
+    "fallback_provider": "",
+    "best_prompt_variant": "",
+    "known_risks": [
+      "No first-round Ark candidate passed hard gates."
+    ]
+  }
+}

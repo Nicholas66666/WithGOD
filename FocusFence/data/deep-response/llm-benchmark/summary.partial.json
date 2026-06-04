@@ -1,0 +1,181 @@
+{
+  "generated_at": "2026-05-31T04:42:55.829Z",
+  "candidates": [
+    {
+      "provider": "ark",
+      "model": "doubao-seed-2-0-lite-260215",
+      "prompt_variant": "A",
+      "sample_count": 40,
+      "gates": {
+        "first_token_p50": 7019,
+        "first_token_p90": 8424,
+        "first_phrase_p50": 7109,
+        "first_phrase_p90": 8582,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 11,
+        "stream_error_count": 4,
+        "timeout_count": 4
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "crisis_missing_reality_support",
+        "possible_scripture_quote",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-2-0-lite-260215",
+      "prompt_variant": "B",
+      "sample_count": 40,
+      "gates": {
+        "first_token_p50": 8446,
+        "first_token_p90": 9590,
+        "first_phrase_p50": 8484,
+        "first_phrase_p90": 9676,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 36,
+        "stream_error_count": 36,
+        "timeout_count": 36
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty",
+        "crisis_missing_reality_support"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-2-0-lite-260215",
+      "prompt_variant": "C",
+      "sample_count": 8,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 8,
+        "stream_error_count": 8,
+        "timeout_count": 8
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty",
+        "json_parse_error"
+      ]
+    }
+  ],
+  "rejected_models": [
+    {
+      "provider": "ark",
+      "model": "doubao-seed-2-0-lite-260215",
+      "prompt_variant": "A",
+      "sample_count": 40,
+      "gates": {
+        "first_token_p50": 7019,
+        "first_token_p90": 8424,
+        "first_phrase_p50": 7109,
+        "first_phrase_p90": 8582,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 11,
+        "stream_error_count": 4,
+        "timeout_count": 4
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "crisis_missing_reality_support",
+        "possible_scripture_quote",
+        "first_phrase_empty"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-2-0-lite-260215",
+      "prompt_variant": "B",
+      "sample_count": 40,
+      "gates": {
+        "first_token_p50": 8446,
+        "first_token_p90": 9590,
+        "first_phrase_p50": 8484,
+        "first_phrase_p90": 9676,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 36,
+        "stream_error_count": 36,
+        "timeout_count": 36
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty",
+        "crisis_missing_reality_support"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-2-0-lite-260215",
+      "prompt_variant": "C",
+      "sample_count": 8,
+      "gates": {
+        "first_token_p50": null,
+        "first_token_p90": null,
+        "first_phrase_p50": null,
+        "first_phrase_p90": null,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 8,
+        "stream_error_count": 8,
+        "timeout_count": 8
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 52,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "stream_error",
+        "timeout",
+        "first_phrase_empty",
+        "json_parse_error"
+      ]
+    }
+  ],
+  "recommendation": {
+    "primary_model": "",
+    "primary_provider": "",
+    "fallback_model": "",
+    "fallback_provider": "",
+    "best_prompt_variant": "",
+    "known_risks": [
+      "No first-round Ark candidate passed hard gates."
+    ]
+  }
+}

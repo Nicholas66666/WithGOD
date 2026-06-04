@@ -1,0 +1,26 @@
+[
+  {
+    "provider": "ark",
+    "model": "doubao-seed-2-0-lite-260215",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODEL",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 10000,
+    "retryPolicy": { "retries": 0, "retryOn": [] },
+    "temperature": 0.3,
+    "maxTokens": 220
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-seed-2-0-pro-260215",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_FALLBACK_MODEL",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 10000,
+    "retryPolicy": { "retries": 0, "retryOn": [] },
+    "temperature": 0.3,
+    "maxTokens": 220
+  }
+]

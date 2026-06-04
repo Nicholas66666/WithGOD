@@ -22,6 +22,39 @@ test("parseBenchmarkArgs accepts replay interval", () => {
   });
 });
 
+test("parseBenchmarkArgs accepts LLM-only benchmark inputs", () => {
+  assert.deepEqual(parseBenchmarkArgs([
+    "--samples",
+    "data/samples.jsonl",
+    "--candidates",
+    "data/candidates.json",
+    "--out-dir",
+    "data/out",
+    "--runs",
+    "2",
+    "--prompt-variants",
+    "A,C",
+    "--models",
+    "doubao-lite",
+    "--sample-ids",
+    "anxiety-001,crisis-001"
+  ]), {
+    mode: "llm",
+    pcmPath: "",
+    contextPath: "",
+    outputAudioPath: "",
+    replayIntervalMs: 100,
+    samplesPath: "data/samples.jsonl",
+    candidatesPath: "data/candidates.json",
+    outDir: "data/out",
+    runs: 2,
+    promptVariants: ["A", "C"],
+    reviewResultsPath: "",
+    models: ["doubao-lite"],
+    sampleIDs: ["anxiety-001", "crisis-001"]
+  });
+});
+
 test("summarizeBenchmarkResult keeps provider timing and omits audio bytes", () => {
   const result = summarizeBenchmarkResult({
     transcript: "我很累",

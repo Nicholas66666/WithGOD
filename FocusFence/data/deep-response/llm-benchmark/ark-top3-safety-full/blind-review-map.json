@@ -1,0 +1,842 @@
+[
+  {
+    "review_id": "R000001",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "anxiety-001"
+  },
+  {
+    "review_id": "R000002",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "anxiety-002"
+  },
+  {
+    "review_id": "R000003",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "anxiety-003"
+  },
+  {
+    "review_id": "R000004",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "anxiety-004"
+  },
+  {
+    "review_id": "R000005",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "anxiety-005"
+  },
+  {
+    "review_id": "R000006",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "shame-001"
+  },
+  {
+    "review_id": "R000007",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "shame-002"
+  },
+  {
+    "review_id": "R000008",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "shame-003"
+  },
+  {
+    "review_id": "R000009",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "shame-004"
+  },
+  {
+    "review_id": "R000010",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "shame-005"
+  },
+  {
+    "review_id": "R000011",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "lonely-001"
+  },
+  {
+    "review_id": "R000012",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "lonely-002"
+  },
+  {
+    "review_id": "R000013",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "lonely-003"
+  },
+  {
+    "review_id": "R000014",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "lonely-004"
+  },
+  {
+    "review_id": "R000015",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "lonely-005"
+  },
+  {
+    "review_id": "R000016",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "trauma-001"
+  },
+  {
+    "review_id": "R000017",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "trauma-002"
+  },
+  {
+    "review_id": "R000018",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "trauma-003"
+  },
+  {
+    "review_id": "R000019",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "trauma-004"
+  },
+  {
+    "review_id": "R000020",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "trauma-005"
+  },
+  {
+    "review_id": "R000021",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "prayer-001"
+  },
+  {
+    "review_id": "R000022",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "prayer-002"
+  },
+  {
+    "review_id": "R000023",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "prayer-003"
+  },
+  {
+    "review_id": "R000024",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "prayer-004"
+  },
+  {
+    "review_id": "R000025",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "prayer-005"
+  },
+  {
+    "review_id": "R000026",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "theology-001"
+  },
+  {
+    "review_id": "R000027",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "theology-002"
+  },
+  {
+    "review_id": "R000028",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "theology-003"
+  },
+  {
+    "review_id": "R000029",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "theology-004"
+  },
+  {
+    "review_id": "R000030",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "theology-005"
+  },
+  {
+    "review_id": "R000031",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "crisis-001"
+  },
+  {
+    "review_id": "R000032",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "crisis-002"
+  },
+  {
+    "review_id": "R000033",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "crisis-003"
+  },
+  {
+    "review_id": "R000034",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "crisis-004"
+  },
+  {
+    "review_id": "R000035",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "crisis-005"
+  },
+  {
+    "review_id": "R000036",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "crisis-006"
+  },
+  {
+    "review_id": "R000037",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000038",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "ordinary-002"
+  },
+  {
+    "review_id": "R000039",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "ordinary-003"
+  },
+  {
+    "review_id": "R000040",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "S",
+    "sample_id": "ordinary-004"
+  },
+  {
+    "review_id": "R000041",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "anxiety-001"
+  },
+  {
+    "review_id": "R000042",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "anxiety-002"
+  },
+  {
+    "review_id": "R000043",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "anxiety-003"
+  },
+  {
+    "review_id": "R000044",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "anxiety-004"
+  },
+  {
+    "review_id": "R000045",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "anxiety-005"
+  },
+  {
+    "review_id": "R000046",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "shame-001"
+  },
+  {
+    "review_id": "R000047",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "shame-002"
+  },
+  {
+    "review_id": "R000048",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "shame-003"
+  },
+  {
+    "review_id": "R000049",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "shame-004"
+  },
+  {
+    "review_id": "R000050",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "shame-005"
+  },
+  {
+    "review_id": "R000051",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "lonely-001"
+  },
+  {
+    "review_id": "R000052",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "lonely-002"
+  },
+  {
+    "review_id": "R000053",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "lonely-003"
+  },
+  {
+    "review_id": "R000054",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "lonely-004"
+  },
+  {
+    "review_id": "R000055",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "lonely-005"
+  },
+  {
+    "review_id": "R000056",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "trauma-001"
+  },
+  {
+    "review_id": "R000057",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "trauma-002"
+  },
+  {
+    "review_id": "R000058",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "trauma-003"
+  },
+  {
+    "review_id": "R000059",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "trauma-004"
+  },
+  {
+    "review_id": "R000060",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "trauma-005"
+  },
+  {
+    "review_id": "R000061",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "prayer-001"
+  },
+  {
+    "review_id": "R000062",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "prayer-002"
+  },
+  {
+    "review_id": "R000063",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "prayer-003"
+  },
+  {
+    "review_id": "R000064",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "prayer-004"
+  },
+  {
+    "review_id": "R000065",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "prayer-005"
+  },
+  {
+    "review_id": "R000066",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "theology-001"
+  },
+  {
+    "review_id": "R000067",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "theology-002"
+  },
+  {
+    "review_id": "R000068",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "theology-003"
+  },
+  {
+    "review_id": "R000069",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "theology-004"
+  },
+  {
+    "review_id": "R000070",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "theology-005"
+  },
+  {
+    "review_id": "R000071",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "crisis-001"
+  },
+  {
+    "review_id": "R000072",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "crisis-002"
+  },
+  {
+    "review_id": "R000073",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "crisis-003"
+  },
+  {
+    "review_id": "R000074",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "crisis-004"
+  },
+  {
+    "review_id": "R000075",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "crisis-005"
+  },
+  {
+    "review_id": "R000076",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "crisis-006"
+  },
+  {
+    "review_id": "R000077",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000078",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "ordinary-002"
+  },
+  {
+    "review_id": "R000079",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "ordinary-003"
+  },
+  {
+    "review_id": "R000080",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "S",
+    "sample_id": "ordinary-004"
+  },
+  {
+    "review_id": "R000081",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "anxiety-001"
+  },
+  {
+    "review_id": "R000082",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "anxiety-002"
+  },
+  {
+    "review_id": "R000083",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "anxiety-003"
+  },
+  {
+    "review_id": "R000084",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "anxiety-004"
+  },
+  {
+    "review_id": "R000085",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "anxiety-005"
+  },
+  {
+    "review_id": "R000086",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "shame-001"
+  },
+  {
+    "review_id": "R000087",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "shame-002"
+  },
+  {
+    "review_id": "R000088",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "shame-003"
+  },
+  {
+    "review_id": "R000089",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "shame-004"
+  },
+  {
+    "review_id": "R000090",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "shame-005"
+  },
+  {
+    "review_id": "R000091",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "lonely-001"
+  },
+  {
+    "review_id": "R000092",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "lonely-002"
+  },
+  {
+    "review_id": "R000093",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "lonely-003"
+  },
+  {
+    "review_id": "R000094",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "lonely-004"
+  },
+  {
+    "review_id": "R000095",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "lonely-005"
+  },
+  {
+    "review_id": "R000096",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "trauma-001"
+  },
+  {
+    "review_id": "R000097",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "trauma-002"
+  },
+  {
+    "review_id": "R000098",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "trauma-003"
+  },
+  {
+    "review_id": "R000099",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "trauma-004"
+  },
+  {
+    "review_id": "R000100",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "trauma-005"
+  },
+  {
+    "review_id": "R000101",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "prayer-001"
+  },
+  {
+    "review_id": "R000102",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "prayer-002"
+  },
+  {
+    "review_id": "R000103",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "prayer-003"
+  },
+  {
+    "review_id": "R000104",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "prayer-004"
+  },
+  {
+    "review_id": "R000105",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "prayer-005"
+  },
+  {
+    "review_id": "R000106",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "theology-001"
+  },
+  {
+    "review_id": "R000107",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "theology-002"
+  },
+  {
+    "review_id": "R000108",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "theology-003"
+  },
+  {
+    "review_id": "R000109",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "theology-004"
+  },
+  {
+    "review_id": "R000110",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "theology-005"
+  },
+  {
+    "review_id": "R000111",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "crisis-001"
+  },
+  {
+    "review_id": "R000112",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "crisis-002"
+  },
+  {
+    "review_id": "R000113",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "crisis-003"
+  },
+  {
+    "review_id": "R000114",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "crisis-004"
+  },
+  {
+    "review_id": "R000115",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "crisis-005"
+  },
+  {
+    "review_id": "R000116",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "crisis-006"
+  },
+  {
+    "review_id": "R000117",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000118",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "ordinary-002"
+  },
+  {
+    "review_id": "R000119",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "ordinary-003"
+  },
+  {
+    "review_id": "R000120",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "S",
+    "sample_id": "ordinary-004"
+  }
+]

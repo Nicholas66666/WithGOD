@@ -1,0 +1,148 @@
+{
+  "generated_at": "2026-05-31T05:21:08.528Z",
+  "candidates": [
+    {
+      "provider": "ark",
+      "model": "doubao-seed-character-251128",
+      "prompt_variant": "S",
+      "sample_count": 40,
+      "gates": {
+        "first_token_p50": 428,
+        "first_token_p90": 643,
+        "first_phrase_p50": 725,
+        "first_phrase_p90": 866,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 0,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": true,
+      "score": 68,
+      "rejection_reasons": []
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-1-5-pro-32k-character-250715",
+      "prompt_variant": "S",
+      "sample_count": 40,
+      "gates": {
+        "first_token_p50": 602,
+        "first_token_p90": 762,
+        "first_phrase_p50": 782,
+        "first_phrase_p90": 956,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 2,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 66,
+      "rejection_reasons": [
+        "first_token_latency",
+        "high_risk_expression",
+        "possible_scripture_quote",
+        "crisis_missing_reality_support"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-1-6-flash-250615",
+      "prompt_variant": "S",
+      "sample_count": 40,
+      "gates": {
+        "first_token_p50": 848,
+        "first_token_p90": 1433,
+        "first_phrase_p50": 939,
+        "first_phrase_p90": 1469,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 2,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 63,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "crisis_missing_reality_support"
+      ]
+    }
+  ],
+  "rejected_models": [
+    {
+      "provider": "ark",
+      "model": "doubao-1-5-pro-32k-character-250715",
+      "prompt_variant": "S",
+      "sample_count": 40,
+      "gates": {
+        "first_token_p50": 602,
+        "first_token_p90": 762,
+        "first_phrase_p50": 782,
+        "first_phrase_p90": 956,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 2,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 66,
+      "rejection_reasons": [
+        "first_token_latency",
+        "high_risk_expression",
+        "possible_scripture_quote",
+        "crisis_missing_reality_support"
+      ]
+    },
+    {
+      "provider": "ark",
+      "model": "doubao-seed-1-6-flash-250615",
+      "prompt_variant": "S",
+      "sample_count": 40,
+      "gates": {
+        "first_token_p50": 848,
+        "first_token_p90": 1433,
+        "first_phrase_p50": 939,
+        "first_phrase_p90": 1469,
+        "first_phrase_overlong_rate": 0,
+        "failed_count": 2,
+        "stream_error_count": 0,
+        "timeout_count": 0
+      },
+      "manual": {},
+      "hard_gate_pass": false,
+      "score": 63,
+      "rejection_reasons": [
+        "first_token_latency",
+        "first_phrase_latency",
+        "crisis_missing_reality_support"
+      ]
+    }
+  ],
+  "recommendation": {
+    "primary_model": "doubao-seed-character-251128",
+    "primary_provider": "ark",
+    "fallback_model": "",
+    "fallback_provider": "",
+    "best_prompt_variant": "S",
+    "known_risks": []
+  },
+  "end_to_end_retest": {
+    "fixture": "/private/tmp/deep-response-llm-benchmark-fixture.pcm",
+    "model": "doubao-seed-character-251128",
+    "transcript": "我现在真的很害怕，也不知道神是",
+    "firstPhrase": "害怕是很正常的情绪。",
+    "timing": {
+      "asr_final_ms": 1204,
+      "llm_first_token_ms": 506,
+      "llm_first_phrase_ms": 715,
+      "tts_first_audio_ms": 422,
+      "first_playable_audio_ms": 422,
+      "voice_pipeline_total_ms": 2731
+    },
+    "note": "ASR transcript was truncated; use this run as latency proof, not semantic-quality proof."
+  }
+}

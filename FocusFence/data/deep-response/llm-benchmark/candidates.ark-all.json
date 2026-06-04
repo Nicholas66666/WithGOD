@@ -1,0 +1,889 @@
+[
+  {
+    "provider": "ark",
+    "model": "doubao-1-5-lite-32k-250115",
+    "name": "doubao-1-5-lite-32k",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "LLM",
+      "task_type": [
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-250115",
+    "name": "doubao-1-5-pro-32k",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "LLM",
+      "task_type": [
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-1-5-vision-pro-32k-250115",
+    "name": "doubao-1-5-vision-pro-32k",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "VLM",
+      "task_type": [
+        "VisualQuestionAnswering"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text",
+          "image"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "name": "doubao-seed-1-6-flash",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "VLM",
+      "task_type": [
+        "VisualQuestionAnswering",
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-seed-1-6-250615",
+    "name": "doubao-seed-1-6",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "VLM",
+      "task_type": [
+        "VisualQuestionAnswering",
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "name": "doubao-1-5-pro-32k",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "LLM",
+      "task_type": [
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-seed-1-6-vision-250815",
+    "name": "doubao-seed-1-6-vision",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "VLM",
+      "task_type": [
+        "VisualQuestionAnswering",
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250828",
+    "name": "doubao-seed-1-6-flash",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "VLM",
+      "task_type": [
+        "VisualQuestionAnswering",
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "glm-4-5-air-20250728",
+    "name": "glm-4-5-air",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "",
+      "task_type": [],
+      "modalities": {}
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "qwen3-8b-20250429",
+    "name": "qwen3-8b",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "",
+      "task_type": [],
+      "modalities": {}
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "qwen3-32b-20250429",
+    "name": "qwen3-32b",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "",
+      "task_type": [],
+      "modalities": {}
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "qwen2-5-72b-20240919",
+    "name": "qwen2-5-72b",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "",
+      "task_type": [],
+      "modalities": {}
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-seed-translation-250915",
+    "name": "doubao-seed-translation",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "LLM",
+      "task_type": [
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-smart-router-250928",
+    "name": "doubao-smart-router",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "Router",
+      "task_type": [],
+      "modalities": {
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-seed-1-6-251015",
+    "name": "doubao-seed-1-6",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "VLM",
+      "task_type": [
+        "VisualQuestionAnswering",
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-seed-code-preview-251028",
+    "name": "doubao-seed-code",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "VLM",
+      "task_type": [
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "qwen3-0-6b-20250429",
+    "name": "qwen3-0-6b",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "",
+      "task_type": [],
+      "modalities": {}
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "qwen3-14b-20250429",
+    "name": "qwen3-14b",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "",
+      "task_type": [],
+      "modalities": {}
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "deepseek-v3-2-251201",
+    "name": "deepseek-v3-2",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "LLM",
+      "task_type": [
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "glm-4-7-251222",
+    "name": "glm-4-7",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "LLM",
+      "task_type": [
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-seed-1-8-251228",
+    "name": "doubao-seed-1-8",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "VLM",
+      "task_type": [
+        "VisualQuestionAnswering",
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "name": "doubao-seed-character",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "LLM",
+      "task_type": [
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-seed-2-0-lite-260215",
+    "name": "doubao-seed-2-0-lite",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "VLM",
+      "task_type": [
+        "VisualQuestionAnswering",
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-seed-2-0-mini-260215",
+    "name": "doubao-seed-2-0-mini",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "VLM",
+      "task_type": [
+        "VisualQuestionAnswering",
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-seed-2-0-pro-260215",
+    "name": "doubao-seed-2-0-pro",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "VLM",
+      "task_type": [
+        "VisualQuestionAnswering",
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-seed-2-0-code-preview-260215",
+    "name": "doubao-seed-2-0-code",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "VLM",
+      "task_type": [
+        "VisualQuestionAnswering",
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text",
+          "image",
+          "video"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-seed-2-0-mini-260428",
+    "name": "doubao-seed-2-0-mini",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "VLM",
+      "task_type": [
+        "VisualQuestionAnswering",
+        "TextGeneration",
+        "SpeechToText"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text",
+          "image",
+          "video",
+          "audio"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "doubao-seed-2-0-lite-260428",
+    "name": "doubao-seed-2-0-lite",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "VLM",
+      "task_type": [
+        "VisualQuestionAnswering",
+        "TextGeneration",
+        "SpeechToText"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text",
+          "image",
+          "video",
+          "audio"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "deepseek-v4-pro-260425",
+    "name": "deepseek-v4-pro",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "LLM",
+      "task_type": [
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  },
+  {
+    "provider": "ark",
+    "model": "deepseek-v4-flash-260425",
+    "name": "deepseek-v4-flash",
+    "baseURL": "https://ark.cn-beijing.volces.com/api/v3",
+    "source": "ARK_MODELS_API",
+    "streaming": true,
+    "authSource": "ARK_API_KEY",
+    "requestTimeoutMs": 5000,
+    "retryPolicy": {
+      "retries": 0,
+      "retryOn": []
+    },
+    "temperature": 0.3,
+    "maxTokens": 160,
+    "arkMeta": {
+      "domain": "LLM",
+      "task_type": [
+        "TextGeneration"
+      ],
+      "modalities": {
+        "input_modalities": [
+          "text"
+        ],
+        "output_modalities": [
+          "text"
+        ]
+      }
+    }
+  }
+]

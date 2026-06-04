@@ -11,3 +11,4 @@ supabase/.env.local
 supabase/.temp/
 xiaozhi-esp32-server/
 xiaozhi-esp32-server.zip
+data/deep-response/llm-benchmark/**/raw/

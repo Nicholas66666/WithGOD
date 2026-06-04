@@ -70,10 +70,10 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `147/147` passed.
+- Node self-tests: `148/148` passed.
 - Fire/Volcengine HTTP smoke: passed.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
-- Fire/Volcengine stop-to-first-audio: `221ms`, `224ms`.
+- Fire/Volcengine stop-to-first-audio: `236ms`, `221ms`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
@@ -84,6 +84,17 @@ Latest remote deployment note:
 - When that happens, use direct SSH file sync for changed files, restart `deep-response`, then run the remote source gate and smoke.
 - Latest remote source gate after cleanup: `node --test scripts/deep-response-integration-gate.test.mjs`: `5/5` passed on ECS.
 - Latest `/health`: `200`, `mode: provider`, `providerConfigured: true`.
+
+Latest LLM selection benchmark:
+
+- Benchmark harness: `scripts/deep-response-benchmark.mjs --samples ...`
+- Benchmark helper: `scripts/deep-response/lib/llm-benchmark.mjs`
+- Spec: `docs/superpowers/specs/2026-05-31-deep-response-llm-selection-benchmark-spec.md`
+- Results: `docs/deep-response-llm-benchmark-results.md`
+- Current provisional primary candidate: `doubao-seed-character-251128`, prompt variant `S`.
+- Initially configured Ark 2.0 models were rejected for realtime DeepResponse because first-token and first-phrase latency were far outside the voice target.
+- Latest one-row provider smoke against `doubao-seed-character-251128` recorded first token `506ms`, conservative first phrase `965ms`, and output passed automatic content checks. One-row smoke is only a CLI/provider-path check, not a model-selection conclusion.
+- This is a self-test/model-selection gate only; it does not introduce Watch WebSocket, user Watch testing, or product integration.
 
 ## Standard Commands
 
@@ -121,6 +132,18 @@ Provider credential check:
 
 ```bash
 npm run deep:provider:check
+```
+
+LLM model benchmark smoke:
+
+```bash
+npm run deep:provider:benchmark -- \
+  --samples data/deep-response/llm-benchmark/samples.jsonl \
+  --candidates data/deep-response/llm-benchmark/candidates.json \
+  --out-dir /tmp/deep-response-llm-smoke \
+  --models doubao-seed-character-251128 \
+  --sample-ids ordinary-001 \
+  --prompt-variants S
 ```
 
 ## Completed Capabilities

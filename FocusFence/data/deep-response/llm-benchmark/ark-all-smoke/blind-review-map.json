@@ -1,0 +1,212 @@
+[
+  {
+    "review_id": "R000001",
+    "provider": "ark",
+    "model": "doubao-seed-2-0-lite-260215",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000002",
+    "provider": "ark",
+    "model": "doubao-seed-2-0-pro-260215",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000003",
+    "provider": "ark",
+    "model": "doubao-1-5-lite-32k-250115",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000004",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-250115",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000005",
+    "provider": "ark",
+    "model": "doubao-1-5-vision-pro-32k-250115",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000006",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250615",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000007",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-250615",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000008",
+    "provider": "ark",
+    "model": "doubao-1-5-pro-32k-character-250715",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000009",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-vision-250815",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000010",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-flash-250828",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000011",
+    "provider": "ark",
+    "model": "glm-4-5-air-20250728",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000012",
+    "provider": "ark",
+    "model": "qwen3-8b-20250429",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000013",
+    "provider": "ark",
+    "model": "qwen3-32b-20250429",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000014",
+    "provider": "ark",
+    "model": "qwen2-5-72b-20240919",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000015",
+    "provider": "ark",
+    "model": "doubao-seed-translation-250915",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000016",
+    "provider": "ark",
+    "model": "doubao-smart-router-250928",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000017",
+    "provider": "ark",
+    "model": "doubao-seed-1-6-251015",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000018",
+    "provider": "ark",
+    "model": "doubao-seed-code-preview-251028",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000019",
+    "provider": "ark",
+    "model": "qwen3-0-6b-20250429",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000020",
+    "provider": "ark",
+    "model": "qwen3-14b-20250429",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000021",
+    "provider": "ark",
+    "model": "deepseek-v3-2-251201",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000022",
+    "provider": "ark",
+    "model": "glm-4-7-251222",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000023",
+    "provider": "ark",
+    "model": "doubao-seed-1-8-251228",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000024",
+    "provider": "ark",
+    "model": "doubao-seed-character-251128",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000025",
+    "provider": "ark",
+    "model": "doubao-seed-2-0-mini-260215",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000026",
+    "provider": "ark",
+    "model": "doubao-seed-2-0-code-preview-260215",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000027",
+    "provider": "ark",
+    "model": "doubao-seed-2-0-mini-260428",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000028",
+    "provider": "ark",
+    "model": "doubao-seed-2-0-lite-260428",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000029",
+    "provider": "ark",
+    "model": "deepseek-v4-pro-260425",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  },
+  {
+    "review_id": "R000030",
+    "provider": "ark",
+    "model": "deepseek-v4-flash-260425",
+    "prompt_variant": "A",
+    "sample_id": "ordinary-001"
+  }
+]
