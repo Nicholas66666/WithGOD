@@ -6,13 +6,6 @@ import { appendFile, readFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { inflateSync } from "node:zlib";
 
-import {
-  DEEP_RESPONSE_EVENTS,
-  encodeDeepResponseMessage,
-  isDeepResponseRealtimePath,
-  decodeDeepResponseMessage
-} from "./deep-response/protocol/deep-response-protocol.mjs";
-import { acceptWebSocketUpgrade } from "./deep-response/lib/server-websocket.mjs";
 import { loadDeepResponseEnv, requireDeepResponseCredentials } from "./deep-response/lib/env.mjs";
 import { DoubaoASRProvider } from "./deep-response/providers/doubao-asr.mjs";
 import { ArkLLMProvider } from "./deep-response/providers/ark-llm.mjs";
@@ -163,30 +156,6 @@ export async function startDeepResponseServer({
       return;
     }
     sendJSON(response, 404, { error: "not_found" });
-  });
-
-  server.on("upgrade", (request, socket) => {
-    const url = new URL(request.url || "/", `http://${request.headers.host || "localhost"}`);
-    recordEvent("upgrade", {
-      path: url.pathname,
-      remoteAddress: request.socket.remoteAddress || "unknown",
-      userAgent: request.headers["user-agent"] || "",
-      deepResponseClient: request.headers["x-deep-response-client"] || ""
-    });
-    if (log) {
-      console.log(`DeepResponse upgrade from ${request.socket.remoteAddress || "unknown"} path=${url.pathname}`);
-    }
-    if (!isDeepResponseRealtimePath(url.pathname)) {
-      recordEvent("upgrade_rejected", { path: url.pathname, reason: "path" });
-      socket.destroy();
-      return;
-    }
-    const ws = acceptWebSocketUpgrade(request, socket);
-    if (!ws) {
-      recordEvent("upgrade_rejected", { path: url.pathname, reason: "handshake" });
-      return;
-    }
-    handleRealtimeConnection(ws, { mode, env, createPipeline, audioReplayIntervalMs, log, recordEvent });
   });
 
   await new Promise((resolve) => server.listen(port, host, resolve));
@@ -1349,168 +1318,6 @@ function matchHTTPSessionRoute(pathname) {
   };
 }
 
-function handleRealtimeConnection(ws, { mode, env, createPipeline, audioReplayIntervalMs, log, recordEvent = () => {} }) {
-  recordEvent("realtime_connection", { mode });
-  if (log) {
-    console.log(`DeepResponse realtime connection mode=${mode}`);
-  }
-  if (mode === "echo") {
-    handleEchoConnection(ws, { log, recordEvent });
-    return;
-  }
-  if (mode === "provider") {
-    handleProviderConnection(ws, { env, createPipeline, audioReplayIntervalMs });
-    return;
-  }
-
-    ws.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.Error, {
-      code: "unsupported_mode",
-      message: `Unsupported DeepResponse mode: ${mode}`
-    }));
-    ws.close();
-}
-
-function handleEchoConnection(ws, { log, recordEvent = () => {} }) {
-  const startedAt = performance.now();
-  let turnID = 0;
-  let chunksIn = 0;
-  let chunksOut = 0;
-  let bargeIns = 0;
-
-  ws.onText = (text) => {
-    let message;
-    try {
-      message = decodeDeepResponseMessage(text);
-    } catch (error) {
-      ws.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.Error, {
-        code: "bad_message",
-        message: error instanceof Error ? error.message : String(error)
-      }));
-      return;
-    }
-
-    if (message.type === DEEP_RESPONSE_EVENTS.SessionStart) {
-      recordEvent("session_start", {
-        sampleRate: message.sampleRate || 16000
-      });
-      if (log) {
-        console.log(`DeepResponse session_start sampleRate=${message.sampleRate || 16000}`);
-      }
-      ws.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.SessionReady, {
-        sessionID: message.sessionID || "",
-        mode: "echo",
-        sampleRate: message.sampleRate || 16000
-      }));
-    } else if (message.type === DEEP_RESPONSE_EVENTS.BargeIn) {
-      turnID += 1;
-      bargeIns += 1;
-      recordEvent("barge_in", { turnID, bargeIns });
-      ws.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.AudioDone, {
-        reason: "barge_in",
-        turnID
-      }));
-    } else if (message.type === DEEP_RESPONSE_EVENTS.InputStop) {
-      recordEvent("input_stop", { chunksIn, chunksOut, bargeIns });
-      if (log) {
-        console.log(`DeepResponse input_stop chunks_in=${chunksIn} chunks_out=${chunksOut} barge_ins=${bargeIns}`);
-      }
-      ws.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.AudioDone, {
-        reason: "input_stop",
-        turnID
-      }));
-      ws.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.Timing, {
-        timing: {
-          voice_pipeline_total_ms: Math.round(performance.now() - startedAt),
-          chunks_in: chunksIn,
-          chunks_out: chunksOut,
-          barge_ins: bargeIns
-        }
-      }));
-    }
-  };
-
-  ws.onBinary = (chunk) => {
-    chunksIn += 1;
-    chunksOut += 1;
-    ws.sendBinary(chunk);
-  };
-}
-
-function handleProviderConnection(ws, { env, createPipeline, audioReplayIntervalMs }) {
-  let chunks = [];
-  let isRunning = false;
-  let sessionID = "";
-
-  ws.onText = (text) => {
-    let message;
-    try {
-      message = decodeDeepResponseMessage(text);
-    } catch (error) {
-      sendError(ws, "bad_message", error);
-      return;
-    }
-
-    if (message.type === DEEP_RESPONSE_EVENTS.SessionStart) {
-      sessionID = message.sessionID || "";
-      ws.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.SessionReady, {
-        sessionID,
-        mode: "provider",
-        sampleRate: message.sampleRate || 16000
-      }));
-    } else if (message.type === DEEP_RESPONSE_EVENTS.BargeIn) {
-      chunks = [];
-      ws.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.AudioDone, {
-        reason: "barge_in"
-      }));
-    } else if (message.type === DEEP_RESPONSE_EVENTS.InputStop && !isRunning) {
-      isRunning = true;
-      runProviderPipeline(ws, {
-        chunks,
-        env,
-        createPipeline,
-        audioReplayIntervalMs
-      }).finally(() => {
-        isRunning = false;
-        chunks = [];
-      });
-    }
-  };
-
-  ws.onBinary = (chunk) => {
-    if (!isRunning) {
-      chunks.push(Buffer.from(chunk));
-    }
-  };
-}
-
-async function runProviderPipeline(ws, { chunks, env, createPipeline, audioReplayIntervalMs }) {
-  try {
-    const pipeline = createPipeline ? createPipeline() : createDefaultPipeline(env);
-    const result = await pipeline.run({
-      audioChunks: replayChunks(chunks, audioReplayIntervalMs)
-    });
-    ws.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.TranscriptFinal, {
-      transcript: result.transcript
-    }));
-    ws.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.AssistantTextDelta, {
-      delta: result.firstPhrase || result.responseText || ""
-    }));
-    for (const chunk of result.audioChunks || []) {
-      ws.sendBinary(chunk);
-    }
-    ws.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.AudioDone, {
-      reason: "provider_complete",
-      audioByteLength: result.audioByteLength
-    }));
-    ws.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.Timing, {
-      timing: result.timing,
-      providerMeta: result.providerMeta
-    }));
-  } catch (error) {
-    sendError(ws, "provider_pipeline_failed", error);
-  }
-}
-
 async function handleHTTPTurn(request, response, { mode, env, createPipeline, audioReplayIntervalMs, recordEvent = () => {} }) {
   try {
     const body = await readRequestBody(request);
@@ -1712,13 +1519,6 @@ function createDefaultPipeline(env) {
     tts: new DoubaoTTSProvider({ env }),
     firstPhraseMode: env.DEEP_RESPONSE_FIRST_PHRASE_MODE || "llm"
   });
-}
-
-function sendError(ws, code, error) {
-  ws.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.Error, {
-    code,
-    message: error instanceof Error ? error.message : String(error)
-  }));
 }
 
 function sendJSON(response, statusCode, body) {

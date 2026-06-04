@@ -7,10 +7,15 @@ const gate = readFileSync("docs/superpowers/plans/2026-06-04-deep-response-integ
 const plan = readFileSync("docs/superpowers/plans/2026-05-31-deep-response-true-streaming.md", "utf8");
 const presenceWatchApp = readFileSync("Sources/PresenceWatchApp/PresenceWatchApp.swift", "utf8");
 const deepLabClient = readFileSync("Sources/DeepResponseWatchLab/DeepResponseRealtimeClient.swift", "utf8");
+const deepResponseServer = readFileSync("scripts/deep-response-server.mjs", "utf8");
 const quickResponseSourceRoots = ["Sources/PresenceWatchApp", "Sources/PresenceApp"];
 const forbiddenWatchWebSocketScriptFiles = [
   "scripts/watch-wss-echo-server.mjs",
-  "scripts/watch-wss-echo-server.test.mjs"
+  "scripts/watch-wss-echo-server.test.mjs",
+  "scripts/test-deep-response-echo.mjs",
+  "scripts/test-deep-response-echo.test.mjs",
+  "scripts/test-deep-response-realtime.mjs",
+  "scripts/test-deep-response-realtime.test.mjs"
 ];
 const forbiddenQuickResponsePatterns = [
   /DeepResponse/u,
@@ -44,11 +49,17 @@ test("DeepResponse integration gate scans all Quick Response app sources", () =>
   assert.deepEqual(failures, []);
 });
 
-test("DeepResponse self-test suite does not include Watch WebSocket echo spike files", () => {
+test("DeepResponse self-test suite does not include client-facing WebSocket spike files", () => {
   const trackedScriptFiles = collectSourceFiles(["scripts"]);
   const forbiddenPresent = forbiddenWatchWebSocketScriptFiles.filter((file) => trackedScriptFiles.includes(file));
 
   assert.deepEqual(forbiddenPresent, []);
+});
+
+test("DeepResponse server exposes HTTP session transport without client-facing WebSocket upgrade", () => {
+  assert.doesNotMatch(deepResponseServer, /acceptWebSocketUpgrade|server\.on\("upgrade"|handleRealtimeConnection/u);
+  assert.match(deepResponseServer, /handleHTTPSessionCreate/u);
+  assert.match(deepResponseServer, /handleHTTPSessionRoute/u);
 });
 
 function collectForbiddenQuickResponseReferences(roots, patterns) {

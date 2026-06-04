@@ -1285,14 +1285,37 @@ Latest HTTP-only development-surface cleanup:
   - Nested `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
 - Development remained self-test only; no user-operated Watch testing was required.
 
+Latest client-facing DeepResponse WebSocket server cleanup:
+- Removed the remaining client-facing DeepResponse WebSocket server surface:
+  - `server.on("upgrade", ...)` from `scripts/deep-response-server.mjs`
+  - `handleRealtimeConnection()`
+  - echo/provider WebSocket connection handlers
+  - `scripts/deep-response/lib/server-websocket.mjs`
+- Removed stale DeepResponse WebSocket CLI probes and tests:
+  - `scripts/test-deep-response-echo.mjs`
+  - `scripts/test-deep-response-echo.test.mjs`
+  - `scripts/test-deep-response-realtime.mjs`
+  - `scripts/test-deep-response-realtime.test.mjs`
+- Removed the legacy client-facing realtime protocol helper and test:
+  - `scripts/deep-response/protocol/deep-response-protocol.mjs`
+  - `scripts/deep-response/protocol/deep-response-protocol.test.mjs`
+- Updated server debug-events coverage to verify HTTP probe events instead of WebSocket upgrade/session-start events.
+- Strengthened the integration gate so the server must expose HTTP session transport without client-facing WebSocket upgrade handling.
+- Provider-internal WebSocket utilities remain available where required by Doubao ASR/TTS. This cleanup only removes the DeepResponse server/client transport branch.
+- Verification:
+  - RED `node --test scripts/deep-response-integration-gate.test.mjs` first failed on the four stale echo/realtime files and the server upgrade handler.
+  - `node --test scripts/deep-response-integration-gate.test.mjs scripts/deep-response-server.test.mjs`: `35/35` passed.
+  - `node --test scripts/deep-response-integration-gate.test.mjs scripts/deep-response-server.test.mjs scripts/package-scripts.test.mjs`: `39/39` passed.
+  - `npm run deep:selftest:full`: passed.
+  - Nested `npm run test:node`: `144/144` passed.
+  - Nested Fire/Volcengine smoke memory recall: `count: 3`, `store: jsonl`.
+  - Nested Fire/Volcengine smoke stop-to-first-audio: `218ms`, `206ms`.
+  - Nested Fire/Volcengine smoke abort stale audio chunks/bytes: `0` / `0`.
+  - Nested Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
+  - Nested `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
+- Development remained self-test only; no user-operated Watch testing was required.
+
 ## File Responsibilities
-
-- Modify `scripts/deep-response/protocol/deep-response-protocol.mjs`
-  - Own HTTP session event names for streaming.
-  - Add explicit turn/segment/generation fields where needed.
-
-- Modify `scripts/deep-response/protocol/deep-response-protocol.test.mjs`
-  - Validate event encoding/decoding and realtime URL construction.
 
 - Modify `scripts/deep-response/providers/doubao-asr.mjs`
   - Expose a streaming or progressive ASR interface when provider supports it.
@@ -1307,7 +1330,7 @@ Latest HTTP-only development-surface cleanup:
   - Preserve existing `synthesize()` for HTTP fallback and benchmarks.
 
 - Modify `scripts/deep-response/pipeline/voice-pipeline.mjs`
-  - Add a new `streamTurn()` async generator.
+  - Add/maintain `streamCascadeTurn()` async generator.
   - Emit transcript, first phrase, followup text, audio chunk, audio done, timing events progressively.
   - Preserve `run()` and `runSegmented()`.
 
@@ -1318,6 +1341,7 @@ Latest HTTP-only development-surface cleanup:
   - Add HTTP session streaming endpoints under `/deep-response/sessions`.
   - Keep `http-turn-v2` unchanged.
   - Add debug events for session start, audio chunk upload, event/audio delivery, first transcript, first phrase, first audio chunk, abort/end reason.
+  - Do not expose a client-facing WebSocket upgrade route for DeepResponse.
 
 - Modify `scripts/deep-response-server.test.mjs`
   - Test HTTP session server emits progressive messages/audio before full completion.

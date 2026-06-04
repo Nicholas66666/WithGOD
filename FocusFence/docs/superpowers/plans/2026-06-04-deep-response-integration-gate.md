@@ -13,6 +13,7 @@ This gate exists to prevent the DeepResponse Lab work from drifting into the sta
 - No WebSocket feasibility or fallback work is part of the integration path.
 - Standard package scripts must not expose Watch WSS echo or DeepResponse WebSocket development entrypoints.
 - The standard Node self-test suite must not include the old Watch WSS echo spike files.
+- The DeepResponse server must not expose a client-facing WebSocket upgrade route; HTTP sessions are the only Watch/server transport surface.
 - Product-experience spot check is optional and user-requested.
 
 ## Required Before Main App Entry
@@ -32,6 +33,7 @@ This gate exists to prevent the DeepResponse Lab work from drifting into the sta
 - Keep server/provider/memory work behind HTTP session endpoints.
 - Keep using self-tests, source tests, watchOS builds, and Fire/Volcengine smoke as phase gates.
 - Keep Watch-side transport validation on HTTP upload, long-poll events, and HTTP audio pull.
+- Keep provider-internal WebSocket code only where required by Doubao ASR/TTS; do not expose it as a Watch/server transport path.
 - Draft a later integration plan with exact feature flag name, rollback tag, and entry point only after explicit approval.
 
 ## Not Allowed Without Approval
@@ -41,4 +43,5 @@ This gate exists to prevent the DeepResponse Lab work from drifting into the sta
 - Change Quick Response recording, upload, response, or playback flow.
 - Introduce Watch WebSocket transport or fallback.
 - Reintroduce Watch WSS echo spike scripts into standard development or self-test entrypoints.
+- Reintroduce DeepResponse client-facing WebSocket upgrade, echo, or realtime test scripts.
 - Make iPhone part of the realtime chain.

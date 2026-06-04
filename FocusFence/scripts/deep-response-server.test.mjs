@@ -6,52 +6,7 @@ import { join } from "node:path";
 import { deflateSync } from "node:zlib";
 
 import { startDeepResponseServer } from "./deep-response-server.mjs";
-import { DEEP_RESPONSE_EVENTS, buildDeepResponseURL, encodeDeepResponseMessage } from "./deep-response/protocol/deep-response-protocol.mjs";
-import { RawWebSocketClient } from "./deep-response/lib/raw-websocket-client.mjs";
 import { VoicePipeline } from "./deep-response/pipeline/voice-pipeline.mjs";
-
-test("DeepResponse server echo mode streams audio and drops old audio after barge-in", async () => {
-  const server = await startDeepResponseServer({
-    port: 0,
-    host: "127.0.0.1",
-    mode: "echo",
-    log: false
-  });
-  const received = { messages: [], audio: [] };
-  let client = null;
-
-  try {
-    const url = buildDeepResponseURL(`http://127.0.0.1:${server.port}`);
-    client = await RawWebSocketClient.connect(url, {
-      "X-Deep-Response-Client": "node-test"
-    });
-    client.onText = (text) => received.messages.push(JSON.parse(text));
-    client.onBinary = (chunk) => received.audio.push(Buffer.from(chunk));
-
-    client.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.SessionStart, {
-      sessionID: "test-session",
-      sampleRate: 16000
-    }));
-    await waitFor(() => received.messages.some((message) => message.type === DEEP_RESPONSE_EVENTS.SessionReady));
-
-    client.sendBinary(Buffer.from("old-audio"));
-    await waitFor(() => received.audio.length === 1);
-
-    client.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.BargeIn));
-    client.sendBinary(Buffer.from("new-audio"));
-    await waitFor(() => received.audio.length === 2);
-
-    client.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.InputStop));
-    await waitFor(() => received.messages.some((message) => message.type === DEEP_RESPONSE_EVENTS.AudioDone));
-    await waitFor(() => received.messages.some((message) => message.type === DEEP_RESPONSE_EVENTS.Timing));
-
-    assert.deepEqual(received.audio.map((chunk) => chunk.toString("utf8")), ["old-audio", "new-audio"]);
-    assert(received.messages.some((message) => message.type === DEEP_RESPONSE_EVENTS.Timing));
-  } finally {
-    client?.close();
-    await server.close();
-  }
-});
 
 test("DeepResponse server exposes recent debug events for lab diagnosis", async () => {
   const server = await startDeepResponseServer({
@@ -60,30 +15,26 @@ test("DeepResponse server exposes recent debug events for lab diagnosis", async 
     mode: "echo",
     log: false
   });
-  let client = null;
 
   try {
     const health = await fetchJSON(`http://127.0.0.1:${server.port}/health`);
     assert.equal(health.ok, true);
-
-    const url = buildDeepResponseURL(`http://127.0.0.1:${server.port}`);
-    client = await RawWebSocketClient.connect(url, {
-      "X-Deep-Response-Client": "debug-test"
+    const probe = await fetch(`http://127.0.0.1:${server.port}/debug/http-probe`, {
+      method: "POST",
+      headers: {
+        "x-deep-response-client": "debug-test",
+        "content-type": "application/octet-stream"
+      },
+      body: Buffer.from("probe")
     });
-    client.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.SessionStart, {
-      sessionID: "debug-session",
-      sampleRate: 16000
-    }));
+    assert.equal(probe.status, 200);
 
     await waitFor(async () => {
       const debug = await fetchJSON(`http://127.0.0.1:${server.port}/debug/events`);
       return debug.events.some((event) => event.type === "health")
-        && debug.events.some((event) => event.type === "upgrade" && event.deepResponseClient === "debug-test")
-        && debug.events.some((event) => event.type === "realtime_connection")
-        && debug.events.some((event) => event.type === "session_start");
+        && debug.events.some((event) => event.type === "http_probe" && event.deepResponseClient === "debug-test");
     });
   } finally {
-    client?.close();
     await server.close();
   }
 });
@@ -1703,63 +1654,6 @@ test("DeepResponse server HTTP realtime turn echoes audio in echo mode", async (
     assert.equal(body.sampleRate, 16000);
     assert.equal(body.providerMeta.mode, "echo");
   } finally {
-    await server.close();
-  }
-});
-
-test("DeepResponse server provider mode runs pipeline and emits transcript text audio and timing", async () => {
-  const server = await startDeepResponseServer({
-    port: 0,
-    host: "127.0.0.1",
-    mode: "provider",
-    log: false,
-    audioReplayIntervalMs: 0,
-    createPipeline: () => ({
-      async run({ audioChunks }) {
-        const collected = [];
-        for await (const chunk of audioChunks) {
-          collected.push(chunk);
-        }
-        return {
-          transcript: `chunks:${collected.length}`,
-          responseText: "我在这里陪着你。",
-          firstPhrase: "我在这里陪着你。",
-          audioChunks: [Buffer.from("provider-audio")],
-          audioByteLength: Buffer.byteLength("provider-audio"),
-          timing: { voice_pipeline_total_ms: 123 },
-          providerMeta: { ttsMode: "mock" }
-        };
-      }
-    })
-  });
-  const received = { messages: [], audio: [] };
-  let client = null;
-
-  try {
-    const url = buildDeepResponseURL(`http://127.0.0.1:${server.port}`);
-    client = await RawWebSocketClient.connect(url, {
-      "X-Deep-Response-Client": "node-test"
-    });
-    client.onText = (text) => received.messages.push(JSON.parse(text));
-    client.onBinary = (chunk) => received.audio.push(Buffer.from(chunk));
-
-    client.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.SessionStart, {
-      sessionID: "provider-session",
-      sampleRate: 16000
-    }));
-    await waitFor(() => received.messages.some((message) => message.type === DEEP_RESPONSE_EVENTS.SessionReady));
-    client.sendBinary(Buffer.from("a"));
-    client.sendBinary(Buffer.from("b"));
-    client.sendText(encodeDeepResponseMessage(DEEP_RESPONSE_EVENTS.InputStop));
-
-    await waitFor(() => received.messages.some((message) => message.type === DEEP_RESPONSE_EVENTS.AudioDone));
-
-    assert(received.messages.some((message) => message.type === DEEP_RESPONSE_EVENTS.TranscriptFinal && message.transcript === "chunks:2"));
-    assert(received.messages.some((message) => message.type === DEEP_RESPONSE_EVENTS.AssistantTextDelta && message.delta === "我在这里陪着你。"));
-    assert.deepEqual(received.audio.map((chunk) => chunk.toString("utf8")), ["provider-audio"]);
-    assert(received.messages.some((message) => message.type === DEEP_RESPONSE_EVENTS.Timing && message.timing.voice_pipeline_total_ms === 123));
-  } finally {
-    client?.close();
     await server.close();
   }
 });
