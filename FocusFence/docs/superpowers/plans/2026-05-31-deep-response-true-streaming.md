@@ -8,9 +8,9 @@
 
 **Tech Stack:** watchOS SwiftUI, `URLSession` HTTP upload/download, SSE/chunked JSONL/short polling candidates, Node.js HTTP server, Doubao ASR provider, Ark LLM streaming, Doubao bidirectional TTS provider, Fire/Volcengine ECS deployment, Node test runner.
 
-**Testing policy:** This plan is self-test first. Do not use user-operated Watch tests as a normal development gate. Exhaust Node tests, provider fixtures, local HTTP harnesses, Fire/Volcengine remote smoke tests, source-level Watch checks, simulator autoruns where available, and watchOS builds before asking the user for anything. User involvement is reserved for rare final experience checks that cannot be simulated, and must be bundled into one clear checklist.
+**Testing policy:** This plan is self-test mode by default. Do not use user-operated Watch tests as a development gate. Exhaust Node tests, provider fixtures, local HTTP harnesses, Fire/Volcengine remote smoke tests, source-level Watch checks, simulator autoruns where available, and watchOS builds. User-operated Watch testing is not part of phase progression; it is only a product-experience spot check when the user explicitly asks for it.
 
-**2026-06-04 correction:** Do not spend implementation time on Watch WebSocket feasibility, fallback, or spike work. The Watch-side transport goal is HTTP only. Development should proceed in self-test mode by default; user-operated Watch testing is not a phase gate.
+**2026-06-04 correction:** Do not spend implementation time on Watch WebSocket feasibility, fallback, or spike work. The Watch-side transport goal is HTTP only. Development should proceed in self-test mode by default; user-operated Watch testing is not a phase gate or a required validation step.
 
 ---
 
@@ -89,7 +89,7 @@ Main latency goal:
 
 - Stop speaking to first playable audio: target `<= 1500ms`, stretch `<= 1000ms` on scripted Fire/Volcengine fixture.
 - Barge-in local stop: target `<= 200ms`; server stale audio after abort: `0`.
-- Optional final experience checks should only be requested after script/local/remote tests show the target is plausible.
+- Product-experience spot checks are not development gates and should only run when explicitly requested by the user.
 
 ## Full Streaming Implementation Units
 
@@ -356,7 +356,7 @@ Latest remote results:
 Status: completed for self-test gate. No user-operated Watch test was requested.
 
 Purpose:
-- Validate that the DeepLab Watch client is ready to consume cascade events/audio without UI or playback regressions, using source checks, builds, simulator autoruns where possible, and HTTP smoke tests before any human experience check.
+- Validate that the DeepLab Watch client is ready to consume cascade events/audio without UI or playback regressions, using source checks, builds, simulator autoruns where possible, and HTTP smoke tests before any product-experience spot check.
 
 Implementation:
 - Update Watch Lab only when event schema or cascade mode requires it.
@@ -373,9 +373,9 @@ xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration 
 npm run deep:http-smoke:test -- --endpoint http://124.174.96.149:8797 --pcm /private/tmp/deep-response-http-speed.pcm --turns 2 --chunk-ms 1000 --upload-sleep-ms 1000 --poll-ms 50 --timeout-ms 120000 --observe-ms 3000 --max-stop-to-first-audio-ms 3000 --retries 1 --pipeline-mode cascade
 ```
 
-Optional final experience check:
-- Only request if self-tests pass and the remaining question is real wrist playback/latency.
-- Bundle all requested observations into one checklist.
+Product-experience spot check:
+- Not a gate.
+- Only run if explicitly requested by the user after self-tests pass.
 
 Acceptance:
 - Source tests prove cascade mode and streaming delta accumulation.
@@ -406,7 +406,7 @@ Latest results:
 
 ### Milestone S5: Hands-Free Conversation Loop
 
-Status: partially complete. Server-side goodbye/idle lifecycle, remote smoke self-tests, Watch automatic return-to-listening source/build gate, local VAD/silence endpointing source/build gate, VAD fixture calibration, explicit Watch conversation state source gate, local 8-turn rolling-context/goodbye self-test, and remote 8-turn session-end probe are complete. Remaining work is deeper simulated hands-free audio-loop coverage if feasible without user-operated Watch testing.
+Status: complete for the self-test gate. Server-side goodbye/idle lifecycle, remote smoke self-tests, Watch automatic return-to-listening source/build gate, local VAD/silence endpointing source/build gate, VAD fixture calibration, explicit Watch conversation state source gate, simulator-only continuous HTTP fixture autorun source gate, local 8-turn rolling-context/goodbye self-test, and remote 8-turn session-end probe are complete.
 
 Purpose:
 - Move from manual press-to-talk turns toward Xiaozhi-style continuous conversation.
@@ -428,9 +428,9 @@ Self-test validation:
 - Script idle timeout and gentle goodbye.
 - Abort test still passes.
 
-Optional final experience check:
-- Only after script/simulator/build validation passes.
-- User completes 3-5 turns, interrupts once, and says goodbye if we need a real wrist perception check.
+Product-experience spot check:
+- Not a phase gate.
+- Only run if explicitly requested by the user after script/simulator/build validation passes.
 
 Acceptance:
 - Continuous conversation feels coherent.
@@ -454,6 +454,7 @@ Completed evidence:
 - Added local 8-turn HTTP session self-test covering rolling context, automatic goodbye-intent `session_end`, and late audio `409 session_ended`.
 - Extended the HTTP conversation probe with `--end-reason`, `--expect-session-end`, and `--expect-late-audio-409` for reusable remote session lifecycle validation.
 - Added Watch VAD calibration fixtures that parse the Swift threshold and verify digital silence / low room noise stay below threshold while quiet speech / normal speech exceed it.
+- Added simulator-only `DEEP_RESPONSE_AUTORUN_CONTINUOUS_FIXTURE` source gate that runs three HTTP fixture turns through the Watch client and ends in an explicit loop completion state.
 - Verified:
 
 ```bash
@@ -474,8 +475,8 @@ Latest results:
 - `scripts/deep-response/lib/watch-vad-calibration.test.mjs`: `3/3` passed.
 - `scripts/test-deep-response-http-conversation.test.mjs`: `3/3` passed.
 - `scripts/test-deep-response-http-smoke.test.mjs`: `2/2` passed.
-- `scripts/deep-response-watch-ui.test.mjs`: `11/11` passed.
-- `npm run test:node`: `121/121` passed.
+- `scripts/deep-response-watch-ui.test.mjs`: `12/12` passed.
+- `npm run test:node`: `122/122` passed.
 - `DeepResponseWatchLab` generic watchOS build: `BUILD SUCCEEDED`.
 - Fire/Volcengine deployment: remote `HEAD` at `5f3a0e3`, service `active`, health `200`.
 - Fire/Volcengine smoke: `ok: true`.
@@ -483,9 +484,6 @@ Latest results:
 - abort stale audio chunks/bytes: `0` / `0`.
 - idle session ended in `193ms` with reason `idle_timeout`; late audio upload returned `409 session_ended`.
 - Fire/Volcengine 8-turn conversation probe: `ok: true`, elapsed `41981ms`, `session_end` reason `user_goodbye`, late audio `409 session_ended`, per-turn stop-to-first audio roughly `2494ms` to `3121ms`.
-
-Remaining:
-- Deeper simulator-level audio-loop autorun if a reliable watchOS simulator audio path can be automated without user-operated Watch testing.
 
 ### Milestone S6: Memory/Summary And Product Integration Decision
 
@@ -537,7 +535,7 @@ The implementation must preserve these hard boundaries:
 
 ## Final Milestone Plan
 
-The earlier A-G list is consolidated into four milestones. The rule is: do not ask for user-operated Watch testing as a milestone gate. Exhaust script/local/Fire validation and automated Watch build/simulator checks first; only request a human experience check when it is uniquely useful.
+The earlier A-G list is consolidated into four milestones. The rule is: do not ask for user-operated Watch testing as a milestone gate. Exhaust script/local/Fire validation and automated Watch build/simulator checks. Product-experience spot checks are not part of phase progression.
 
 ### Milestone 1: Provider And Server Harness
 
@@ -573,7 +571,7 @@ Self-test validation:
 - `npm run deep:volc:deploy`
 - `npm run deep:http-session:test -- --endpoint http://124.174.96.149:8797`
 
-Optional final experience check:
+Product-experience spot check:
 - None.
 
 Gate:
@@ -607,13 +605,13 @@ Self-test validation:
 - Local mock server or Fire/Volcengine script verifies endpoints.
 - Source-level tests verify UI and transport behavior where possible.
 
-Optional final experience check:
-- Only if real wrist capture/playback perception cannot be answered by simulator/build/script evidence.
-- If requested, ask for chunks upload, event/audio pull, UI crowding, first audio, and fallback status in one checklist.
+Product-experience spot check:
+- Not a gate.
+- Only run if explicitly requested by the user after self-tests pass.
 
 ### Milestone 3: Continuous Conversation Runtime
 
-Status: partially complete.
+Status: complete for the self-test gate.
 
 Purpose:
 - Turn single HTTP session streaming into Xiaozhi-style multi-turn conversation.
@@ -644,8 +642,6 @@ Completed:
 
 Remaining:
 
-- Automatic return-to-listening loop on Watch.
-- VAD or silence detection to end user turn without manual tap.
 - A real gentle goodbye audio/text turn before idle close, if needed for the product feel.
 
 Expected effect:
@@ -661,10 +657,9 @@ Self-test validation:
 - Script tests cover idle goodbye.
 - Fire/Volcengine endpoint passes the same session tests.
 
-Optional final experience check only after self-tests pass:
-- User completes a short 3-5 turn conversation.
-- User verifies it does not reconnect each turn.
-- User verifies goodbye/idle ending feels natural enough for POC.
+Product-experience spot check:
+- Not a gate.
+- Only run if explicitly requested by the user after self-tests pass.
 
 ### Milestone 4: Barge-In And Product-Readiness Checkpoint
 
@@ -708,10 +703,9 @@ Self-test validation:
 - Fire/Volcengine script passes abort test.
 - Watch build and simulator/source checks are ready.
 
-Optional final experience check only after self-tests pass:
-- User tests interrupting while AI speaks.
-- User reports whether old audio stops immediately.
-- User reports whether new turn starts cleanly.
+Product-experience spot check:
+- Not a gate.
+- Only run if explicitly requested by the user after self-tests pass.
 
 Product gate:
 - Only after Milestone 4 do we discuss hidden entry or product integration.
@@ -833,7 +827,7 @@ Acceptance:
   - `xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-volc-build DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 build`
 
 - Watch install:
-  - Not a default gate. Install only when an explicitly requested final experience check is necessary.
+  - Not a default gate. Install only when the user explicitly requests a product-experience spot check.
 
 ## What Can Be Verified Without User
 
@@ -856,9 +850,9 @@ Acceptance:
 - Watch build validation.
 - Watch UI source-level regression checks.
 
-## Rare Final Experience Checks
+## Product-Experience Spot Checks
 
-Only ask the user after self-tests pass and the remaining question cannot be answered by scripts, simulator, or build output:
+Not a development gate. Only ask the user if the user explicitly requests a real wrist experience check after self-tests pass:
 
 - Real microphone permission and live mic capture.
 - Real speaker playback quality.

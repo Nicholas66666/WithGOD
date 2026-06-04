@@ -86,3 +86,12 @@ test("DeepResponse Watch continuous mode has explicit conversation state transit
   assert.match(debugViewSource, /conversationState = \.bargeIn/);
   assert.match(debugViewSource, /conversationState = \.ended/);
 });
+
+test("DeepResponse Watch simulator autoruns a continuous HTTP fixture loop", () => {
+  assert.match(debugViewSource, /DEEP_RESPONSE_AUTORUN_CONTINUOUS_FIXTURE/);
+  assert.match(debugViewSource, /runContinuousFixtureLoop\(turns: 3\)/);
+  assert.match(debugViewSource, /for turnIndex in 1\.\.\.turns/);
+  assert.match(debugViewSource, /await client\.runHTTPSessionFixtureTurn\(\)/);
+  assert.match(debugViewSource, /status = client\.lastError == nil \? "Loop fixture done" : "Loop fixture failed"/);
+  assert.match(debugViewSource, /conversationState = \.ended/);
+});

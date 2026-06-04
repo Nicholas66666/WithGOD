@@ -242,10 +242,15 @@ struct DeepResponseDebugView: View {
         #if targetEnvironment(simulator)
         guard !didRunAutorunFixture,
               ProcessInfo.processInfo.environment["DEEP_RESPONSE_AUTORUN_FIXTURE"] == "1"
-                || ProcessInfo.processInfo.environment["DEEP_RESPONSE_AUTORUN_ECHO"] == "1" else {
+                || ProcessInfo.processInfo.environment["DEEP_RESPONSE_AUTORUN_ECHO"] == "1"
+                || ProcessInfo.processInfo.environment["DEEP_RESPONSE_AUTORUN_CONTINUOUS_FIXTURE"] == "1" else {
             return
         }
         didRunAutorunFixture = true
+        if ProcessInfo.processInfo.environment["DEEP_RESPONSE_AUTORUN_CONTINUOUS_FIXTURE"] == "1" {
+            await runContinuousFixtureLoop(turns: 3)
+            return
+        }
         if ProcessInfo.processInfo.environment["DEEP_RESPONSE_AUTORUN_ECHO"] == "1" {
             status = "Echo fixture"
             await client.runHTTPEchoFixture()
@@ -255,6 +260,26 @@ struct DeepResponseDebugView: View {
         status = "Fixture"
         await client.runHTTPSessionFixtureTurn()
         status = client.lastError == nil ? "Fixture done" : "Fixture failed"
+        #endif
+    }
+
+    private func runContinuousFixtureLoop(turns: Int) async {
+        #if targetEnvironment(simulator)
+        isContinuousMode = true
+        for turnIndex in 1...turns {
+            status = "Loop fixture \(turnIndex)"
+            conversationState = .userSpeaking
+            await client.runHTTPSessionFixtureTurn()
+            if client.lastError != nil || client.isHTTPSessionEnded {
+                break
+            }
+            conversationState = client.isHTTPSessionPlaybackActive ? .assistantSpeaking : .idleWaiting
+            try? await Task.sleep(nanoseconds: 100_000_000)
+            conversationState = .listening
+        }
+        isContinuousMode = false
+        conversationState = .ended
+        status = client.lastError == nil ? "Loop fixture done" : "Loop fixture failed"
         #endif
     }
 }
