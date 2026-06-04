@@ -125,7 +125,17 @@ test("DeepResponse Watch continuous abort resumes recording as barge-in", () => 
   const abortFunction = debugViewSource.match(/private func abortCurrentTurn\(\) async \{[\s\S]*?\n    \}/)?.[0] || "";
   assert.match(debugViewSource, /let shouldResumeListening = isContinuousMode/);
   assert.doesNotMatch(abortFunction, /isContinuousMode = false/);
-  assert.match(debugViewSource, /await client\.abortHTTPSessionTurn\(\)[\s\S]*?if shouldResumeListening,[\s\S]*?!client\.isHTTPSessionEnded[\s\S]*?await startRecordingTurn\(reason: "Barge-in recording"\)/);
+  assert.match(debugViewSource, /let abortTask = client\.beginAbortHTTPSessionTurn\(\)[\s\S]*?if shouldResumeListening,[\s\S]*?!client\.isHTTPSessionEnded[\s\S]*?await startRecordingTurn\(reason: "Barge-in recording"\)/);
+});
+
+test("DeepResponse Watch continuous barge-in starts recording before abort ack", () => {
+  const abortFunction = debugViewSource.match(/private func abortCurrentTurn\(\) async \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(realtimeClientSource, /func beginAbortHTTPSessionTurn\(\) -> Task<Void, Never>\?/);
+  assert.match(realtimeClientSource, /let abortTurnID = httpTurnID \?\? ""/);
+  assert.match(realtimeClientSource, /let abortGenerationID = httpGenerationID \?\? ""/);
+  assert.match(realtimeClientSource, /DeepResponseHTTPSessionAbortRequest\([\s\S]*?turnID: abortTurnID,[\s\S]*?generationID: abortGenerationID,/);
+  assert.match(abortFunction, /let abortTask = client\.beginAbortHTTPSessionTurn\(\)/);
+  assert.match(abortFunction, /if shouldResumeListening,[\s\S]*?!client\.isHTTPSessionEnded[\s\S]*?await startRecordingTurn\(reason: "Barge-in recording"\)[\s\S]*?await abortTask\?\.value/);
 });
 
 test("DeepResponse Watch HTTP polling waits for turn_done or session_end, not audio_done", () => {

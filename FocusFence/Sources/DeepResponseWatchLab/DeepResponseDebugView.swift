@@ -254,12 +254,14 @@ struct DeepResponseDebugView: View {
         let shouldResumeListening = isContinuousMode
         isWaitingForResponse = false
         conversationState = .bargeIn
-        await client.abortHTTPSessionTurn()
+        let abortTask = client.beginAbortHTTPSessionTurn()
         if shouldResumeListening,
            client.lastError == nil,
            !client.isHTTPSessionEnded {
             await startRecordingTurn(reason: "Barge-in recording")
+            await abortTask?.value
         } else {
+            await abortTask?.value
             status = client.lastError == nil ? "Aborted" : "Abort failed"
             conversationState = client.isHTTPSessionEnded ? .ended : .listening
         }

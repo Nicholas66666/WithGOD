@@ -57,6 +57,7 @@ DeepResponse remains in the independent Lab target.
 Latest pushed commits:
 
 - `77a9228` Gate DeepResponse harsh comfort phrasing.
+- `75eabe8` Gate DeepResponse repetitive conversation phrasing.
 - `e2cfc5e` Gate DeepResponse continuous conversation self-test.
 - `a9e9884` Gate DeepResponse comfort reply style.
 - `e1652bd` Gate DeepResponse partial ASR streaming.
@@ -78,19 +79,20 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `172/172` passed.
+- Node self-tests: `174/174` passed.
 - Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply, lookup-style-comfort, harsh repeated-comfort, mechanical tired/fatigue, incomplete-utterance, and `是还想听` gate enabled.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
 - Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
 - Fire/Volcengine partial-ASR LLM start: `llm_started_from_partial: 1` on both standard smoke turns.
-- Fire/Volcengine smoke stop-to-first-audio: `213ms`, `228ms`.
+- Fire/Volcengine smoke stop-to-first-audio: `212ms`, `215ms`.
 - Fire/Volcengine repeated reply failures: `[]`.
 - Fire/Volcengine forbidden lookup/harsh/mechanical comfort failures: `[]`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
 - Fire/Volcengine 8-turn continuous conversation gate: passed with `session_end` reason `user_goodbye`, `memoryRecalled.count: 3`, `memory_candidate.persisted: true`, `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, and late audio `409 session_ended`.
-- Fire/Volcengine 8-turn stop-to-first-audio: `1745ms`, `1760ms`, `1714ms`, `1785ms`, `2479ms`, `1791ms`, `1763ms`, `2149ms`.
+- Fire/Volcengine 8-turn stop-to-first-audio: `1751ms`, `2105ms`, `1766ms`, `1745ms`, `1770ms`, `1686ms`, `1712ms`, `1989ms`.
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
+- Latest WatchLab barge-in self-test update: continuous-mode abort now captures the old `turn_id` / `generation_id`, stops playback locally, starts barge-in recording before waiting for the `/abort` server ack, and posts the abort in the background. Full `npm run deep:selftest:full` passed after this change; no user-operated Watch test was required.
 
 Latest remote deployment note:
 
@@ -187,6 +189,7 @@ npm run deep:provider:benchmark -- \
 - Continuous conversation self-test gate: multi-turn context, goodbye intent, idle goodbye, late audio rejection.
 - Fire/Volcengine continuous 8-turn gate is part of the standard full self-test.
 - Watch continuous-loop state-machine self-test: auto-listen after playback drain, immediate auto-listen without queued playback, barge-in resume, and session-end stop.
+- Watch barge-in local-first self-test: continuous-mode `abort_requested` starts recording before server abort ack while preserving stale generation discard.
 - Memory candidate generation, JSONL persistence, recall, dedupe, and remote probe gates.
 - Quick Response source guard for `Sources/PresenceWatchApp` and `Sources/PresenceApp`.
 - Client-facing DeepResponse WebSocket server path removed.

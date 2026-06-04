@@ -1581,6 +1581,24 @@ Latest remote conversation quality gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - No user-operated Watch test was requested or required.
 
+Latest WatchLab barge-in local-first update:
+- Tightened the Xiaozhi-style interrupt path in DeepResponseWatchLab continuous mode.
+- Before this update, `abortCurrentTurn()` stopped playback locally but waited for the server `/abort` response before starting the next recording.
+- Now `DeepResponseRealtimeClient.beginAbortHTTPSessionTurn()` captures the old `turn_id` / `generation_id`, stops playback locally, cancels polling, marks the old generation as canceled, and returns a background abort task.
+- `DeepResponseDebugView.abortCurrentTurn()` starts `Barge-in recording` in continuous mode before awaiting the abort task, so server abort ack no longer blocks the user from starting the next utterance.
+- The old `abortHTTPSessionTurn()` API remains as a compatibility wrapper that waits for the background task.
+- Verification:
+  - RED `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs` first failed because `abort_requested` did not start recording and `beginAbortHTTPSessionTurn()` did not exist.
+  - `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`: `23/23` passed.
+  - `npm run test:node`: `174/174` passed.
+  - `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Fire/Volcengine smoke stop-to-first-audio: `212ms`, `215ms`; abort stale audio chunks/bytes: `0` / `0`.
+  - Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Fire/Volcengine 8-turn stop-to-first-audio: `1751ms`, `2105ms`, `1766ms`, `1745ms`, `1770ms`, `1686ms`, `1712ms`, `1989ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- No server deployment or user-operated Watch test was required for this WatchLab gate.
+
 - Unit and server tests:
   - `npm run test:node`
 

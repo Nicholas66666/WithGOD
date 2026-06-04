@@ -52,6 +52,25 @@ test("continuous barge-in abort resumes recording after local-first stop", () =>
   ]);
 });
 
+test("continuous barge-in starts recording on local abort request before server ack", () => {
+  const afterAbortRequest = applyDeepResponseWatchEvent({
+    isContinuousMode: true,
+    isRecording: false,
+    isWaitingForResponse: false,
+    isHTTPSessionEnded: false,
+    lastError: null,
+    conversationState: "assistantSpeaking"
+  }, { type: "abort_requested" });
+
+  assert.equal(afterAbortRequest.state.conversationState, "userSpeaking");
+  assert.equal(afterAbortRequest.state.isRecording, true);
+  assert.deepEqual(afterAbortRequest.actions, [
+    "local_stop_playback",
+    "post_abort:background",
+    "start_recording:barge_in"
+  ]);
+});
+
 test("session end blocks auto-listen and keeps the loop ended", () => {
   const result = simulateDeepResponseWatchEvents([
     { type: "toggle_continuous", enabled: true },
@@ -64,4 +83,3 @@ test("session end blocks auto-listen and keeps the loop ended", () => {
   assert.equal(result.state.isRecording, false);
   assert.deepEqual(result.actions, []);
 });
-

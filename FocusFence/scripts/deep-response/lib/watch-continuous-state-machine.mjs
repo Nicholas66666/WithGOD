@@ -163,6 +163,32 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
     };
   }
 
+  if (event.type === "abort_requested") {
+    actions.push("local_stop_playback");
+    actions.push("post_abort:background");
+    if (state.isContinuousMode && !state.isHTTPSessionEnded && !state.lastError) {
+      actions.push("start_recording:barge_in");
+      return {
+        state: {
+          ...state,
+          isRecording: true,
+          isWaitingForResponse: false,
+          conversationState: "userSpeaking"
+        },
+        actions
+      };
+    }
+    return {
+      state: {
+        ...state,
+        isRecording: false,
+        isWaitingForResponse: false,
+        conversationState: state.isHTTPSessionEnded ? "ended" : "listening"
+      },
+      actions
+    };
+  }
+
   if (event.type === "session_end") {
     return {
       state: {

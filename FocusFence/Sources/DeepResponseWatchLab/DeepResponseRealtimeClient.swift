@@ -492,20 +492,22 @@ final class DeepResponseRealtimeClient: ObservableObject {
         }
     }
 
-    func abortHTTPSessionTurn() async {
+    func beginAbortHTTPSessionTurn() -> Task<Void, Never>? {
         guard let sessionID = httpSessionID else {
-            return
+            return nil
         }
 
         let abortStartedAt = Date()
+        let abortTurnID = httpTurnID ?? ""
+        let abortGenerationID = httpGenerationID ?? ""
         httpAbortStartedAt = abortStartedAt
         httpAbortLocalStopMs = nil
         httpAbortServerStopMs = nil
         httpStaleAudioAfterAbortCount = 0
         isAbortingHTTPSessionTurn = true
         canAbortHTTPSessionTurn = false
-        if let httpGenerationID {
-            canceledHTTPGenerationIDs.insert(httpGenerationID)
+        if !abortGenerationID.isEmpty {
+            canceledHTTPGenerationIDs.insert(abortGenerationID)
         }
         isHTTPSessionPlaybackActive = false
         player.stop()
@@ -515,6 +517,29 @@ final class DeepResponseRealtimeClient: ObservableObject {
         httpSessionPollTask = nil
         connectionStage = "http_session:abort_local"
 
+        return Task { [weak self] in
+            await self?.finishHTTPSessionAbort(
+                sessionID: sessionID,
+                abortTurnID: abortTurnID,
+                abortGenerationID: abortGenerationID,
+                abortStartedAt: abortStartedAt
+            )
+        }
+    }
+
+    func abortHTTPSessionTurn() async {
+        guard let abortTask = beginAbortHTTPSessionTurn() else {
+            return
+        }
+        await abortTask.value
+    }
+
+    private func finishHTTPSessionAbort(
+        sessionID: String,
+        abortTurnID: String,
+        abortGenerationID: String,
+        abortStartedAt: Date
+    ) async {
         do {
             var request = URLRequest(url: try Self.httpSessionURL(path: "/deep-response/sessions/\(sessionID)/abort"))
             request.httpMethod = "POST"
@@ -522,8 +547,8 @@ final class DeepResponseRealtimeClient: ObservableObject {
             request.setValue("application/json", forHTTPHeaderField: "Content-Type")
             request.setValue("DeepLab-watchOS", forHTTPHeaderField: "X-Deep-Response-Client")
             let body = DeepResponseHTTPSessionAbortRequest(
-                turnID: httpTurnID ?? "",
-                generationID: httpGenerationID ?? "",
+                turnID: abortTurnID,
+                generationID: abortGenerationID,
                 reason: "watch_local_abort"
             )
             request.httpBody = try JSONEncoder().encode(body)
