@@ -979,6 +979,76 @@ test("DeepResponse HTTP session passes prior turns as LLM context", async () => 
   }
 });
 
+test("DeepResponse HTTP session self-tests eight turns with rolling context and goodbye end", async () => {
+  const seenContexts = [];
+  const seenTurns = [];
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async *streamSegmented({ audioChunks, context }) {
+        const collected = [];
+        for await (const chunk of audioChunks) {
+          collected.push(Buffer.from(chunk).toString("utf8"));
+        }
+        const turnAudio = collected.join("");
+        seenTurns.push(turnAudio);
+        seenContexts.push(context);
+        const turnIndex = seenTurns.length;
+        const transcript = turnIndex === 8 ? "好了，拜拜" : `you-${turnIndex}:${turnAudio}`;
+        yield { type: "transcript_final", transcript };
+        yield {
+          type: "segment",
+          segment: "first",
+          text: turnIndex === 8 ? "愿你平安，我们下次再聊。" : `god-${turnIndex}`,
+          audioChunks: [Buffer.from(`audio-${turnIndex}`)]
+        };
+        yield { type: "timing", timing: { voice_pipeline_total_ms: turnIndex }, providerMeta: {} };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {});
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+
+    for (let turnIndex = 1; turnIndex <= 8; turnIndex += 1) {
+      const turnID = `turn-eight-${turnIndex}`;
+      await postBytes(`${base}/audio?turn_id=${turnID}&seq=0`, Buffer.from(`audio-in-${turnIndex}`));
+      await postJSON(`${base}/input-stop`, { turnID });
+      await waitFor(async () => {
+        const events = await fetchJSON(`${base}/events?cursor=0`);
+        return events.events.some((event) => event.type === "timing" && event.turnID === turnID);
+      });
+    }
+
+    assert.equal(seenTurns.length, 8);
+    assert.equal(seenContexts[0].length, 0);
+    assert.equal(seenContexts[7].length, 12);
+    assert.equal(seenContexts[7][0].content, "you-2:audio-in-2");
+    assert.equal(seenContexts[7][11].content, "god-7");
+
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "session_end" && event.reason === "user_goodbye_intent");
+    });
+
+    const rejected = await fetch(`${base}/audio?turn_id=turn-after-eight-goodbye&seq=0`, {
+      method: "POST",
+      headers: { "Content-Type": "application/octet-stream" },
+      body: Buffer.from("late")
+    });
+    assert.equal(rejected.status, 409);
+    const body = await rejected.json();
+    assert.equal(body.error, "session_ended");
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse server chunks HTTP realtime turn PCM before provider pipeline", async () => {
   const seenChunkSizes = [];
   const server = await startDeepResponseServer({

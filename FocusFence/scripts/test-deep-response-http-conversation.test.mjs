@@ -15,6 +15,21 @@ test("parseHTTPConversationArgs accepts cascade pipeline mode", () => {
   assert.equal(args.pipelineMode, "cascade");
 });
 
+test("parseHTTPConversationArgs accepts session-end validation options", () => {
+  const args = parseHTTPConversationArgs([
+    "--pcm", "fixtures/speech.pcm",
+    "--turns", "8",
+    "--end-reason", "user_goodbye",
+    "--expect-session-end",
+    "--expect-late-audio-409"
+  ]);
+
+  assert.equal(args.turns, 8);
+  assert.equal(args.endReason, "user_goodbye");
+  assert.equal(args.expectSessionEnd, true);
+  assert.equal(args.expectLateAudio409, true);
+});
+
 test("summarizeTurn concatenates streaming text deltas without inserting spaces", () => {
   const summary = summarizeTurn({
     turnID: "turn-1",

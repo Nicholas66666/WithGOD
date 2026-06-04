@@ -1,5 +1,14 @@
 import SwiftUI
 
+enum DeepResponseConversationState {
+    case listening
+    case userSpeaking
+    case assistantSpeaking
+    case bargeIn
+    case idleWaiting
+    case ended
+}
+
 struct DeepResponseDebugView: View {
     @StateObject private var client = DeepResponseRealtimeClient()
     @State private var isRecording = false
@@ -8,6 +17,7 @@ struct DeepResponseDebugView: View {
     @State private var didRunAutorunFixture = false
     @State private var isWaitingForResponse = false
     @State private var isContinuousMode = false
+    @State private var conversationState: DeepResponseConversationState = .listening
 
     var body: some View {
         VStack(spacing: 8) {
@@ -111,6 +121,7 @@ struct DeepResponseDebugView: View {
                 _ = recorder.stop()
                 isRecording = false
             }
+            conversationState = .ended
         }
         .onAppear {
             client.onHTTPSessionPlaybackDrained = {
@@ -142,10 +153,14 @@ struct DeepResponseDebugView: View {
 
     private func startRecordingTurn(reason: String) async {
         guard !isRecording, !isWaitingForResponse, !client.isHTTPSessionEnded else {
+            if client.isHTTPSessionEnded {
+                conversationState = .ended
+            }
             return
         }
         do {
             status = "Starting session"
+            conversationState = .idleWaiting
             try await client.startHTTPSessionTurn()
             status = reason
             try await recorder.start(
@@ -161,8 +176,10 @@ struct DeepResponseDebugView: View {
                     }
                 })
             isRecording = true
+            conversationState = .userSpeaking
         } catch {
             status = error.localizedDescription
+            conversationState = .listening
         }
     }
 
@@ -172,9 +189,11 @@ struct DeepResponseDebugView: View {
         }
         isRecording = false
         status = reason
+        conversationState = .idleWaiting
         let audio = recorder.stop()
         guard !audio.isEmpty || client.uploadedAudioChunks > 0 else {
             status = "No audio"
+            conversationState = .listening
             return
         }
         isWaitingForResponse = true
@@ -183,15 +202,21 @@ struct DeepResponseDebugView: View {
         if isContinuousMode, client.lastError == nil, !client.isHTTPSessionEnded {
             if client.isHTTPSessionPlaybackActive {
                 status = "Waiting playback"
+                conversationState = .assistantSpeaking
             } else {
                 await startRecordingTurn(reason: "Auto listening")
             }
         } else {
             status = client.lastError == nil ? "HTTP session done" : "HTTP session failed"
+            conversationState = client.isHTTPSessionEnded ? .ended : .listening
         }
     }
 
     private func handlePlaybackDrained() {
+        if client.isHTTPSessionEnded {
+            conversationState = .ended
+            return
+        }
         guard isContinuousMode,
               !isRecording,
               !isWaitingForResponse,
@@ -207,8 +232,10 @@ struct DeepResponseDebugView: View {
     private func abortCurrentTurn() async {
         isWaitingForResponse = false
         isContinuousMode = false
+        conversationState = .bargeIn
         await client.abortHTTPSessionTurn()
         status = client.lastError == nil ? "Aborted" : "Abort failed"
+        conversationState = .listening
     }
 
     private func runAutorunFixtureIfRequested() async {

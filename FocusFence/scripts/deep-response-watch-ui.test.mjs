@@ -73,3 +73,16 @@ test("DeepResponse Watch lab does not expose Watch WebSocket transport", () => {
   assert.doesNotMatch(realtimeClientSource, /func connect\(\) async throws/);
   assert.doesNotMatch(realtimeClientSource, /connectionStage = "ws:/);
 });
+
+test("DeepResponse Watch continuous mode has explicit conversation state transitions", () => {
+  assert.match(debugViewSource, /enum DeepResponseConversationState/);
+  for (const state of ["listening", "userSpeaking", "assistantSpeaking", "bargeIn", "idleWaiting", "ended"]) {
+    assert.match(debugViewSource, new RegExp(`case ${state}`));
+  }
+  assert.match(debugViewSource, /@State private var conversationState: DeepResponseConversationState = \.listening/);
+  assert.match(debugViewSource, /conversationState = \.userSpeaking/);
+  assert.match(debugViewSource, /conversationState = \.idleWaiting/);
+  assert.match(debugViewSource, /conversationState = \.assistantSpeaking/);
+  assert.match(debugViewSource, /conversationState = \.bargeIn/);
+  assert.match(debugViewSource, /conversationState = \.ended/);
+});

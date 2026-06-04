@@ -15,6 +15,9 @@ export function parseHTTPConversationArgs(argv) {
     pollMs: 50,
     timeoutMs: 90_000,
     pipelineMode: "",
+    endReason: "probe_complete",
+    expectSessionEnd: false,
+    expectLateAudio409: false,
     verbose: false
   };
 
@@ -44,6 +47,13 @@ export function parseHTTPConversationArgs(argv) {
     } else if (arg === "--pipeline-mode") {
       args.pipelineMode = argv[index + 1] || "";
       index += 1;
+    } else if (arg === "--end-reason") {
+      args.endReason = argv[index + 1] || args.endReason;
+      index += 1;
+    } else if (arg === "--expect-session-end") {
+      args.expectSessionEnd = true;
+    } else if (arg === "--expect-late-audio-409") {
+      args.expectLateAudio409 = true;
     } else if (arg === "--verbose") {
       args.verbose = true;
     } else if (arg === "--help" || arg === "-h") {
@@ -140,12 +150,46 @@ export async function runHTTPConversationProbe(args) {
     }));
   }
 
-  await postJSON(buildURL(args.endpoint, `${basePath}/end`), { reason: "probe_complete" });
+  const ended = await postJSON(buildURL(args.endpoint, `${basePath}/end`), { reason: args.endReason });
+  let sessionEnd = null;
+  if (args.expectSessionEnd) {
+    await waitFor(async () => {
+      const eventBatch = await fetchJSON(buildURL(args.endpoint, `${basePath}/events?cursor=${eventCursor}`));
+      eventCursor = eventBatch.nextCursor;
+      sessionEnd = eventBatch.events.find((event) => event.type === "session_end") || null;
+      return sessionEnd?.reason === args.endReason;
+    }, { timeoutMs: args.timeoutMs, intervalMs: args.pollMs });
+  }
+
+  let lateAudioRejected = null;
+  if (args.expectLateAudio409) {
+    const late = await fetch(buildURL(args.endpoint, `${basePath}/audio?turn_id=late-after-end&seq=0`), {
+      method: "POST",
+      headers: { "Content-Type": "application/octet-stream" },
+      body: Buffer.from("late-audio")
+    });
+    let lateBody = null;
+    try {
+      lateBody = await late.json();
+    } catch {
+      lateBody = null;
+    }
+    lateAudioRejected = {
+      status: late.status,
+      error: lateBody?.error || ""
+    };
+    if (late.status !== 409 || lateBody?.error !== "session_ended") {
+      throw new Error(`Expected late audio 409 session_ended, got ${late.status} ${JSON.stringify(lateBody)}`);
+    }
+  }
 
   return {
     ok: true,
     endpoint: args.endpoint,
     sessionID,
+    ended,
+    sessionEnd,
+    lateAudioRejected,
     elapsedMs: Math.round(performance.now() - startedAt),
     turns
   };
@@ -254,6 +298,10 @@ Options:
   --poll-ms <ms>        Poll interval for events/audio. Default: 50
   --timeout-ms <ms>     Probe timeout. Default: 90000
   --pipeline-mode <m>   Optional HTTP session pipeline mode, e.g. cascade.
+  --end-reason <reason> Reason sent to /end after all turns. Default: probe_complete
+  --expect-session-end  Require a matching session_end event after /end.
+  --expect-late-audio-409
+                        Verify audio upload after session end returns 409 session_ended.
   --verbose             Print turn event batches.
 `);
 }
