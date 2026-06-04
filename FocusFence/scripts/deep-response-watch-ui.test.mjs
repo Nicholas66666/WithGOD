@@ -133,3 +133,16 @@ test("DeepResponse Watch HTTP polling waits for turn_done or session_end, not au
   assert.match(pollFunction, /event\.type == "turn_done"[\s\S]*?isDone = true/);
   assert.match(pollFunction, /event\.type == "session_end"[\s\S]*?isDone = true/);
 });
+
+test("DeepResponse Watch shows session end and memory persistence diagnostics", () => {
+  assert.match(realtimeClientSource, /@Published private\(set\) var lastSessionEndText: String\?/);
+  assert.match(realtimeClientSource, /@Published private\(set\) var lastMemoryStatusText: String\?/);
+  assert.match(realtimeClientSource, /lastSessionEndText = event\.reason\.map \{ "end \\\(\$0\)" \} \?\? "end"/);
+  assert.match(realtimeClientSource, /event\.type == "memory_candidate"/);
+  assert.match(realtimeClientSource, /lastMemoryStatusText = Self\.memoryStatusText\(for: event\)/);
+  assert.match(realtimeClientSource, /let persisted: Bool\?/);
+  assert.match(realtimeClientSource, /let store: String\?/);
+  assert.match(realtimeClientSource, /let turnCount: Int\?/);
+  assert.match(debugViewSource, /client\.lastSessionEndText/);
+  assert.match(debugViewSource, /client\.lastMemoryStatusText/);
+});

@@ -51,6 +51,20 @@ struct DeepResponseDebugView: View {
                         .lineLimit(1)
                         .minimumScaleFactor(0.55)
                 }
+                if let sessionEnd = client.lastSessionEndText {
+                    Text(sessionEnd)
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.55)
+                }
+                if let memoryStatus = client.lastMemoryStatusText {
+                    Text(memoryStatus)
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.55)
+                }
                 Text(client.connectionStage)
                     .font(.system(size: 10, design: .monospaced))
                     .foregroundStyle(.secondary)

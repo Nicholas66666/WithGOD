@@ -37,6 +37,8 @@ final class DeepResponseRealtimeClient: ObservableObject {
     @Published private(set) var lastTurnTiming: DeepResponseTiming?
     @Published private(set) var lastClientTimingText: String?
     @Published private(set) var lastAbortTimingText: String?
+    @Published private(set) var lastSessionEndText: String?
+    @Published private(set) var lastMemoryStatusText: String?
     @Published private(set) var canAbortHTTPSessionTurn = false
     @Published private(set) var isHTTPSessionPlaybackActive = false
     @Published private(set) var isHTTPSessionEnded = false
@@ -330,6 +332,8 @@ final class DeepResponseRealtimeClient: ObservableObject {
         httpSessionID = created.sessionID
         httpEventCursor = 0
         httpOutputAudioCursor = 0
+        lastSessionEndText = nil
+        lastMemoryStatusText = nil
         return created.sessionID
     }
 
@@ -665,7 +669,10 @@ final class DeepResponseRealtimeClient: ObservableObject {
         } else if event.type == "session_end" {
             isHTTPSessionEnded = true
             canAbortHTTPSessionTurn = false
+            lastSessionEndText = event.reason.map { "end \($0)" } ?? "end"
             connectionStage = event.reason.map { "http_session:ended \($0)" } ?? "http_session:ended"
+        } else if event.type == "memory_candidate" {
+            lastMemoryStatusText = Self.memoryStatusText(for: event)
         } else if event.type == "error" {
             lastError = event.message ?? "HTTP session error"
         }
@@ -708,6 +715,13 @@ final class DeepResponseRealtimeClient: ObservableObject {
             return current
         }
         return (current ?? "") + delta
+    }
+
+    private static func memoryStatusText(for event: DeepResponseHTTPSessionEvent) -> String {
+        let persistedText = event.persisted == true ? "saved" : "memory"
+        let storeText = event.store.map { " \($0)" } ?? ""
+        let turnText = event.turnCount.map { " \($0)t" } ?? ""
+        return "\(persistedText)\(storeText)\(turnText)"
     }
 
     fileprivate func setError(_ message: String, error: Error? = nil) {
@@ -931,6 +945,9 @@ private struct DeepResponseHTTPSessionEvent: Decodable {
     let message: String?
     let reason: String?
     let timing: DeepResponseTiming?
+    let persisted: Bool?
+    let store: String?
+    let turnCount: Int?
 }
 
 private struct DeepResponseHTTPSessionAudioResponse: Decodable {

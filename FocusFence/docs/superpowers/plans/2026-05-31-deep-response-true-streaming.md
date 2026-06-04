@@ -1174,6 +1174,26 @@ Latest idle memory persistence gate:
   - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-idle-memory-persist-build build`: `BUILD SUCCEEDED`.
 - Development remained self-test only; no user-operated Watch testing was required.
 
+Latest Watch session/memory diagnostics gate:
+- Added compact WatchLab diagnostics for `session_end` and async `memory_candidate` events.
+- `DeepResponseRealtimeClient` now publishes:
+  - `lastSessionEndText`, e.g. `end idle_timeout`, and
+  - `lastMemoryStatusText`, e.g. `saved jsonl 1t`.
+- `DeepResponseDebugView` shows these fields in the compact Deep HTTP debug stack, making simulator/WatchLab self-checks able to see natural session end and memory persistence without requiring Quick Response integration.
+- Added source-level regression coverage proving:
+  - the Watch client decodes `persisted`, `store`, and `turnCount` from session events,
+  - `session_end` updates the visible session-end diagnostic, and
+  - `memory_candidate` updates the visible memory diagnostic.
+- Verification:
+  - RED test first failed because `lastSessionEndText` / `lastMemoryStatusText` and `memory_candidate` handling were absent.
+  - `node --test scripts/deep-response-watch-ui.test.mjs --test-name-pattern "session end and memory|HTTP polling waits"`: `17/17` passed.
+  - `npm run test:node`: `149/149` passed.
+  - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-watch-memory-diagnostics-build build`: `BUILD SUCCEEDED`.
+  - Fire/Volcengine full HTTP smoke with recall, conversation persistence, idle persistence, abort-next-turn, idle goodbye, cascade mode, and forbidden-pattern gates: passed.
+  - Latest full-smoke conversation stop-to-first-audio: `235ms`, `208ms`.
+  - Latest idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`, `turnCount: 1`.
+- Development remained self-test only; no user-operated Watch testing was required.
+
 ## File Responsibilities
 
 - Modify `scripts/deep-response/protocol/deep-response-protocol.mjs`
