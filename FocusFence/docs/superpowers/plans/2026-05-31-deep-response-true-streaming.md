@@ -1313,6 +1313,16 @@ Latest client-facing DeepResponse WebSocket server cleanup:
   - Nested Fire/Volcengine smoke abort stale audio chunks/bytes: `0` / `0`.
   - Nested Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
   - Nested `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
+  - Pushed commit `cf342b5`.
+  - `npm run deep:volc:deploy` hit the known ECS -> GitHub TLS fetch failure: `GnuTLS recv error (-110)`.
+  - Used direct SSH file sync to update Fire/Volcengine ECS, delete the stale WebSocket files, and restart `deep-response`.
+  - Fire/Volcengine `/health`: `200`, `mode: provider`, `providerConfigured: true`.
+  - Remote `npm run deep:volc:smoke:full`: passed after direct sync.
+  - Remote post-sync stop-to-first-audio: `209ms`, `196ms`.
+  - Remote post-sync memory recall: `count: 3`, `store: jsonl`.
+  - Remote post-sync abort stale audio chunks/bytes: `0` / `0`.
+  - Remote post-sync idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
+  - Remote source gate `node --test scripts/deep-response-integration-gate.test.mjs`: `5/5` passed after deleting stale ECS copies of `scripts/watch-wss-echo-server.mjs` and `scripts/watch-wss-echo-server.test.mjs`.
 - Development remained self-test only; no user-operated Watch testing was required.
 
 ## File Responsibilities
