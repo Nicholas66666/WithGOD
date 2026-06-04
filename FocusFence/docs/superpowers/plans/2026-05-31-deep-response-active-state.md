@@ -103,6 +103,14 @@ Latest status as of 2026-06-04:
   - latest smoke stop-to-first-audio: `448ms`, `454ms`
   - latest smoke abort stale audio chunks/bytes: `0` / `0`
   - Render remains rollback until real Watch validates the Volcengine endpoint.
+- DeepLab Watch build targeting Volcengine endpoint succeeded:
+  - build endpoint: `http://124.174.96.149:8797`
+  - build path: `/private/tmp/focus-deepresponse-volc-build/Build/Products/Debug-watchos/DeepLab.app`
+  - Info.plist `DeepResponseRealtimeEndpoint` confirmed as `http://124.174.96.149:8797`
+  - Watch install attempted twice and failed due CoreDevice/remote tunnel interruption, not build failure.
+- Volcengine redeploy helper:
+  - `npm run deep:volc:deploy`
+  - verified with `npm run deep:volc:deploy -- --skip-restart`, health `200`.
 
 Current recommended validation command before any server migration/manual Watch test:
 
