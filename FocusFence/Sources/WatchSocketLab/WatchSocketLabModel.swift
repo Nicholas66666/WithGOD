@@ -7,6 +7,8 @@ final class WatchSocketLabModel: ObservableObject {
     @Published private(set) var audioState = "inactive"
     @Published private(set) var route = "-"
     @Published private(set) var connectMs: Int?
+    @Published private(set) var nwConnectMs: Int?
+    @Published private(set) var nwRTTMs: Int?
     @Published private(set) var healthStatus = "-"
     @Published private(set) var firstBinaryRTTMs: Int?
     @Published private(set) var framesSent = 0
@@ -19,6 +21,7 @@ final class WatchSocketLabModel: ObservableObject {
     private let runID = ISO8601DateFormatter().string(from: Date())
     private let audio = WatchSocketAudioRuntime()
     private let client = WatchSocketEchoClient()
+    private let nwClient = WatchSocketNWClient()
     private var logs = WatchSocketLogStore()
     private var streamTask: Task<Void, Never>?
     private var runStartedAt: Date?
@@ -34,6 +37,11 @@ final class WatchSocketLabModel: ObservableObject {
         }
 
         client.onEvent = { [weak self] event in
+            Task { @MainActor in
+                self?.handle(event)
+            }
+        }
+        nwClient.onEvent = { [weak self] event in
             Task { @MainActor in
                 self?.handle(event)
             }
@@ -138,6 +146,40 @@ final class WatchSocketLabModel: ObservableObject {
         }
     }
 
+    func probeNetworkWebSocket() {
+        Task {
+            guard let url = URL(string: wssURLString) else {
+                lastError = "Bad WSS URL"
+                appendLog("nw_probe_error", ["run_id": runID, "error": "bad_url"])
+                return
+            }
+
+            do {
+                state = "nw:connecting"
+                nwConnectMs = nil
+                nwRTTMs = nil
+                appendLog("nw_probe_start", [
+                    "run_id": runID,
+                    "wss_url": url.absoluteString,
+                    "audio_session": audioState,
+                    "route": route,
+                ])
+                let result = try await nwClient.probe(url: url)
+                nwConnectMs = result.connectMs
+                nwRTTMs = result.rttMs
+                state = "nw:ok"
+                lastError = ""
+                appendLog("nw_probe_ok", [
+                    "run_id": runID,
+                    "connect_ms": result.connectMs,
+                    "rtt_ms": result.rttMs,
+                ])
+            } catch {
+                setError("nw_probe_error", error)
+            }
+        }
+    }
+
     func startBinaryEcho() {
         guard client.isConnected else {
             state = "connect_first"
@@ -206,6 +248,7 @@ final class WatchSocketLabModel: ObservableObject {
         streamTask?.cancel()
         streamTask = nil
         client.disconnect()
+        nwClient.disconnect()
         audio.deactivate()
         durationSeconds = currentDurationSeconds()
         state = "stopped"
@@ -269,6 +312,8 @@ final class WatchSocketLabModel: ObservableObject {
             "audio_session": audioState,
             "background_modes": ["audio"],
             "connect_ms": connectMs ?? -1,
+            "nw_connect_ms": nwConnectMs ?? -1,
+            "nw_rtt_ms": nwRTTMs ?? -1,
             "health_status": healthStatus,
             "first_binary_rtt_ms": firstBinaryRTTMs ?? -1,
             "duration_s": durationSeconds,

@@ -41,6 +41,35 @@ test("serves health and echoes binary frames", async () => {
 
     const event = await waitForMessage(socket);
     assert.deepEqual([...new Uint8Array(event.data)], [...payload]);
+
+    const stats = await fetch(`http://127.0.0.1:${app.port}/stats`);
+    assert.equal(stats.status, 200);
+    const body = await stats.json();
+    assert.equal(body.ok, true);
+    assert.equal(body.stats.last_path, "/ws/echo");
+    assert.ok(body.stats.ws_open_count >= 1);
+    assert.ok(body.stats.binary_frame_count >= 1);
+
+    socket.close();
+  } finally {
+    await closeServer(app.server);
+  }
+});
+
+test("accepts root websocket path for Network.framework diagnostics", async () => {
+  const app = createWatchWssEchoServer({ pingIntervalMs: 0 });
+  await app.listen(0, "127.0.0.1");
+
+  try {
+    const socket = new WebSocket(`ws://127.0.0.1:${app.port}/`);
+    socket.binaryType = "arraybuffer";
+    await waitForOpen(socket);
+
+    const payload = new Uint8Array([0x4e, 0x57, 0x01]);
+    socket.send(payload);
+
+    const event = await waitForMessage(socket);
+    assert.deepEqual([...new Uint8Array(event.data)], [...payload]);
     socket.close();
   } finally {
     await closeServer(app.server);

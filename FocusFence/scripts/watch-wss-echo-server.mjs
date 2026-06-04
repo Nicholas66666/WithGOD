@@ -3,7 +3,20 @@ import http from "node:http";
 import { fileURLToPath } from "node:url";
 
 const WS_GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
-const VALID_PATHS = new Set(["/ws/echo", "/ws/audio-echo"]);
+const VALID_PATHS = new Set(["/", "/ws/echo", "/ws/audio-echo"]);
+const stats = {
+  started_at: now(),
+  health_count: 0,
+  ws_open_count: 0,
+  ws_close_count: 0,
+  binary_frame_count: 0,
+  abort_ack_count: 0,
+  last_ws_open_at: null,
+  last_ws_close_at: null,
+  last_binary_at: null,
+  last_path: null,
+  last_session_id: null,
+};
 
 function now() {
   return new Date().toISOString();
@@ -100,6 +113,7 @@ function handleControlText(socket, sessionID, payload) {
       generation: Number.isFinite(message.generation) ? message.generation : null,
     };
     log({ event: "abort_ack", session_id: sessionID, generation: ack.generation });
+    stats.abort_ack_count += 1;
     socket.write(encodeFrame(0x1, JSON.stringify(ack)));
     return;
   }
@@ -115,6 +129,10 @@ function attachWebSocket(socket, request, options) {
   let pingTimer;
 
   log({ event: "ws_open", session_id: sessionID, path });
+  stats.ws_open_count += 1;
+  stats.last_ws_open_at = now();
+  stats.last_path = path;
+  stats.last_session_id = sessionID;
 
   if (options.pingIntervalMs > 0) {
     pingTimer = setInterval(() => {
@@ -145,6 +163,8 @@ function attachWebSocket(socket, request, options) {
         }
         if (frame.opcode === 0x2) {
           framesIn += 1;
+          stats.binary_frame_count += 1;
+          stats.last_binary_at = now();
           log({
             event: "binary_echo",
             session_id: sessionID,
@@ -162,6 +182,8 @@ function attachWebSocket(socket, request, options) {
 
   socket.on("close", () => {
     if (pingTimer) clearInterval(pingTimer);
+    stats.ws_close_count += 1;
+    stats.last_ws_close_at = now();
     log({ event: "ws_close", session_id: sessionID, frames_in: framesIn });
   });
 }
@@ -174,8 +196,14 @@ export function createWatchWssEchoServer(options = {}) {
   const server = http.createServer((request, response) => {
     const path = new URL(request.url, "http://localhost").pathname;
     if (path === "/health") {
+      stats.health_count += 1;
       response.writeHead(200, { "content-type": "application/json" });
       response.end(JSON.stringify({ ok: true, service: "watch-wss-echo" }));
+      return;
+    }
+    if (path === "/stats") {
+      response.writeHead(200, { "content-type": "application/json" });
+      response.end(JSON.stringify({ ok: true, stats }));
       return;
     }
 

@@ -18,6 +18,8 @@ struct WatchSocketLabView: View {
                 metric("Route", model.route)
                 metric("Health", model.healthStatus)
                 metric("Connect", model.connectMs.map { "\($0) ms" } ?? "-")
+                metric("NW", model.nwConnectMs.map { "\($0) ms" } ?? "-")
+                metric("NW RTT", model.nwRTTMs.map { "\($0) ms" } ?? "-")
                 metric("First RTT", model.firstBinaryRTTMs.map { "\($0) ms" } ?? "-")
                 metric("Sent", "\(model.framesSent)")
                 metric("Recv", "\(model.framesReceived)")
@@ -36,13 +38,14 @@ struct WatchSocketLabView: View {
                 }
                 HStack {
                     Button("Connect") { model.connect() }
+                    Button("NW") { model.probeNetworkWebSocket() }
+                }
+                HStack {
                     Button("Echo") { model.startBinaryEcho() }
-                }
-                HStack {
                     Button("Abort") { model.simulateAbort() }
-                    Button("Stop") { model.stop() }
                 }
                 HStack {
+                    Button("Stop") { model.stop() }
                     Button("Summary") { model.markSummary() }
                 }
 

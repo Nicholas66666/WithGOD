@@ -52,6 +52,7 @@
 		CDE198702D05991D9E7D51BB /* PresenceWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = D13937118EF5C0CF50ACBE9D /* PresenceWatchApp.swift */; };
 		D375641CDCAFFBEB15C1E75B /* PresenceHomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F99EEED3CF57F0ED34B2AB33 /* PresenceHomeView.swift */; };
 		D7A2AB757D7662CA06C2F17A /* PresenceWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 253FCCB096C0E132A4DDBBE2 /* PresenceWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		DD6F78CEFEB7797F177E7544 /* WatchSocketNWClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 493FB6D5FD6A39C41EA1B1E6 /* WatchSocketNWClient.swift */; };
 		E08F6AB845824CC5E69C166F /* FocusFenceMonitor.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 67E4897D3A086954E2693D15 /* FocusFenceMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		E3A8A2C6539508D3C27A45FE /* PresenceServiceClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51A59EDB21D99DC3573DAED6 /* PresenceServiceClient.swift */; };
 		E55CA6280875A6CA20EE7EAC /* PresenceRecordStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 06DEF1371E616F8470B867FC /* PresenceRecordStore.swift */; };
@@ -140,6 +141,7 @@
 		3706609F277E3C2D880B1D31 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		3FB2D53862697A891F1E0311 /* TurningReflectionService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurningReflectionService.swift; sourceTree = "<group>"; };
 		48EB9F4985E8467EFA3745A2 /* FocusFenceShieldAction.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusFenceShieldAction.swift; sourceTree = "<group>"; };
+		493FB6D5FD6A39C41EA1B1E6 /* WatchSocketNWClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSocketNWClient.swift; sourceTree = "<group>"; };
 		518695297D7BAE60F854EF81 /* Focus.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Focus.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		51A59EDB21D99DC3573DAED6 /* PresenceServiceClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceServiceClient.swift; sourceTree = "<group>"; };
 		53F123EB364B10B926792F59 /* DeepResponseWatchLabApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepResponseWatchLabApp.swift; sourceTree = "<group>"; };
@@ -311,6 +313,7 @@
 				760D0E5F33FADA50827A3018 /* WatchSocketLabModel.swift */,
 				B5DCB5D994AA0681CA0086A0 /* WatchSocketLabView.swift */,
 				2A80D57676AE65149F6FCBD9 /* WatchSocketLogStore.swift */,
+				493FB6D5FD6A39C41EA1B1E6 /* WatchSocketNWClient.swift */,
 			);
 			name = WatchSocketLab;
 			path = Sources/WatchSocketLab;
@@ -636,6 +639,7 @@
 				203E1E72414A698B6C7A273D /* WatchSocketLabModel.swift in Sources */,
 				AD59F6EB9BEB15ADE39EAA31 /* WatchSocketLabView.swift in Sources */,
 				A09A3B33781F35F92F88BD14 /* WatchSocketLogStore.swift in Sources */,
+				DD6F78CEFEB7797F177E7544 /* WatchSocketNWClient.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
