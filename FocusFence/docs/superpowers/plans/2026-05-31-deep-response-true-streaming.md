@@ -270,6 +270,18 @@ Latest short-first-sentence prompt optimization:
 - Remote abort stale audio chunks/bytes: `0` / `0`.
 - Remote idle lifecycle: session ended in `222ms` with reason `idle_timeout`; late audio upload returned `409 session_ended`.
 
+Latest HTTP timing breakdown:
+- Added HTTP probe receive-side timing fields so remote smoke can distinguish phrase arrival from first audio arrival:
+  - `http_stop_to_first_phrase_ms`
+  - `http_stop_to_first_audio_ms`
+  - `http_first_audio_after_first_phrase_ms`
+- `npm run test:node`: `125/125` passed.
+- `npm run deep:http-smoke:test -- --endpoint http://124.174.96.149:8797 --pcm /private/tmp/deep-response-http-speed.pcm --turns 2 --chunk-ms 1000 --upload-sleep-ms 1000 --poll-ms 50 --timeout-ms 120000 --observe-ms 3000 --max-stop-to-first-audio-ms 3000 --retries 1 --pipeline-mode cascade`: passed.
+- Remote stop-to-first-audio with timing breakdown: `1050ms`, `1034ms`.
+- Remote HTTP stop-to-first-phrase: `795ms`, `690ms`.
+- Remote HTTP first-audio-after-first-phrase: `255ms`, `344ms`.
+- Current timing implication: after ASR final, the larger remaining controllable cost is first phrase generation / event arrival, not TTS first audio.
+
 ### Milestone S2: Real Provider Cascade Harness
 
 Status: completed for provider-only cascade harness on branch `codex/deep-response-lab`.
