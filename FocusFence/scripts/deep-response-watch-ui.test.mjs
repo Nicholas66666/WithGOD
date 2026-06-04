@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 
 const debugViewSource = readFileSync("Sources/DeepResponseWatchLab/DeepResponseDebugView.swift", "utf8");
 const realtimeClientSource = readFileSync("Sources/DeepResponseWatchLab/DeepResponseRealtimeClient.swift", "utf8");
+const audioPlayerSource = readFileSync("Sources/DeepResponseWatchLab/DeepResponseAudioPlayer.swift", "utf8");
 
 test("DeepResponse Watch debug UI presents assistant reply as one god field", () => {
   assert.match(debugViewSource, /Text\("god: \\\(/);
@@ -21,4 +22,30 @@ test("DeepResponse Watch HTTP session appends streaming assistant deltas", () =>
   assert.match(realtimeClientSource, /lastTurnFollowupText = Self\.appendText\(lastTurnFollowupText, event\.delta\)/);
   assert.doesNotMatch(realtimeClientSource, /lastTurnFirstText = event\.delta/);
   assert.doesNotMatch(realtimeClientSource, /lastTurnFollowupText = event\.delta/);
+});
+
+test("DeepResponse Watch audio player reports when queued playback drains", () => {
+  assert.match(audioPlayerSource, /var onPlaybackDrained: \(\(\) -> Void\)\?/);
+  assert.match(audioPlayerSource, /pendingBufferCount/);
+  assert.match(audioPlayerSource, /notifyPlaybackDrainedIfNeeded\(\)/);
+  assert.match(audioPlayerSource, /completionCallbackType: \.dataPlayedBack/);
+});
+
+test("DeepResponse Watch audio player detaches stopped nodes before reprepare", () => {
+  assert.match(audioPlayerSource, /if isPrepared \{/);
+  assert.match(audioPlayerSource, /engine\.detach\(player\)/);
+});
+
+test("DeepResponse Watch client exposes HTTP playback-drained callback", () => {
+  assert.match(realtimeClientSource, /var onHTTPSessionPlaybackDrained: \(\(\) -> Void\)\?/);
+  assert.match(realtimeClientSource, /player\.onPlaybackDrained = \{ \[weak self\] in/);
+  assert.match(realtimeClientSource, /self\?\.onHTTPSessionPlaybackDrained\?\(\)/);
+});
+
+test("DeepResponse Watch debug UI has an HTTP continuous auto-listen loop", () => {
+  assert.match(debugViewSource, /@State private var isContinuousMode = false/);
+  assert.match(debugViewSource, /Image\(systemName: isContinuousMode \? "repeat\.circle\.fill" : "repeat\.circle"\)/);
+  assert.match(debugViewSource, /client\.onHTTPSessionPlaybackDrained = \{/);
+  assert.match(debugViewSource, /handlePlaybackDrained\(\)/);
+  assert.match(debugViewSource, /startRecordingTurn\(reason: "Auto listening"\)/);
 });

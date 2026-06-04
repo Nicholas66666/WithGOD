@@ -5,6 +5,9 @@ final class DeepResponseAudioPlayer {
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
     private var isPrepared = false
+    private let stateQueue = DispatchQueue(label: "deeplab.audio-player")
+    private var pendingBufferCount = 0
+    var onPlaybackDrained: (() -> Void)?
 
     func enqueuePCM16(_ data: Data, sampleRate: Double) {
         guard !data.isEmpty,
@@ -15,7 +18,12 @@ final class DeepResponseAudioPlayer {
 
         do {
             try prepareIfNeeded(format: format)
-            player.scheduleBuffer(buffer, completionHandler: nil)
+            stateQueue.sync {
+                pendingBufferCount += 1
+            }
+            player.scheduleBuffer(buffer, completionCallbackType: .dataPlayedBack) { [weak self] _ in
+                self?.markBufferPlayed()
+            }
             if !player.isPlaying {
                 player.play()
             }
@@ -25,9 +33,31 @@ final class DeepResponseAudioPlayer {
     }
 
     func stop() {
+        stateQueue.sync {
+            pendingBufferCount = 0
+        }
         player.stop()
         engine.stop()
-        isPrepared = false
+        if isPrepared {
+            engine.detach(player)
+            isPrepared = false
+        }
+    }
+
+    private func markBufferPlayed() {
+        let shouldNotify = stateQueue.sync {
+            pendingBufferCount = max(0, pendingBufferCount - 1)
+            return pendingBufferCount == 0
+        }
+        if shouldNotify {
+            notifyPlaybackDrainedIfNeeded()
+        }
+    }
+
+    private func notifyPlaybackDrainedIfNeeded() {
+        DispatchQueue.main.async { [weak self] in
+            self?.onPlaybackDrained?()
+        }
     }
 
     private func prepareIfNeeded(format: AVAudioFormat) throws {

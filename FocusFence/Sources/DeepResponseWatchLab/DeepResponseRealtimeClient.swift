@@ -34,6 +34,9 @@ final class DeepResponseRealtimeClient: ObservableObject {
     @Published private(set) var lastTurnTiming: DeepResponseTiming?
     @Published private(set) var lastClientTimingText: String?
     @Published private(set) var canAbortHTTPSessionTurn = false
+    @Published private(set) var isHTTPSessionPlaybackActive = false
+    @Published private(set) var isHTTPSessionEnded = false
+    var onHTTPSessionPlaybackDrained: (() -> Void)?
 
     private var task: URLSessionWebSocketTask?
     private var receiveTask: Task<Void, Never>?
@@ -60,6 +63,15 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private var httpSessionPollTask: Task<Void, Error>?
     private var isAbortingHTTPSessionTurn = false
     private var canceledHTTPGenerationIDs = Set<String>()
+
+    init() {
+        player.onPlaybackDrained = { [weak self] in
+            Task { @MainActor in
+                self?.isHTTPSessionPlaybackActive = false
+                self?.onHTTPSessionPlaybackDrained?()
+            }
+        }
+    }
 
     func checkHealth() async {
         do {
@@ -254,6 +266,8 @@ final class DeepResponseRealtimeClient: ObservableObject {
         httpInputStopResponseMs = nil
         httpFirstTextMs = nil
         httpFirstAudioMs = nil
+        isHTTPSessionPlaybackActive = false
+        isHTTPSessionEnded = false
         canAbortHTTPSessionTurn = false
         isAbortingHTTPSessionTurn = false
         httpSessionPollTask?.cancel()
@@ -477,6 +491,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
         if let httpGenerationID {
             canceledHTTPGenerationIDs.insert(httpGenerationID)
         }
+        isHTTPSessionPlaybackActive = false
         player.stop()
         httpSessionPollTask?.cancel()
         httpSessionPollTask = nil
@@ -584,6 +599,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
                         httpFirstAudioMs = Self.elapsedMs(since: stopStartedAt)
                         updateHTTPClientTimingText()
                     }
+                    isHTTPSessionPlaybackActive = true
                     player.enqueuePCM16(playbackAudio, sampleRate: playbackSampleRate ?? 24_000)
                 }
             }
@@ -619,6 +635,10 @@ final class DeepResponseRealtimeClient: ObservableObject {
         } else if event.type == "timing" {
             lastTurnTiming = event.timing
             lastTurnTotalMs = event.timing?.voicePipelineTotalMs
+        } else if event.type == "session_end" {
+            isHTTPSessionEnded = true
+            canAbortHTTPSessionTurn = false
+            connectionStage = event.reason.map { "http_session:ended \($0)" } ?? "http_session:ended"
         } else if event.type == "error" {
             lastError = event.message ?? "HTTP session error"
         }
@@ -706,6 +726,8 @@ final class DeepResponseRealtimeClient: ObservableObject {
         httpSessionPollTask?.cancel()
         httpSessionPollTask = nil
         canAbortHTTPSessionTurn = false
+        isHTTPSessionPlaybackActive = false
+        isHTTPSessionEnded = false
         isIntentionalDisconnect = true
         task?.cancel(with: .goingAway, reason: nil)
         task = nil
@@ -1077,6 +1099,7 @@ private struct DeepResponseHTTPSessionEvent: Decodable {
     let text: String?
     let delta: String?
     let message: String?
+    let reason: String?
     let timing: DeepResponseTiming?
 }
 

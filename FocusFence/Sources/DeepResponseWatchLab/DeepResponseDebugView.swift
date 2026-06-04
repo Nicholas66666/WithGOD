@@ -7,6 +7,7 @@ struct DeepResponseDebugView: View {
     @State private var recorder = DeepResponseMicrophoneRecorder()
     @State private var didRunAutorunFixture = false
     @State private var isWaitingForResponse = false
+    @State private var isContinuousMode = false
 
     var body: some View {
         VStack(spacing: 8) {
@@ -78,6 +79,14 @@ struct DeepResponseDebugView: View {
 
             HStack {
                 Button {
+                    isContinuousMode.toggle()
+                    status = isContinuousMode ? "Continuous on" : "Continuous off"
+                } label: {
+                    Image(systemName: isContinuousMode ? "repeat.circle.fill" : "repeat.circle")
+                }
+                .buttonStyle(.bordered)
+
+                Button {
                     Task { await toggleMicrophoneTurn() }
                 } label: {
                     Image(systemName: isRecording ? "stop.circle.fill" : "mic.circle.fill")
@@ -97,9 +106,15 @@ struct DeepResponseDebugView: View {
         }
         .padding()
         .onDisappear {
+            client.onHTTPSessionPlaybackDrained = nil
             if isRecording {
                 _ = recorder.stop()
                 isRecording = false
+            }
+        }
+        .onAppear {
+            client.onHTTPSessionPlaybackDrained = {
+                handlePlaybackDrained()
             }
         }
         .task {
@@ -128,14 +143,29 @@ struct DeepResponseDebugView: View {
             isWaitingForResponse = true
             await client.finishHTTPSessionTurn()
             isWaitingForResponse = false
-            status = client.lastError == nil ? "HTTP session done" : "HTTP session failed"
+            if isContinuousMode, client.lastError == nil, !client.isHTTPSessionEnded {
+                if client.isHTTPSessionPlaybackActive {
+                    status = "Waiting playback"
+                } else {
+                    await startRecordingTurn(reason: "Auto listening")
+                }
+            } else {
+                status = client.lastError == nil ? "HTTP session done" : "HTTP session failed"
+            }
             return
         }
 
+        await startRecordingTurn(reason: "Recording")
+    }
+
+    private func startRecordingTurn(reason: String) async {
+        guard !isRecording, !isWaitingForResponse, !client.isHTTPSessionEnded else {
+            return
+        }
         do {
             status = "Starting session"
             try await client.startHTTPSessionTurn()
-            status = "Recording"
+            status = reason
             try await recorder.start { chunk in
                 Task { @MainActor in
                     client.enqueueHTTPSessionAudio(chunk)
@@ -147,8 +177,22 @@ struct DeepResponseDebugView: View {
         }
     }
 
+    private func handlePlaybackDrained() {
+        guard isContinuousMode,
+              !isRecording,
+              !isWaitingForResponse,
+              client.lastError == nil,
+              !client.isHTTPSessionEnded else {
+            return
+        }
+        Task {
+            await startRecordingTurn(reason: "Auto listening")
+        }
+    }
+
     private func abortCurrentTurn() async {
         isWaitingForResponse = false
+        isContinuousMode = false
         await client.abortHTTPSessionTurn()
         status = client.lastError == nil ? "Aborted" : "Abort failed"
     }
