@@ -25,7 +25,8 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
     "--end-reason", "user_goodbye",
     "--expect-session-end",
     "--expect-late-audio-409",
-    "--expect-memory-candidate"
+    "--expect-memory-candidate",
+    "--expect-memory-persisted"
   ]);
 
   assert.equal(args.turns, 8);
@@ -33,6 +34,7 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
   assert.equal(args.expectSessionEnd, true);
   assert.equal(args.expectLateAudio409, true);
   assert.equal(args.expectMemoryCandidate, true);
+  assert.equal(args.expectMemoryPersisted, true);
 });
 
 test("summarizeTurn concatenates streaming text deltas without inserting spaces", () => {

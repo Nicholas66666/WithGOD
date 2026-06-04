@@ -710,6 +710,26 @@ Integration gate update 2026-06-04:
   - `npm run test:node`: `134/134` passed.
   - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-volc-build build`: `BUILD SUCCEEDED`.
 
+S6 memory persistence update 2026-06-04:
+- Added optional JSONL persistence for async memory candidates using `DEEP_RESPONSE_MEMORY_JSONL_PATH`.
+- Default behavior remains `persisted: false` when no memory store path is configured.
+- When configured, the server appends one JSON object per candidate and emits `memory_candidate` with:
+  - `persisted: true`
+  - `store: "jsonl"`
+  - `path: <configured JSONL path>`
+- Added local regression coverage proving the JSONL file is written, contains the session id, end reason, summary, turn count, and `persisted: true`.
+- Extended `scripts/test-deep-response-http-conversation.mjs` with `--expect-memory-persisted` so remote probes can require `memory_candidate.persisted === true` and a non-empty store.
+- Fire/Volcengine ECS was configured with:
+  - `DEEP_RESPONSE_MEMORY_JSONL_PATH=/opt/deep-response/memory/deep-response-memory.jsonl`
+- Verification:
+  - `node --test scripts/deep-response-server.test.mjs scripts/test-deep-response-http-conversation.test.mjs`: `35/35` passed.
+  - `npm run test:node`: `141/141` passed.
+  - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-volc-build build`: `BUILD SUCCEEDED`.
+  - Remote `node scripts/test-deep-response-http-conversation.mjs --endpoint http://124.174.96.149:8797 --pcm /private/tmp/deep-response-http-speed.pcm --turns 2 --chunk-ms 1000 --upload-sleep-ms 1000 --poll-ms 50 --wait-ms 800 --timeout-ms 120000 --pipeline-mode cascade --end-reason memory_persist_probe --expect-session-end --expect-late-audio-409 --expect-memory-candidate --expect-memory-persisted`: passed.
+  - Remote memory candidate reported `persisted: true`, `store: "jsonl"`, and path `/opt/deep-response/memory/deep-response-memory.jsonl`.
+  - Remote JSONL tail confirmed a persisted row for session `drs_a76b0b0064d046dd98df9bf113915bb8`.
+- Integration remains blocked by the explicit integration gate until user approval; this update does not touch Quick Response.
+
 Product gate:
 - Only after S1-S5 self-tests pass and any explicitly requested final experience check is acceptable.
 - User approves whether to integrate into old Watch app or keep separate for more Lab testing.

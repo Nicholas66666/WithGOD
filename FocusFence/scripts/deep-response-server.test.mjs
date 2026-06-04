@@ -1,5 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { deflateSync } from "node:zlib";
 
 import { startDeepResponseServer } from "./deep-response-server.mjs";
@@ -1393,6 +1396,74 @@ test("DeepResponse HTTP session writes async memory candidate after session end"
     assert.equal(memory.persisted, false);
   } finally {
     await server.close();
+  }
+});
+
+test("DeepResponse HTTP session can persist memory candidate to JSONL", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "deep-response-memory-"));
+  const memoryPath = join(tempDir, "memory.jsonl");
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    env: {
+      DEEP_RESPONSE_MEMORY_JSONL_PATH: memoryPath
+    },
+    createPipeline: () => ({
+      async *streamSegmented({ audioChunks }) {
+        const collected = [];
+        for await (const chunk of audioChunks) {
+          collected.push(Buffer.from(chunk).toString("utf8"));
+        }
+        const text = collected.join("");
+        yield { type: "transcript_final", transcript: `用户说${text}` };
+        yield {
+          type: "segment",
+          segment: "first",
+          text: `回应${text}`,
+          audioChunks: [Buffer.from(`audio-${text}`)]
+        };
+        yield { type: "timing", timing: {}, providerMeta: {} };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {});
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+
+    await postBytes(`${base}/audio?turn_id=turn-memory-jsonl&seq=0`, Buffer.from("需要被记住"));
+    await postJSON(`${base}/input-stop`, { turnID: "turn-memory-jsonl" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "timing" && event.turnID === "turn-memory-jsonl");
+    });
+
+    await postJSON(`${base}/end`, { reason: "memory_persist_probe" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "memory_candidate" && event.persisted === true);
+    });
+
+    const events = await fetchJSON(`${base}/events?cursor=0`);
+    const memory = events.events.find((event) => event.type === "memory_candidate");
+    assert.equal(memory.persisted, true);
+    assert.equal(memory.store, "jsonl");
+    assert.equal(memory.path, memoryPath);
+    assert.match(memory.summary, /需要被记住/);
+
+    const lines = readFileSync(memoryPath, "utf8").trim().split("\n");
+    assert.equal(lines.length, 1);
+    const persisted = JSON.parse(lines[0]);
+    assert.equal(persisted.sessionID, created.sessionID);
+    assert.equal(persisted.reason, "memory_persist_probe");
+    assert.equal(persisted.persisted, true);
+    assert.match(persisted.summary, /需要被记住/);
+  } finally {
+    await server.close();
+    rmSync(tempDir, { recursive: true, force: true });
   }
 });
 

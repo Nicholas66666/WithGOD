@@ -20,6 +20,7 @@ export function parseHTTPConversationArgs(argv) {
     expectSessionEnd: false,
     expectLateAudio409: false,
     expectMemoryCandidate: false,
+    expectMemoryPersisted: false,
     verbose: false
   };
 
@@ -60,6 +61,9 @@ export function parseHTTPConversationArgs(argv) {
     } else if (arg === "--expect-late-audio-409") {
       args.expectLateAudio409 = true;
     } else if (arg === "--expect-memory-candidate") {
+      args.expectMemoryCandidate = true;
+    } else if (arg === "--expect-memory-persisted") {
+      args.expectMemoryPersisted = true;
       args.expectMemoryCandidate = true;
     } else if (arg === "--verbose") {
       args.verbose = true;
@@ -185,6 +189,11 @@ export async function runHTTPConversationProbe(args) {
       }));
       return memoryCandidate?.summary;
     }, { timeoutMs: args.timeoutMs, intervalMs: args.pollMs });
+  }
+  if (args.expectMemoryPersisted) {
+    if (memoryCandidate?.persisted !== true || !memoryCandidate?.store) {
+      throw new Error(`Expected persisted memory candidate, got ${JSON.stringify(memoryCandidate)}`);
+    }
   }
 
   let lateAudioRejected = null;
@@ -366,6 +375,8 @@ Options:
                         Verify audio upload after session end returns 409 session_ended.
   --expect-memory-candidate
                         Require an async memory_candidate event after session end.
+  --expect-memory-persisted
+                        Require memory_candidate.persisted=true and a non-empty store.
   --verbose             Print turn event batches.
 `);
 }

@@ -2,6 +2,7 @@
 
 import { createServer } from "node:http";
 import crypto from "node:crypto";
+import { appendFile } from "node:fs/promises";
 import { pathToFileURL } from "node:url";
 import { inflateSync } from "node:zlib";
 
@@ -215,6 +216,7 @@ async function handleHTTPSessionCreate(request, response, { sessions, env = {}, 
       idleTimeoutMs: Number.isFinite(idleTimeoutMs) && idleTimeoutMs > 0 ? idleTimeoutMs : 0,
       idleGoodbye,
       idleGoodbyeStarted: false,
+      env,
       lastActivityAt: Date.now(),
       audioByTurn: new Map(),
       events: [],
@@ -1099,32 +1101,73 @@ function scheduleHTTPSessionMemoryCandidate(session, {
   }
   session.memoryCandidateScheduled = true;
   const history = session.history.slice();
-  setTimeout(() => {
+  setTimeout(async () => {
     const candidate = buildHTTPSessionMemoryCandidate(session, {
       history,
       reason,
       turnID,
       generationID
     });
-    session.memoryCandidates.push(candidate);
+    const persisted = await persistHTTPSessionMemoryCandidate(session, candidate);
+    const eventCandidate = {
+      ...candidate,
+      persisted: persisted.persisted,
+      store: persisted.store,
+      path: persisted.path,
+      persistError: persisted.error
+    };
+    session.memoryCandidates.push(eventCandidate);
     pushSessionEvent(session, {
       type: "memory_candidate",
       sessionID: session.sessionID,
       turnID,
       generationID,
       reason,
-      summary: candidate.summary,
-      turnCount: candidate.turnCount,
-      persisted: false
+      summary: eventCandidate.summary,
+      turnCount: eventCandidate.turnCount,
+      persisted: eventCandidate.persisted,
+      store: eventCandidate.store,
+      path: eventCandidate.path,
+      persistError: eventCandidate.persistError
     });
     recordEvent("http_session_memory_candidate", {
       sessionID: session.sessionID,
       reason,
-      turnCount: candidate.turnCount,
-      summaryLength: candidate.summary.length
+      turnCount: eventCandidate.turnCount,
+      summaryLength: eventCandidate.summary.length,
+      persisted: eventCandidate.persisted,
+      store: eventCandidate.store || ""
     });
   }, 0);
   return true;
+}
+
+async function persistHTTPSessionMemoryCandidate(session, candidate) {
+  const jsonlPath = session.env?.DEEP_RESPONSE_MEMORY_JSONL_PATH || process.env.DEEP_RESPONSE_MEMORY_JSONL_PATH || "";
+  if (!jsonlPath) {
+    return { persisted: false };
+  }
+  try {
+    const persistedCandidate = {
+      ...candidate,
+      persisted: true,
+      store: "jsonl",
+      path: jsonlPath
+    };
+    await appendFile(jsonlPath, `${JSON.stringify(persistedCandidate)}\n`, "utf8");
+    return {
+      persisted: true,
+      store: "jsonl",
+      path: jsonlPath
+    };
+  } catch (error) {
+    return {
+      persisted: false,
+      store: "jsonl",
+      path: jsonlPath,
+      error: error instanceof Error ? error.message : String(error)
+    };
+  }
 }
 
 function buildHTTPSessionMemoryCandidate(session, {
