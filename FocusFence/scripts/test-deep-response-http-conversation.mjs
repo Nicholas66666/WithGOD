@@ -23,6 +23,7 @@ export function parseHTTPConversationArgs(argv) {
     expectMemoryPersisted: false,
     expectMemoryRecalled: false,
     expectLLMStartedFromPartial: false,
+    expectAudioBeforeTurnDone: false,
     forbidIdenticalConsecutiveReplies: false,
     maxOpeningStemRepeats: 0,
     maxAssistantReplyChars: 0,
@@ -77,6 +78,8 @@ export function parseHTTPConversationArgs(argv) {
       args.expectMemoryRecalled = true;
     } else if (arg === "--expect-llm-started-from-partial") {
       args.expectLLMStartedFromPartial = true;
+    } else if (arg === "--expect-audio-before-turn-done") {
+      args.expectAudioBeforeTurnDone = true;
     } else if (arg === "--forbid-identical-consecutive-replies") {
       args.forbidIdenticalConsecutiveReplies = true;
     } else if (arg === "--max-opening-stem-repeats") {
@@ -285,6 +288,12 @@ export async function runHTTPConversationProbe(args) {
   if (partialStartFailures.length > 0) {
     throw new Error(`Conversation partial-start failures: ${JSON.stringify(partialStartFailures, null, 2)}`);
   }
+  const audioBeforeTurnDoneFailures = args.expectAudioBeforeTurnDone
+    ? collectAudioBeforeTurnDoneFailures(turns)
+    : [];
+  if (audioBeforeTurnDoneFailures.length > 0) {
+    throw new Error(`Audio-before-turn-done failures: ${JSON.stringify(audioBeforeTurnDoneFailures, null, 2)}`);
+  }
 
   let lateAudioRejected = null;
   if (args.expectLateAudio409) {
@@ -323,6 +332,7 @@ export async function runHTTPConversationProbe(args) {
     shortReplyFailures,
     stopToFirstAudioFailures,
     partialStartFailures,
+    audioBeforeTurnDoneFailures,
     lateAudioRejected,
     elapsedMs: Math.round(performance.now() - startedAt),
     turns
@@ -350,7 +360,8 @@ export function summarizeTurn({
     .join("");
   const timing = events.find((event) => event.type === "timing")?.timing || null;
   const audioDone = events.some((event) => event.type === "audio_done" && event.generationID === generationID);
-  const turnDone = events.some((event) => event.type === "turn_done" && event.generationID === generationID);
+  const turnDoneEvent = events.find((event) => event.type === "turn_done" && event.generationID === generationID);
+  const turnDone = Boolean(turnDoneEvent);
   const firstPhraseEvent = events.find((event) => event.type === "assistant_phrase");
   const firstAudioChunk = audioChunks[0] || null;
   const stopAtMs = Math.round(uploadEndedAt - turnStartedAt);
@@ -380,6 +391,7 @@ export function summarizeTurn({
     text,
     audioDone,
     turnDone,
+    turnDoneReceivedAtMs: Number.isFinite(turnDoneEvent?.receivedAtMs) ? turnDoneEvent.receivedAtMs : null,
     audioByteLength: audioChunks.reduce((sum, chunk) => sum + Number(chunk.audioByteLength || 0), 0),
     audioChunks: audioChunks.length,
     timing: timingWithHTTP
@@ -565,6 +577,23 @@ export function collectConversationPartialStartFailures(turns = []) {
     }));
 }
 
+export function collectAudioBeforeTurnDoneFailures(turns = []) {
+  return (turns || [])
+    .filter((turn) => {
+      const firstAudioMs = Number.isFinite(turn?.firstAudioMs) ? Number(turn.firstAudioMs) : null;
+      const turnDoneReceivedAtMs = Number.isFinite(turn?.turnDoneReceivedAtMs)
+        ? Number(turn.turnDoneReceivedAtMs)
+        : null;
+      return firstAudioMs == null || turnDoneReceivedAtMs == null || firstAudioMs >= turnDoneReceivedAtMs;
+    })
+    .map((turn) => ({
+      turnID: turn?.turnID || "",
+      firstAudioMs: Number.isFinite(turn?.firstAudioMs) ? Number(turn.firstAudioMs) : null,
+      turnDoneReceivedAtMs: Number.isFinite(turn?.turnDoneReceivedAtMs) ? Number(turn.turnDoneReceivedAtMs) : null,
+      text: String(turn?.text || "").trim()
+    }));
+}
+
 function normalizeConversationReplyText(text) {
   return String(text || "").replace(/\s+/g, "").trim();
 }
@@ -663,6 +692,8 @@ Options:
                         Require session creation to recall persisted memory into context.
   --expect-llm-started-from-partial
                         Require every conversation turn to start LLM from usable ASR partial.
+  --expect-audio-before-turn-done
+                        Require first audio to arrive before turn_done for every turn.
   --forbid-identical-consecutive-replies
                         Fail if any assistant replies in the same session are identical.
   --max-assistant-reply-chars <n>

@@ -168,8 +168,12 @@ export class VoicePipeline {
     let llmStartedFromPartial = false;
     let spokenReplyChars = 0;
     let replyTruncatedForLength = false;
+    let shortReplyFallbackQueued = false;
+    let nextPhraseIndex = 0;
 
     const enqueuePhrase = (phraseText, phrase = {}) => {
+      const phraseIndex = Number.isFinite(phrase.index) ? Number(phrase.index) : nextPhraseIndex;
+      nextPhraseIndex = Math.max(nextPhraseIndex, phraseIndex + 1);
       spokenReplyChars += countSpokenChars(phraseText);
       assistantText += phraseText;
       outputQueue.push({
@@ -182,11 +186,11 @@ export class VoicePipeline {
         type: "assistant_phrase",
         turnID,
         generationID,
-        phraseIndex: phrase.index,
+        phraseIndex,
         text: phraseText,
         reason: phrase.reason
       });
-      phraseQueue.push({ index: phrase.index, text: phraseText });
+      phraseQueue.push({ index: phraseIndex, text: phraseText });
     };
 
     const enqueueShortReplyFallbackIfNeeded = (phrase = {}) => {
@@ -202,6 +206,7 @@ export class VoicePipeline {
         index: phrase.index,
         reason: "short_reply_fallback"
       });
+      shortReplyFallbackQueued = true;
       return true;
     };
 
@@ -272,6 +277,7 @@ export class VoicePipeline {
             }
             enqueuePhrase(phraseText, phrase);
           }
+          enqueueShortReplyFallbackIfNeeded({ reason: "short_reply_fallback" });
         } finally {
           phraseQueue.close();
         }
@@ -355,6 +361,7 @@ export class VoicePipeline {
             ...llmTiming,
             ...(llmStartedFromPartial ? { llm_started_from_partial: 1 } : {}),
             ...(replyTruncatedForLength ? { reply_truncated_for_length: 1 } : {}),
+            ...(shortReplyFallbackQueued ? { short_reply_fallback: 1 } : {}),
             voice_pipeline_total_ms: Math.round(this.clock() - startedAt)
           };
 

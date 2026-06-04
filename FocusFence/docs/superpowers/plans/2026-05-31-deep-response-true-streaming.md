@@ -99,6 +99,7 @@ Latest full self-test update:
   - `npm run deep:volc:conversation:full`
   - `npm run deep:watchlab:build:volc`
 - The 8-turn Fire/Volcengine continuous gate verifies one HTTP session across 8 turns, `memory_recalled`, persisted `memory_candidate`, explicit `/end` with reason `user_goodbye`, late audio `409 session_ended`, and `forbiddenTextFailures: []`.
+- The 8-turn Fire/Volcengine continuous gate also verifies `--expect-audio-before-turn-done`, so every turn must receive first audio before `turn_done` and buffered full-turn responses cannot pass as true streaming.
 - Added conversation-level `--forbid-text-pattern` support so long continuous probes reject lookup-style, harsh repeated-comfort, and mechanical tired/fatigue replies in turn text and memory summaries, not only in the 2-turn smoke.
 - Added memory recall sanitization for lookup-style, harsh repeated-comfort, and mechanical tired/fatigue phrases before persisted summaries enter LLM context.
 - Added VoicePipeline output normalization so lookup-style, harsh repeated-comfort, and mechanical tired/fatigue openings are corrected before `assistant_text_delta`, `assistant_phrase`, and TTS audio.
@@ -319,6 +320,23 @@ Latest HTTP timing breakdown:
 - Remote HTTP stop-to-first-phrase: `795ms`, `690ms`.
 - Remote HTTP first-audio-after-first-phrase: `255ms`, `344ms`.
 - Current timing implication: after ASR final, the larger remaining controllable cost is first phrase generation / event arrival, not TTS first audio.
+
+Latest audio-before-turn-done streaming gate:
+- Added `--expect-audio-before-turn-done` to the standard Fire/Volcengine 8-turn conversation probe.
+- The probe now records `turnDoneReceivedAtMs` and fails if first audio is missing or arrives at/after `turn_done`.
+- This turns "true streaming over HTTP" into an automated remote invariant, independent of user-operated Watch testing.
+- The first full self-test with this gate exposed a separate real remote regression: complete reply `我陪你慢下来。` was only 7 spoken characters and failed `--min-assistant-reply-chars 8`.
+- `VoicePipeline.streamCascadeTurn()` now applies the short spoken-reply fallback after normal LLM completion as well as after truncation, and marks `short_reply_fallback: 1` when it queues that fallback.
+- Latest `npm run deep:selftest:full` result:
+  - Node self-tests: `192/192`
+  - Fire/Volcengine smoke: passed, stop-to-first-audio `214ms`, `214ms`
+  - `audioBeforeTurnDoneFailures: []`
+  - `partialStartFailures: []`
+  - `shortReplyFailures: []`
+  - `stopToFirstAudioFailures: []`
+  - 8-turn stop-to-first-audio: `192ms`, `181ms`, `189ms`, `186ms`, `192ms`, `188ms`, `178ms`, `171ms`
+  - first audio arrived before `turn_done` on all 8 turns.
+  - DeepResponseWatchLab generic watchOS build: `BUILD SUCCEEDED`
 
 ### Milestone S2: Real Provider Cascade Harness
 

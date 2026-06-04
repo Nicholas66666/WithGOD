@@ -10,6 +10,7 @@ import {
   collectShortConversationReplyFailures,
   collectStopToFirstAudioFailures,
   collectConversationPartialStartFailures,
+  collectAudioBeforeTurnDoneFailures,
   parseHTTPConversationArgs,
   summarizeTurn
 } from "./test-deep-response-http-conversation.mjs";
@@ -36,6 +37,7 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
     "--expect-memory-persisted",
     "--expect-memory-recalled",
     "--expect-llm-started-from-partial",
+    "--expect-audio-before-turn-done",
     "--forbid-identical-consecutive-replies",
     "--max-opening-stem-repeats", "2",
     "--max-assistant-reply-chars", "48",
@@ -52,6 +54,7 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
   assert.equal(args.expectMemoryPersisted, true);
   assert.equal(args.expectMemoryRecalled, true);
   assert.equal(args.expectLLMStartedFromPartial, true);
+  assert.equal(args.expectAudioBeforeTurnDone, true);
   assert.equal(args.forbidIdenticalConsecutiveReplies, true);
   assert.equal(args.maxOpeningStemRepeats, 2);
   assert.equal(args.maxAssistantReplyChars, 48);
@@ -77,6 +80,44 @@ test("collectConversationPartialStartFailures flags turns that waited for ASR fi
       turnID: "turn-3",
       expected: "llm_started_from_partial",
       actual: ""
+    }
+  ]);
+});
+
+test("collectAudioBeforeTurnDoneFailures flags non-streamed turn completion order", () => {
+  const failures = collectAudioBeforeTurnDoneFailures([
+    {
+      turnID: "turn-1",
+      firstAudioMs: 210,
+      turnDoneReceivedAtMs: 480,
+      text: "我陪你慢慢来。"
+    },
+    {
+      turnID: "turn-2",
+      firstAudioMs: 520,
+      turnDoneReceivedAtMs: 520,
+      text: "这轮音频和完成同时到达。"
+    },
+    {
+      turnID: "turn-3",
+      firstAudioMs: null,
+      turnDoneReceivedAtMs: 500,
+      text: "这轮没有音频。"
+    }
+  ]);
+
+  assert.deepEqual(failures, [
+    {
+      turnID: "turn-2",
+      firstAudioMs: 520,
+      turnDoneReceivedAtMs: 520,
+      text: "这轮音频和完成同时到达。"
+    },
+    {
+      turnID: "turn-3",
+      firstAudioMs: null,
+      turnDoneReceivedAtMs: 500,
+      text: "这轮没有音频。"
     }
   ]);
 });
@@ -146,13 +187,14 @@ test("summarizeTurn records authoritative turn_done completion", () => {
     decodedUploadBytes: 10,
     events: [
       { type: "audio_done", generationID: "gen-1" },
-      { type: "turn_done", generationID: "gen-1" }
+      { type: "turn_done", generationID: "gen-1", receivedAtMs: 460 }
     ],
     audioChunks: [{ audioByteLength: 100, receivedAtMs: 260 }]
   });
 
   assert.equal(summary.audioDone, true);
   assert.equal(summary.turnDone, true);
+  assert.equal(summary.turnDoneReceivedAtMs, 460);
 });
 
 test("collectSessionLifecycleEvents keeps memory candidate from same batch as session end", () => {

@@ -1297,6 +1297,49 @@ test("VoicePipeline streamCascadeTurn adds a short fallback when truncation woul
   assert.equal(timing.timing.reply_truncated_for_length, 1);
 });
 
+test("VoicePipeline streamCascadeTurn adds a short fallback when complete reply is below minimum", async () => {
+  const spokenTexts = [];
+  const asr = {
+    async *transcribeStream() {
+      yield { type: "transcript_final", transcript: "今天我有点累，想听一句安慰的话。" };
+    }
+  };
+  const llm = {
+    async *streamTokens() {
+      yield { type: "delta", delta: "我陪你慢下来。" };
+      yield { type: "done", timing: { llm_total_ms: 700 } };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      spokenTexts.push(text);
+      yield { type: "audio_chunk", audioChunk: Buffer.from(text), sampleRate: 24000 };
+      yield { type: "done", timing: { tts_first_audio_ms: 10 } };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 1, 2, 3]) });
+  const events = [];
+  for await (const event of pipeline.streamCascadeTurn({
+    audioChunks: [Buffer.from("voice")],
+    maxSpokenReplyChars: 48,
+    minSpokenReplyChars: 8
+  })) {
+    events.push(event);
+  }
+
+  const deltas = events
+    .filter((event) => event.type === "assistant_text_delta")
+    .map((event) => event.delta);
+  const done = events.find((event) => event.type === "turn_done");
+  const timing = events.find((event) => event.type === "timing");
+
+  assert.deepEqual(deltas, ["我陪你慢下来。", "我陪你慢慢缓过来。"]);
+  assert.deepEqual(spokenTexts, ["我陪你慢下来。", "我陪你慢慢缓过来。"]);
+  assert.equal(done.assistantText, "我陪你慢下来。我陪你慢慢缓过来。");
+  assert.equal(timing.timing.short_reply_fallback, 1);
+});
+
 function delay(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
