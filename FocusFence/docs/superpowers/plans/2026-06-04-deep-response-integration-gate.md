@@ -21,6 +21,7 @@ This gate exists to prevent the DeepResponse Lab work from drifting into the sta
 - DeepResponseWatchLab watchOS build must pass.
 - Node self-tests must pass.
 - Quick Response main flow must have a source-level guard proving no DeepResponse debug routing is present.
+- Directory-level source guard required for PresenceWatchApp and PresenceApp: no DeepResponse, DeepLab, or deep-response references may enter those app source trees before explicit approval.
 - DeepResponse must remain removable without changing Quick Response behavior.
 
 ## Allowed Next Steps

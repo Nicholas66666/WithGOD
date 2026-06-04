@@ -1194,6 +1194,23 @@ Latest Watch session/memory diagnostics gate:
   - Latest idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`, `turnCount: 1`.
 - Development remained self-test only; no user-operated Watch testing was required.
 
+Latest integration boundary guard:
+- Strengthened `scripts/deep-response-integration-gate.test.mjs` from checking only the Watch app entry file to scanning the full stable app source trees:
+  - `Sources/PresenceWatchApp`
+  - `Sources/PresenceApp`
+- The scan fails if `DeepResponse`, `DeepLab`, or `deep-response` appears in those Quick Response / stable Presence source trees before explicit integration approval.
+- Updated `docs/superpowers/plans/2026-06-04-deep-response-integration-gate.md` to require the directory-level source guard for `PresenceWatchApp` and `PresenceApp`.
+- This makes the "do not touch Quick Response old flow" requirement machine-checkable across the stable app sources, not only the app entry point.
+- Verification:
+  - RED test first failed because the integration gate document did not require directory-level source scanning.
+  - `node --test scripts/deep-response-integration-gate.test.mjs`: `3/3` passed.
+  - `npm run test:node`: `150/150` passed.
+  - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-integration-guard-build build`: `BUILD SUCCEEDED`.
+  - Fire/Volcengine full HTTP smoke with recall, conversation persistence, idle persistence, abort-next-turn, idle goodbye, cascade mode, and forbidden-pattern gates: passed.
+  - Latest full-smoke conversation stop-to-first-audio: `232ms`, `227ms`.
+  - Latest idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`, `turnCount: 1`.
+- Development remained self-test only; no user-operated Watch testing was required.
+
 ## File Responsibilities
 
 - Modify `scripts/deep-response/protocol/deep-response-protocol.mjs`
