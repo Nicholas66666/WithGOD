@@ -638,6 +638,23 @@ Status update 2026-06-04:
   - Remote `node scripts/test-deep-response-http-conversation.mjs --endpoint http://124.174.96.149:8797 --pcm /private/tmp/deep-response-http-speed.pcm --turns 2 --chunk-ms 1000 --upload-sleep-ms 1000 --poll-ms 50 --wait-ms 800 --timeout-ms 120000 --pipeline-mode cascade --end-reason memory_probe_complete --expect-session-end --expect-late-audio-409 --expect-memory-candidate`: passed.
   - Remote `npm run deep:http-smoke:test -- --endpoint http://124.174.96.149:8797 --pcm /private/tmp/deep-response-http-speed.pcm --turns 2 --chunk-ms 1000 --upload-sleep-ms 1000 --poll-ms 50 --wait-ms 800 --timeout-ms 120000 --observe-ms 3000 --max-stop-to-first-audio-ms 3000 --retries 1 --pipeline-mode cascade`: passed.
 
+Integration gate update 2026-06-04:
+- Added `docs/superpowers/plans/2026-06-04-deep-response-integration-gate.md`.
+- Current integration status is explicitly blocked until user approval.
+- The gate requires:
+  - Quick Response main flow stays untouched.
+  - DeepResponseWatchLab remains the active test package.
+  - Watch transport remains HTTP-only.
+  - No WebSocket feasibility or fallback work.
+  - Feature flag before any main app entry.
+  - Rollback tag before integration.
+  - Product-experience spot check is optional and user-requested.
+- Added `scripts/deep-response-integration-gate.test.mjs` to keep the gate machine-checkable against current code boundaries.
+- Verification:
+  - `node --test scripts/deep-response-integration-gate.test.mjs`: `2/2` passed.
+  - `npm run test:node`: `134/134` passed.
+  - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-volc-build build`: `BUILD SUCCEEDED`.
+
 Product gate:
 - Only after S1-S5 self-tests pass and any explicitly requested final experience check is acceptable.
 - User approves whether to integrate into old Watch app or keep separate for more Lab testing.
