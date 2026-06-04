@@ -14,6 +14,7 @@ export function parseHTTPConversationArgs(argv) {
     uploadSleepMs: null,
     pollMs: 50,
     timeoutMs: 90_000,
+    pipelineMode: "",
     verbose: false
   };
 
@@ -40,6 +41,9 @@ export function parseHTTPConversationArgs(argv) {
     } else if (arg === "--timeout-ms") {
       args.timeoutMs = Number(argv[index + 1] || args.timeoutMs);
       index += 1;
+    } else if (arg === "--pipeline-mode") {
+      args.pipelineMode = argv[index + 1] || "";
+      index += 1;
     } else if (arg === "--verbose") {
       args.verbose = true;
     } else if (arg === "--help" || arg === "-h") {
@@ -65,7 +69,8 @@ export async function runHTTPConversationProbe(args) {
   const chunks = [...chunkPCM16(pcm, { sampleRate: 16_000, chunkMs: args.chunkMs })];
   const uploadSleepMs = args.uploadSleepMs ?? args.chunkMs;
   const created = await postJSON(buildURL(args.endpoint, "/deep-response/sessions"), {
-    sampleRate: 16_000
+    sampleRate: 16_000,
+    ...(args.pipelineMode ? { pipelineMode: args.pipelineMode } : {})
   });
   const sessionID = created.sessionID;
   const basePath = `/deep-response/sessions/${encodeURIComponent(sessionID)}`;
@@ -146,7 +151,7 @@ export async function runHTTPConversationProbe(args) {
   };
 }
 
-function summarizeTurn({
+export function summarizeTurn({
   turnID,
   generationID,
   turnStartedAt,
@@ -164,7 +169,7 @@ function summarizeTurn({
   const text = events
     .filter((event) => event.type === "assistant_text_delta")
     .map((event) => event.delta || "")
-    .join(" ");
+    .join("");
   const timing = events.find((event) => event.type === "timing")?.timing || null;
   return {
     turnID,
@@ -248,6 +253,7 @@ Options:
                         Sleep after each upload. Default: chunk-ms. Use 0 for network drain timing.
   --poll-ms <ms>        Poll interval for events/audio. Default: 50
   --timeout-ms <ms>     Probe timeout. Default: 90000
+  --pipeline-mode <m>   Optional HTTP session pipeline mode, e.g. cascade.
   --verbose             Print turn event batches.
 `);
 }

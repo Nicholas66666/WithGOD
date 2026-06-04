@@ -13,6 +13,7 @@ export function parseHTTPAbortArgs(argv) {
     uploadSleepMs: null,
     pollMs: 50,
     observeMs: 3_000,
+    pipelineMode: "",
     verbose: false
   };
 
@@ -35,6 +36,9 @@ export function parseHTTPAbortArgs(argv) {
       index += 1;
     } else if (arg === "--observe-ms") {
       args.observeMs = Number(argv[index + 1] || args.observeMs);
+      index += 1;
+    } else if (arg === "--pipeline-mode") {
+      args.pipelineMode = argv[index + 1] || "";
       index += 1;
     } else if (arg === "--verbose") {
       args.verbose = true;
@@ -61,7 +65,8 @@ export async function runHTTPAbortProbe(args) {
   const chunks = [...chunkPCM16(pcm, { sampleRate: 16_000, chunkMs: args.chunkMs })];
   const uploadSleepMs = args.uploadSleepMs ?? args.chunkMs;
   const created = await postJSON(buildURL(args.endpoint, "/deep-response/sessions"), {
-    sampleRate: 16_000
+    sampleRate: 16_000,
+    ...(args.pipelineMode ? { pipelineMode: args.pipelineMode } : {})
   });
   const sessionID = created.sessionID;
   const turnID = `turn_abort_${Date.now()}`;
@@ -175,6 +180,7 @@ Options:
                         Sleep after each upload. Default: chunk-ms.
   --poll-ms <ms>        Poll interval for events/audio. Default: 50
   --observe-ms <ms>     How long to watch for stale audio after abort. Default: 3000
+  --pipeline-mode <m>   Optional HTTP session pipeline mode, e.g. cascade.
   --verbose             Print turn event batches.
 `);
 }

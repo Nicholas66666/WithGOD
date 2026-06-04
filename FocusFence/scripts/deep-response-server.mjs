@@ -203,9 +203,11 @@ async function handleHTTPSessionCreate(request, response, { sessions, recordEven
   try {
     const body = await readJSONBody(request);
     const sessionID = body.sessionID || `drs_${crypto.randomUUID().replaceAll("-", "")}`;
+    const pipelineMode = body.pipelineMode === "cascade" ? "cascade" : "";
     const session = {
       sessionID,
       state: "listening",
+      pipelineMode,
       sampleRate: Number(body.sampleRate || 16000),
       audioByTurn: new Map(),
       events: [],
@@ -227,6 +229,7 @@ async function handleHTTPSessionCreate(request, response, { sessions, recordEven
     recordEvent("http_session_created", {
       sessionID,
       sampleRate: session.sampleRate,
+      pipelineMode,
       remoteAddress: request.socket.remoteAddress || "unknown",
       userAgent: request.headers["user-agent"] || ""
     });
@@ -234,7 +237,8 @@ async function handleHTTPSessionCreate(request, response, { sessions, recordEven
       ok: true,
       sessionID,
       state: session.state,
-      sampleRate: session.sampleRate
+      sampleRate: session.sampleRate,
+      pipelineMode
     });
   } catch (error) {
     sendJSON(response, 400, {
@@ -453,7 +457,12 @@ function ensureHTTPSessionTurnStream({
   }
 
   const pipeline = createPipeline ? createPipeline() : createDefaultPipeline(env);
-  if (typeof pipeline.streamSegmented !== "function") {
+  if (!selectHTTPSessionStream(pipeline, {
+    env,
+    context: [],
+    audioChunks: [],
+    turnID
+  })) {
     return null;
   }
 
@@ -463,17 +472,23 @@ function ensureHTTPSessionTurnStream({
     generationReady: deferred()
   };
   session.turnStreams.set(turnID, turnStream);
+  const stream = selectHTTPSessionStream(pipeline, {
+    session,
+    env,
+    context: session.history.slice(),
+    audioChunks: replayChunks(rechunkPCM16Async(turnStream.queue, {
+      sampleRate: session.sampleRate || 16_000,
+      chunkMs: 100
+    }), audioReplayIntervalMs),
+    turnID,
+    generationID: turnStream.generationReady.promise
+  });
+
   runHTTPSessionStreamedPipeline({
     session,
     turnID,
     generationID: turnStream.generationReady.promise,
-    stream: pipeline.streamSegmented({
-      context: session.history.slice(),
-      audioChunks: replayChunks(rechunkPCM16Async(turnStream.queue, {
-        sampleRate: session.sampleRate || 16_000,
-        chunkMs: 100
-      }), audioReplayIntervalMs)
-    }),
+    stream,
     recordEvent
   }).catch((error) => {
     pushSessionEvent(session, {
@@ -555,15 +570,20 @@ async function runHTTPSessionPipeline({
     };
   } else {
     const pipeline = createPipeline ? createPipeline() : createDefaultPipeline(env);
-    if (typeof pipeline.streamSegmented === "function") {
+    const stream = selectHTTPSessionStream(pipeline, {
+      session,
+      env,
+      context: session.history.slice(),
+      audioChunks: replayChunks(providerInputChunks, audioReplayIntervalMs),
+      turnID,
+      generationID
+    });
+    if (stream) {
       await runHTTPSessionStreamedPipeline({
         session,
         turnID,
         generationID,
-        stream: pipeline.streamSegmented({
-          context: session.history.slice(),
-          audioChunks: replayChunks(providerInputChunks, audioReplayIntervalMs)
-        }),
+        stream,
         recordEvent
       });
       return;
@@ -697,6 +717,35 @@ async function runHTTPSessionStreamedPipeline({
         generationID: eventGenerationID,
         text: transcript
       });
+    } else if (event.type === "transcript_partial") {
+      pushSessionEvent(session, {
+        type: "transcript_partial",
+        sessionID: session.sessionID,
+        turnID,
+        generationID: eventGenerationID,
+        text: event.transcript || event.text || ""
+      });
+    } else if (event.type === "assistant_text_delta") {
+      firstText += event.delta || "";
+      pushSessionEvent(session, {
+        type: "assistant_text_delta",
+        sessionID: session.sessionID,
+        turnID,
+        generationID: eventGenerationID,
+        segment: event.segment || "reply",
+        delta: event.delta || ""
+      });
+    } else if (event.type === "assistant_phrase") {
+      pushSessionEvent(session, {
+        type: "assistant_phrase",
+        sessionID: session.sessionID,
+        turnID,
+        generationID: eventGenerationID,
+        segment: event.segment || "reply",
+        phraseIndex: event.phraseIndex,
+        text: event.text || "",
+        reason: event.reason || ""
+      });
     } else if (event.type === "segment") {
       if (event.segment === "followup") {
         followupText = event.text || "";
@@ -727,13 +776,16 @@ async function runHTTPSessionStreamedPipeline({
       pushSessionAudio(session, {
         turnID,
         generationID: eventGenerationID,
-        segment: event.segment || "first",
+        segment: event.segment || "reply",
         audio: Buffer.from(event.audioChunk || []),
         sampleRate: event.sampleRate
       });
     } else if (event.type === "timing") {
       timing = event.timing || {};
       providerMeta = event.providerMeta || {};
+    } else if (event.type === "turn_done") {
+      transcript = event.transcript || transcript;
+      firstText = event.assistantText || firstText;
     }
   }
 
@@ -769,6 +821,26 @@ async function runHTTPSessionStreamedPipeline({
     audioChunks: session.audio.length,
     timing
   });
+}
+
+function selectHTTPSessionStream(pipeline, { session, env, context, audioChunks, turnID, generationID }) {
+  const cascadeRequested = session?.pipelineMode === "cascade" || env?.DEEP_RESPONSE_SESSION_PIPELINE_MODE === "cascade";
+  if (cascadeRequested && typeof pipeline.streamCascadeTurn === "function") {
+    return pipeline.streamCascadeTurn({
+      context,
+      audioChunks,
+      turnID,
+      generationID,
+      phraseMaxChars: Number(env.DEEP_RESPONSE_CASCADE_PHRASE_MAX_CHARS || 28)
+    });
+  }
+  if (typeof pipeline.streamSegmented === "function") {
+    return pipeline.streamSegmented({
+      context,
+      audioChunks
+    });
+  }
+  return null;
 }
 
 function appendSessionHistory(session, { transcript, assistantText }) {

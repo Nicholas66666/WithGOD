@@ -23,6 +23,7 @@ export function parseHTTPSmokeArgs(argv) {
     observeMs: 3_000,
     maxStopToFirstAudioMs: 3_000,
     retries: 2,
+    pipelineMode: "",
     verbose: false
   };
 
@@ -58,6 +59,9 @@ export function parseHTTPSmokeArgs(argv) {
     } else if (arg === "--retries") {
       args.retries = Number(argv[index + 1] || args.retries);
       index += 1;
+    } else if (arg === "--pipeline-mode") {
+      args.pipelineMode = argv[index + 1] || "";
+      index += 1;
     } else if (arg === "--verbose") {
       args.verbose = true;
     } else if (arg === "--help" || arg === "-h") {
@@ -86,6 +90,7 @@ export async function runHTTPSmokeProbe(args) {
     "--upload-sleep-ms", String(args.uploadSleepMs ?? args.chunkMs),
     "--poll-ms", String(args.pollMs),
     "--timeout-ms", String(args.timeoutMs),
+    ...(args.pipelineMode ? ["--pipeline-mode", args.pipelineMode] : []),
     ...(args.verbose ? ["--verbose"] : [])
   ]);
   const conversation = await withRetries(() => runHTTPConversationProbe(conversationArgs), {
@@ -99,6 +104,7 @@ export async function runHTTPSmokeProbe(args) {
     "--upload-sleep-ms", String(args.uploadSleepMs ?? args.chunkMs),
     "--poll-ms", String(args.pollMs),
     "--observe-ms", String(args.observeMs),
+    ...(args.pipelineMode ? ["--pipeline-mode", args.pipelineMode] : []),
     ...(args.verbose ? ["--verbose"] : [])
   ]);
   const abort = await withRetries(() => runHTTPAbortProbe(abortArgs), {
@@ -119,7 +125,8 @@ export async function runHTTPSmokeProbe(args) {
     ok: health.ok && conversation.ok && abort.ok && turnFailures.length === 0,
     endpoint: args.endpoint,
     thresholds: {
-      maxStopToFirstAudioMs: args.maxStopToFirstAudioMs
+      maxStopToFirstAudioMs: args.maxStopToFirstAudioMs,
+      pipelineMode: args.pipelineMode
     },
     health,
     conversation: {
@@ -213,6 +220,7 @@ Options:
   --max-stop-to-first-audio-ms <ms>
                                    Fail if any turn exceeds this stop-to-first-audio budget. Default: 3000
   --retries <n>                    Retry each top-level probe after transient network failures. Default: 2
+  --pipeline-mode <m>              Optional HTTP session pipeline mode, e.g. cascade.
   --verbose                        Print event details from child probes.
 `);
 }

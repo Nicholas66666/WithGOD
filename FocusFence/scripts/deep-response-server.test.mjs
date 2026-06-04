@@ -464,6 +464,89 @@ test("DeepResponse HTTP session exposes first segment before followup finishes",
   }
 });
 
+test("DeepResponse HTTP session streams cascade phrase and audio events", async () => {
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async *streamCascadeTurn() {
+        yield { type: "transcript_partial", transcript: "今天我很累" };
+        yield { type: "transcript_final", transcript: "今天我很累。" };
+        yield {
+          type: "assistant_text_delta",
+          turnID: "turn-cascade",
+          generationID: "gen-cascade",
+          delta: "我听见你真的很累。"
+        };
+        yield {
+          type: "assistant_phrase",
+          turnID: "turn-cascade",
+          generationID: "gen-cascade",
+          phraseIndex: 0,
+          text: "我听见你真的很累。",
+          reason: "punctuation"
+        };
+        yield {
+          type: "audio_chunk",
+          turnID: "turn-cascade",
+          generationID: "gen-cascade",
+          phraseIndex: 0,
+          audioIndex: 0,
+          audioChunk: Buffer.from("cascade-audio"),
+          sampleRate: 24000
+        };
+        yield {
+          type: "timing",
+          timing: { transcript_final_ms: 100, llm_first_token_ms: 20, voice_pipeline_total_ms: 200 },
+          providerMeta: { transport: "cascade" }
+        };
+        yield {
+          type: "turn_done",
+          transcript: "今天我很累。",
+          assistantText: "我听见你真的很累。"
+        };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {
+      pipelineMode: "cascade"
+    });
+    assert.equal(created.pipelineMode, "cascade");
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+    await postBytes(`${base}/audio?turn_id=turn-cascade&seq=0`, Buffer.from("voice"));
+    await postJSON(`${base}/input-stop`, { turnID: "turn-cascade", generationID: "gen-cascade" });
+
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "assistant_phrase")
+        && events.events.some((event) => event.type === "timing");
+    });
+
+    const events = await fetchJSON(`${base}/events?cursor=0`);
+    assert(events.events.some((event) => event.type === "transcript_partial" && event.text === "今天我很累"));
+    assert(events.events.some((event) => event.type === "transcript_final" && event.text === "今天我很累。"));
+    assert(events.events.some((event) => event.type === "assistant_text_delta" && event.delta === "我听见你真的很累。"));
+    assert(events.events.some((event) => event.type === "assistant_phrase"
+      && event.text === "我听见你真的很累。"
+      && event.phraseIndex === 0));
+    assert(events.events.some((event) => event.type === "timing"
+      && event.providerMeta.transport === "cascade"
+      && event.timing.voice_pipeline_total_ms === 200));
+
+    const audio = await fetchJSON(`${base}/audio?cursor=0&generation_id=gen-cascade`);
+    assert.equal(audio.chunks.length, 1);
+    assert.equal(audio.chunks[0].segment, "reply");
+    assert.equal(Buffer.from(audio.chunks[0].audioBase64, "base64").toString("utf8"), "cascade-audio");
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse HTTP session starts provider audio consumption before input stop", async () => {
   let firstChunkSeenAt = 0;
   let inputStopPostedAt = 0;
