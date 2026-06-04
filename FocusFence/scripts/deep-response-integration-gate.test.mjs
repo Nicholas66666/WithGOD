@@ -69,11 +69,18 @@ test("DeepResponse integration gate matches current code boundaries", () => {
 test("DeepResponse active-state handoff matches current HTTP-only self-test policy", () => {
   assert.match(activeState, /Watch 端 transport 固定使用 HTTP/u);
   assert.match(activeState, /完全不再考虑 Watch WebSocket/u);
-  assert.match(activeState, /自测试优先/u);
-  assert.match(activeState, /用户人工 Watch 真机测试不作为常规推进条件/u);
+  assert.match(activeState, /完全采用自测试模式/u);
+  assert.match(activeState, /用户人工 Watch 真机测试不作为阶段计划、推进条件或验收门槛/u);
   assert.match(activeState, /DeepResponseWatchLab/u);
   assert.match(activeState, /Quick Response/u);
   assert.doesNotMatch(activeState, /WebSocket Spike Rules|feasibility spike|只允许做隔离 feasibility spike/u);
+});
+
+test("DeepResponse true-streaming plan excludes user-operated Watch testing from phase gates", () => {
+  assert.match(plan, /Watch transport is HTTP only/u);
+  assert.match(plan, /completely self-test/u);
+  assert.match(plan, /Do not ask the user to operate Apple Watch as a planned validation step/u);
+  assert.doesNotMatch(plan, /user-operated Watch tests as a development gate/u);
 });
 
 test("DeepResponse defaults use benchmark-selected Ark model without rejected fallback", () => {

@@ -8,9 +8,9 @@
 
 **Tech Stack:** watchOS SwiftUI, `URLSession` HTTP upload/download, SSE/chunked JSONL/short polling candidates, Node.js HTTP server, Doubao ASR provider, Ark LLM streaming, Doubao bidirectional TTS provider, Fire/Volcengine ECS deployment, Node test runner.
 
-**Testing policy:** This plan is self-test mode by default. Do not use user-operated Watch tests as a development gate. Exhaust Node tests, provider fixtures, local HTTP harnesses, Fire/Volcengine remote smoke tests, source-level Watch checks, simulator autoruns where available, and watchOS builds. User-operated Watch testing is not part of phase progression; it is only a product-experience spot check when the user explicitly asks for it.
+**Testing policy:** This plan is completely self-test. Do not ask the user to operate Apple Watch as a planned validation step. Exhaust Node tests, provider fixtures, local HTTP harnesses, Fire/Volcengine remote smoke tests, source-level Watch checks, simulator autoruns where available, and watchOS builds. User-operated Watch testing is not part of phase progression, phase gates, or acceptance; it is only an optional product-experience spot check when the user explicitly asks for it.
 
-**2026-06-05 correction:** Watch WebSocket is completely out of scope for the current target text. Do not spend implementation time on Watch WebSocket feasibility, fallback, spike, benchmark, comparison, or validation work. The Watch-side transport goal is HTTP only. Development proceeds in self-test mode by default; user-operated Watch testing is not part of the implementation plan, phase gate, or required validation loop.
+**2026-06-05 correction:** Watch WebSocket is completely out of scope for the current target text. Do not spend implementation time on Watch WebSocket feasibility, fallback, spike, benchmark, comparison, or validation work. The Watch-side transport goal is HTTP only. Development proceeds in completely self-test mode; user-operated Watch testing is not part of the implementation plan, phase gate, or required validation loop.
 
 ---
 
@@ -43,7 +43,7 @@
   - Goodbye and idle-end flows are implemented on the server and covered by smoke tests.
   - Summary/memory candidate JSONL persistence is implemented, and new HTTP sessions can recall bounded recent JSONL memory into LLM context.
   - Watch installation/launch is sometimes blocked by CoreDevice tunnel instability; do not rely on user-operated Watch testing for normal development progress.
-  - Development mode is now explicitly self-test first. A real Watch test is only a product-experience spot check after local/server/simulator/source/build checks pass.
+  - Development mode is now completely self-test. Do not ask the user to operate Apple Watch as a planned validation step; local/server/simulator/source/build checks are the phase gates.
 
 Latest remote smoke command:
 
@@ -1490,6 +1490,24 @@ Latest standard smoke config gate:
   - `npm run test:node`: `150/150` passed.
   - `npm run deep:volc:smoke:full`: passed and reported `debugConfig.body.arkModel = "doubao-seed-character-251128"` and `debugConfig.body.arkFallbackModel = ""`.
   - `npm run deep:selftest:full`: passed; nested WatchLab build `BUILD SUCCEEDED`.
+- Development remained self-test only; no user-operated Watch testing was required.
+
+Latest HTTP-only self-test policy and repeated-reply gate:
+- User correction recorded as a hard policy: Watch transport is HTTP only, and development validation is completely self-test. Do not ask the user to operate Apple Watch as a planned validation step.
+- Added integration-gate coverage so active-state and true-streaming plan must retain the HTTP-only / completely self-test policy.
+- Added `--forbid-identical-consecutive-replies` to `scripts/test-deep-response-http-smoke.mjs`.
+- Added `collectRepeatedReplyFailures()` so the standard remote smoke fails if adjacent assistant replies in the same session are text-identical after normalization.
+- Added the new flag to `npm run deep:volc:smoke:full`.
+- Strengthened `buildCompleteReplyMessages()` so the current prompt explicitly quotes the previous assistant reply and forbids repeating it when session context contains prior assistant text.
+- RED verification:
+  - `node --test scripts/deep-response-integration-gate.test.mjs scripts/test-deep-response-http-smoke.test.mjs scripts/package-scripts.test.mjs scripts/deep-response/pipeline/voice-pipeline.test.mjs` first failed on the new self-test policy text, missing repeated-reply export/flag, missing package flag, and missing prompt instruction.
+  - `npm run deep:volc:smoke:full` then failed with two identical Fire/Volcengine replies: `那咱不听了，先好好歇着。主耶稣说过，他会赐给我们安息。`
+- GREEN verification:
+  - `npm run test:node`: `153/153` passed.
+  - Direct ECS sync was used because `npm run deep:volc:deploy` again hit `GnuTLS recv error (-110)` during remote GitHub fetch.
+  - Remote pipeline gate after sync: `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs`: `10/10` passed.
+  - `npm run deep:volc:smoke:full`: passed with repeated-reply gate enabled; stop-to-first-audio `205ms` / `237ms`; repeated reply failures `[]`; abort stale audio `0` / `0`.
+  - Final `npm run deep:selftest:full`: passed; Node `153/153`, Fire/Volcengine smoke passed with stop-to-first-audio `221ms` / `228ms`, repeated reply failures `[]`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
 - Development remained self-test only; no user-operated Watch testing was required.
 
 ## Test Commands

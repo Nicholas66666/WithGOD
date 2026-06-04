@@ -34,6 +34,7 @@ export function parseHTTPSmokeArgs(argv) {
     expectIdleMemoryPersisted: false,
     expectArkModel: "",
     expectArkFallbackModel: null,
+    forbidIdenticalConsecutiveReplies: false,
     forbiddenTextPatterns: [],
     verbose: false
   };
@@ -98,6 +99,8 @@ export function parseHTTPSmokeArgs(argv) {
     } else if (arg === "--expect-ark-fallback-model") {
       args.expectArkFallbackModel = argv[index + 1] ?? "";
       index += 1;
+    } else if (arg === "--forbid-identical-consecutive-replies") {
+      args.forbidIdenticalConsecutiveReplies = true;
     } else if (arg === "--forbid-text-pattern") {
       args.forbiddenTextPatterns.push(argv[index + 1] || "");
       index += 1;
@@ -180,10 +183,13 @@ export async function runHTTPSmokeProbe(args) {
       || turn.stopToFirstAudioMs > args.maxStopToFirstAudioMs;
   });
   const textFailures = collectForbiddenTextFailures(conversation.turns, args.forbiddenTextPatterns);
+  const repeatedReplyFailures = args.forbidIdenticalConsecutiveReplies
+    ? collectRepeatedReplyFailures(conversation.turns)
+    : [];
   const configFailures = collectDebugConfigFailures(debugConfig.body, args);
 
   return {
-    ok: health.ok && debugConfig.ok && conversation.ok && abort.ok && idle.ok && turnFailures.length === 0 && textFailures.length === 0 && configFailures.length === 0,
+    ok: health.ok && debugConfig.ok && conversation.ok && abort.ok && idle.ok && turnFailures.length === 0 && textFailures.length === 0 && repeatedReplyFailures.length === 0 && configFailures.length === 0,
     endpoint: args.endpoint,
     thresholds: {
       maxStopToFirstAudioMs: args.maxStopToFirstAudioMs,
@@ -254,6 +260,7 @@ export async function runHTTPSmokeProbe(args) {
         audioByteLength: turn.audioByteLength
       })),
       ...configFailures,
+      ...repeatedReplyFailures,
       ...textFailures
     ]
   };
@@ -296,6 +303,36 @@ export function collectForbiddenTextFailures(turns, forbiddenTextPatterns = []) 
     }
   }
   return failures;
+}
+
+export function collectRepeatedReplyFailures(turns = []) {
+  const failures = [];
+  let previous = null;
+  for (const turn of turns) {
+    const text = String(turn.text || "").trim();
+    const normalizedText = normalizeReplyText(text);
+    if (previous && normalizedText && normalizedText === previous.normalizedText) {
+      failures.push({
+        turnID: turn.turnID,
+        previousTurnID: previous.turnID,
+        repeatedText: text
+      });
+    }
+    if (normalizedText) {
+      previous = {
+        turnID: turn.turnID,
+        normalizedText
+      };
+    }
+  }
+  return failures;
+}
+
+function normalizeReplyText(text) {
+  return String(text || "")
+    .replace(/\s+/gu, "")
+    .replace(/[“”"'']/gu, "")
+    .trim();
 }
 
 export async function runHTTPIdleProbe({
@@ -485,6 +522,8 @@ Options:
   --expect-ark-model <model>       Require /debug/config arkModel to match.
   --expect-ark-fallback-model <model>
                                    Require /debug/config arkFallbackModel to match. Use "" for no fallback.
+  --forbid-identical-consecutive-replies
+                                   Fail if adjacent assistant replies in the same session are identical.
   --forbid-text-pattern <regex>    Fail if any assistant reply matches this regex. Repeatable.
   --verbose                        Print event details from child probes.
 `);

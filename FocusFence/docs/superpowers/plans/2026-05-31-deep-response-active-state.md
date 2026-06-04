@@ -30,7 +30,7 @@ Watch 持续会话
 - DeepResponse server 不暴露 client-facing WebSocket upgrade；Watch/server transport 只走 HTTP sessions。
 - Server 内部连接 Doubao ASR/TTS 可以继续使用 provider 所需的 WebSocket。
 - iPhone 不参与核心实时链路。
-- 自测试优先；用户人工 Watch 真机测试不作为常规推进条件。
+- 完全采用自测试模式；用户人工 Watch 真机测试不作为阶段计划、推进条件或验收门槛。
 - 每个阶段通过后提交并推送。
 
 ## Current Canonical References
@@ -72,11 +72,12 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `150/150` passed.
-- Fire/Volcengine HTTP smoke: passed.
+- Node self-tests: `153/153` passed.
+- Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply gate enabled.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
 - Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
-- Fire/Volcengine stop-to-first-audio: `211ms`, `213ms`.
+- Fire/Volcengine stop-to-first-audio: `221ms`, `228ms`.
+- Fire/Volcengine repeated reply failures: `[]`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
@@ -100,7 +101,9 @@ Latest LLM selection benchmark:
 - Runtime/default model config now uses `ARK_MODEL=doubao-seed-character-251128` and `ARK_FALLBACK_MODEL=`. The old `doubao-seed-2-0-pro-260215` fallback is not a default because it failed realtime latency gates.
 - Fire/Volcengine `/debug/config` after deploying `006347b` reports `arkModel: "doubao-seed-character-251128"` and `arkFallbackModel: ""`.
 - Standard Fire/Volcengine smoke now requires `/debug/config` to match that model/fallback pair via `--expect-ark-model doubao-seed-character-251128 --expect-ark-fallback-model ""`.
-- This is a self-test/model-selection gate only; it does not introduce Watch WebSocket, user Watch testing, or product integration.
+- This is a self-test/model-selection gate only; it does not introduce Watch WebSocket, user-operated Watch validation, or product integration.
+- Standard Fire/Volcengine smoke also forbids identical adjacent assistant replies in the same session via `--forbid-identical-consecutive-replies`.
+- The LLM prompt now explicitly quotes the previous assistant reply when present and forbids repeating it, including when the user repeats the same request.
 
 ## Standard Commands
 
@@ -177,15 +180,16 @@ Before implementation:
 During implementation:
 
 1. Use TDD for behavior changes.
-2. Prefer local Node tests, scripted harnesses, Fire/Volcengine smoke, source gates, simulator/source checks, and watchOS builds.
+2. Use local Node tests, scripted harnesses, Fire/Volcengine smoke, source gates, simulator/source checks, and watchOS builds as the validation path.
 3. Keep changes scoped to DeepResponse / DeepResponseWatchLab / docs / tests unless explicit product integration approval is given.
 4. Do not touch Quick Response main flow.
 5. Do not add Watch WebSocket or client-facing DeepResponse WebSocket transport.
 6. Commit and push after each passing increment.
+7. Do not ask the user to operate Apple Watch as a planned validation step.
 
 ## User Involvement Policy
 
-用户人工 Watch 真机测试不作为常规推进条件。
+用户人工 Watch 真机测试不作为阶段计划、推进条件或验收门槛。
 
 Only ask the user for a real Watch product-experience spot check if:
 

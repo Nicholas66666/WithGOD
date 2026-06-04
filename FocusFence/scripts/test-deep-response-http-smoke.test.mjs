@@ -9,6 +9,7 @@ import { startDeepResponseServer } from "./deep-response-server.mjs";
 import {
   collectDebugConfigFailures,
   collectForbiddenTextFailures,
+  collectRepeatedReplyFailures,
   parseHTTPSmokeArgs,
   runHTTPIdleProbe
 } from "./test-deep-response-http-smoke.mjs";
@@ -28,6 +29,7 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
     "--expect-idle-memory-persisted",
     "--expect-ark-model", "doubao-seed-character-251128",
     "--expect-ark-fallback-model", "",
+    "--forbid-identical-consecutive-replies",
     "--forbid-text-pattern", "大卫.*歌利亚",
     "--forbid-text-pattern", "你知道.*为什么"
   ]);
@@ -45,6 +47,7 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
   assert.equal(args.expectIdleMemoryPersisted, true);
   assert.equal(args.expectArkModel, "doubao-seed-character-251128");
   assert.equal(args.expectArkFallbackModel, "");
+  assert.equal(args.forbidIdenticalConsecutiveReplies, true);
   assert.deepEqual(args.forbiddenTextPatterns, ["大卫.*歌利亚", "你知道.*为什么"]);
 });
 
@@ -78,6 +81,22 @@ test("collectForbiddenTextFailures flags obvious comfort-intent derailments", ()
   assert.deepEqual(failures, [
     { turnID: "turn-1", forbiddenPattern: "大卫.*歌利亚", text: "那我给你讲个轻松的。你知道大卫为什么能打败歌利亚吗？" },
     { turnID: "turn-1", forbiddenPattern: "你知道.*为什么", text: "那我给你讲个轻松的。你知道大卫为什么能打败歌利亚吗？" }
+  ]);
+});
+
+test("collectRepeatedReplyFailures flags identical consecutive assistant replies", () => {
+  const failures = collectRepeatedReplyFailures([
+    { turnID: "turn-1", text: "我在这里陪着你。" },
+    { turnID: "turn-2", text: " 我在这里陪着你。 " },
+    { turnID: "turn-3", text: "这一次我们先慢慢呼吸。" }
+  ]);
+
+  assert.deepEqual(failures, [
+    {
+      turnID: "turn-2",
+      previousTurnID: "turn-1",
+      repeatedText: "我在这里陪着你。"
+    }
   ]);
 });
 

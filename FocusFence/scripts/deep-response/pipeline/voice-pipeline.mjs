@@ -685,6 +685,7 @@ function buildFollowupMessages(transcript, firstText, context = []) {
 }
 
 function buildCompleteReplyMessages(transcript, context = []) {
+  const previousAssistantReply = getPreviousAssistantReply(context);
   return [
     { role: "system", content: scriptureCompanionSystemPrompt() },
     ...context,
@@ -695,6 +696,12 @@ function buildCompleteReplyMessages(transcript, context = []) {
         "不要拆成 first/more，不要输出 JSON，不要输出标题、编号或 Markdown。",
         "只说 1 句，最多 2 句；总长度控制在 45 个中文字符以内。",
         "像连续语音对话的一轮回应，不要讲长段，不要朗读整段经文。",
+        "如果上文已有 assistant 回复，不要原样重复上一轮完整回复、首句或经文句；即使用户重复同一句，也要换一种具体承接。",
+        ...(previousAssistantReply ? [
+          `上一轮 assistant 回复：${previousAssistantReply}`,
+          "本轮禁止输出与上一轮相同或只有标点空格差异的回复。",
+          "如果用户重复相同请求，要像连续对话一样推进承接，例如“你又提到这份累”，不要机械复读。"
+        ] : []),
         "第一句必须是 6-14 个中文字符的日常口语承接，适合立刻语音播放。",
         "第一句不要直接引用经文，不要出现书名、章节、引号或冒号。",
         "第二句如果出现，只能很轻地带到一句经文或一个小问题；不要每次都固定用同一句开头。",
@@ -708,6 +715,16 @@ function buildCompleteReplyMessages(transcript, context = []) {
       ].join("\n")
     }
   ];
+}
+
+function getPreviousAssistantReply(context = []) {
+  for (let index = context.length - 1; index >= 0; index -= 1) {
+    const message = context[index];
+    if (message?.role === "assistant") {
+      return String(message.content || "").replace(/\s+/gu, " ").trim().slice(0, 80);
+    }
+  }
+  return "";
 }
 
 function buildTemplateFirstPhrase(transcript) {

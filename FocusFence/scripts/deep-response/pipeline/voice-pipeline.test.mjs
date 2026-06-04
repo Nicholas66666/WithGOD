@@ -108,11 +108,54 @@ test("VoicePipeline creates one complete spoken reply without followup generatio
   assert.match(prompt, /第一句.*6-14 个中文字符/);
   assert.match(prompt, /第一句.*不要直接引用经文/);
   assert.match(prompt, /总长度控制在 45 个中文字符以内/);
+  assert.match(prompt, /不要原样重复上一轮完整回复/);
   assert.match(prompt, /不要朗读整段经文/);
   assert.match(prompt, /如果用户是在要安慰/);
   assert.match(prompt, /不要把安慰请求转成圣经知识问答/);
   assert.match(prompt, /不要问用户想从哪卷书或哪句经文开始/);
   assert.match(prompt, /不要问用户想从哪里开始听/);
+});
+
+test("VoicePipeline prompt explicitly forbids repeating previous assistant reply", async () => {
+  let prompt = "";
+  const asr = {
+    async transcribe() {
+      return {
+        transcript: "今天我有点累，想听一句安慰的话。",
+        timing: {}
+      };
+    }
+  };
+  const llm = {
+    async generate({ messages }) {
+      prompt = messages.at(-1).content;
+      return {
+        text: "我听见你又提到这份累。",
+        firstPhrase: "我听见你又提到这份累。",
+        timing: {}
+      };
+    }
+  };
+  const tts = {
+    async synthesize({ text }) {
+      return {
+        audioChunks: [Buffer.from(text)],
+        timing: {}
+      };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 1, 2]) });
+  await pipeline.runSegmented({
+    audioChunks: [Buffer.from("voice")],
+    context: [
+      { role: "user", content: "今天我有点累，想听一句安慰的话。" },
+      { role: "assistant", content: "那咱不听了，先好好歇着。主耶稣说过，他会赐给我们安息。" }
+    ]
+  });
+
+  assert.match(prompt, /上一轮 assistant 回复：那咱不听了/);
+  assert.match(prompt, /本轮禁止输出与上一轮相同/);
 });
 
 test("VoicePipeline streamSegmented emits one reply segment and no followup segment", async () => {
