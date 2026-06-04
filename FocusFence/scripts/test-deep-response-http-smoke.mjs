@@ -242,6 +242,26 @@ async function fetchHealth(endpoint) {
   };
 }
 
+async function postJSON(url, body) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body)
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+  }
+  return response.json();
+}
+
+async function fetchJSON(url) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+  }
+  return response.json();
+}
+
 async function withRetries(operation, { attempts, label }) {
   let lastError;
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
