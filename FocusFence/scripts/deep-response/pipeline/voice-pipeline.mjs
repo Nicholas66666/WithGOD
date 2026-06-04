@@ -138,7 +138,7 @@ export class VoicePipeline {
       messages: buildCompleteReplyMessages(transcript, context),
       signal,
       streamFull: true,
-      maxTokens: 96,
+      maxTokens: 72,
       temperature: 0.2
     });
   }
@@ -149,7 +149,8 @@ export class VoicePipeline {
     signal,
     turnID,
     generationID,
-    phraseMaxChars
+    phraseMaxChars,
+    maxSpokenReplyChars = 48
   } = {}) {
     const startedAt = this.clock();
     const phraseChunker = createPhraseChunker({ maxChars: phraseMaxChars });
@@ -164,6 +165,8 @@ export class VoicePipeline {
     let assistantText = "";
     let aborted = false;
     let llmStartedFromPartial = false;
+    let spokenReplyChars = 0;
+    let replyTruncatedForLength = false;
 
     const startLLM = (transcript, { source = "final" } = {}) => {
       if (llmTask) {
@@ -177,6 +180,7 @@ export class VoicePipeline {
             transcript: llmTranscript,
             context,
             messages: buildCompleteReplyMessages(llmTranscript, context),
+            maxTokens: 72,
             signal
           })) {
             if (signal?.aborted) {
@@ -195,15 +199,19 @@ export class VoicePipeline {
               continue;
             }
 
-            assistantText += delta;
-            outputQueue.push({
-              type: "assistant_text_delta",
-              turnID,
-              generationID,
-              delta
-            });
-
             for (const phrase of phraseChunker.push(delta)) {
+              if (wouldExceedSpokenReplyLimit(spokenReplyChars, phrase.text, maxSpokenReplyChars)) {
+                replyTruncatedForLength = true;
+                return;
+              }
+              spokenReplyChars += countSpokenChars(phrase.text);
+              assistantText += phrase.text;
+              outputQueue.push({
+                type: "assistant_text_delta",
+                turnID,
+                generationID,
+                delta: phrase.text
+              });
               outputQueue.push({
                 type: "assistant_phrase",
                 turnID,
@@ -217,6 +225,18 @@ export class VoicePipeline {
           }
 
           for (const phrase of phraseChunker.flush()) {
+            if (wouldExceedSpokenReplyLimit(spokenReplyChars, phrase.text, maxSpokenReplyChars)) {
+              replyTruncatedForLength = true;
+              break;
+            }
+            spokenReplyChars += countSpokenChars(phrase.text);
+            assistantText += phrase.text;
+            outputQueue.push({
+              type: "assistant_text_delta",
+              turnID,
+              generationID,
+              delta: phrase.text
+            });
             outputQueue.push({
               type: "assistant_phrase",
               turnID,
@@ -309,6 +329,7 @@ export class VoicePipeline {
             ...asrTiming,
             ...llmTiming,
             ...(llmStartedFromPartial ? { llm_started_from_partial: 1 } : {}),
+            ...(replyTruncatedForLength ? { reply_truncated_for_length: 1 } : {}),
             voice_pipeline_total_ms: Math.round(this.clock() - startedAt)
           };
 
@@ -672,10 +693,11 @@ function buildCompleteReplyMessages(transcript, context = []) {
       content: [
         "请直接生成这一轮要说出的完整中文语音回复。",
         "不要拆成 first/more，不要输出 JSON，不要输出标题、编号或 Markdown。",
-        "1-2 句即可，整体尽量短，但必须真实回应用户刚说的话。",
+        "只说 1 句，最多 2 句；总长度控制在 45 个中文字符以内。",
+        "像连续语音对话的一轮回应，不要讲长段，不要朗读整段经文。",
         "第一句必须是 6-14 个中文字符的日常口语承接，适合立刻语音播放。",
         "第一句不要直接引用经文，不要出现书名、章节、引号或冒号。",
-        "第二句再在合适时轻轻带到经文；不要每次都固定用同一句开头。",
+        "第二句如果出现，只能很轻地带到一句经文或一个小问题；不要每次都固定用同一句开头。",
         "如果用户只是日常闲聊或报平安，可以自然回应，不要强行讲道。",
         "",
         `用户说：${transcript}`
@@ -710,6 +732,18 @@ function shouldSpeakFromPartial(transcript) {
     return false;
   }
   return text.length >= 10 || /(累|疲惫|害怕|恐惧|焦虑|孤单|孤独|羞耻|内疚|开心|感恩|平安)/u.test(text);
+}
+
+function wouldExceedSpokenReplyLimit(currentChars, nextText, maxChars) {
+  const limit = Number(maxChars || 0);
+  if (!Number.isFinite(limit) || limit <= 0) {
+    return false;
+  }
+  return currentChars > 0 && currentChars + countSpokenChars(nextText) > limit;
+}
+
+function countSpokenChars(text) {
+  return [...String(text || "").replace(/\s+/g, "")].length;
 }
 
 function findCompleteFirstPhrase(text, { minChars = 8 } = {}) {

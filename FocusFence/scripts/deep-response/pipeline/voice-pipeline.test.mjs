@@ -69,8 +69,8 @@ test("VoicePipeline creates one complete spoken reply without followup generatio
     }
   };
   const llm = {
-    async generate({ transcript, streamFull, messages }) {
-      llmCalls.push({ transcript, streamFull, messages });
+    async generate({ transcript, streamFull, messages, maxTokens }) {
+      llmCalls.push({ transcript, streamFull, messages, maxTokens });
       return {
         text: "我听见你真的很累，我们先慢慢停一下，记得主靠近伤心的人。",
         firstPhrase: "我听见你真的很累，我们先慢慢停一下，记得主靠近伤心的人。",
@@ -101,11 +101,14 @@ test("VoicePipeline creates one complete spoken reply without followup generatio
   assert.deepEqual(spokenTexts, ["我听见你真的很累，我们先慢慢停一下，记得主靠近伤心的人。"]);
   assert.equal(llmCalls.length, 1);
   assert.equal(llmCalls[0].streamFull, true);
+  assert.equal(llmCalls[0].maxTokens, 72);
   assert.match(llmCalls[0].transcript, /我今天很累/);
   assert.doesNotMatch(llmCalls[0].transcript, /已经说过的第一句/);
   const prompt = llmCalls[0].messages.at(-1).content;
   assert.match(prompt, /第一句.*6-14 个中文字符/);
   assert.match(prompt, /第一句.*不要直接引用经文/);
+  assert.match(prompt, /总长度控制在 45 个中文字符以内/);
+  assert.match(prompt, /不要朗读整段经文/);
 });
 
 test("VoicePipeline streamSegmented emits one reply segment and no followup segment", async () => {
@@ -534,6 +537,48 @@ test("VoicePipeline streamCascadeTurn starts LLM from usable partial transcript 
   assert.equal(done.transcript, "今天我真的很累，想听一句安慰。");
   const timing = remainingEvents.find((event) => event.type === "timing");
   assert.equal(timing.timing.llm_started_from_partial, 1);
+});
+
+test("VoicePipeline streamCascadeTurn stops queuing TTS after short spoken reply limit", async () => {
+  const ttsTexts = [];
+  const asr = {
+    async *transcribeStream() {
+      yield { type: "transcript_final", transcript: "我今天很累。" };
+    }
+  };
+  const llm = {
+    async *streamTokens() {
+      yield { type: "delta", delta: "我听见你今天很累。" };
+      yield { type: "delta", delta: "我们先安静一下。" };
+      yield { type: "delta", delta: "接下来我还想继续讲很多很多内容。" };
+      yield { type: "done", timing: { llm_total_ms: 500 } };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      ttsTexts.push(text);
+      yield { type: "audio_chunk", audioChunk: Buffer.from(`${text}:audio`), sampleRate: 24000 };
+      yield { type: "done", timing: { tts_first_audio_ms: 80 } };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20, 30]) });
+  const events = [];
+  for await (const event of pipeline.streamCascadeTurn({
+    audioChunks: [Buffer.from("voice")],
+    turnID: "turn-short",
+    generationID: "gen-short",
+    maxSpokenReplyChars: 18
+  })) {
+    events.push(event);
+  }
+
+  assert.deepEqual(ttsTexts, ["我听见你今天很累。", "我们先安静一下。"]);
+  assert(!events.some((event) => event.type === "assistant_phrase" && /很多很多内容/u.test(event.text)));
+  const done = events.find((event) => event.type === "turn_done");
+  assert.equal(done.assistantText, "我听见你今天很累。我们先安静一下。");
+  const timing = events.find((event) => event.type === "timing");
+  assert.equal(timing.timing.reply_truncated_for_length, 1);
 });
 
 function delay(ms) {

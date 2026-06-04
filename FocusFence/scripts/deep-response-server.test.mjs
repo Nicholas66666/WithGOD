@@ -5,6 +5,7 @@ import { deflateSync } from "node:zlib";
 import { startDeepResponseServer } from "./deep-response-server.mjs";
 import { DEEP_RESPONSE_EVENTS, buildDeepResponseURL, encodeDeepResponseMessage } from "./deep-response/protocol/deep-response-protocol.mjs";
 import { RawWebSocketClient } from "./deep-response/lib/raw-websocket-client.mjs";
+import { VoicePipeline } from "./deep-response/pipeline/voice-pipeline.mjs";
 
 test("DeepResponse server echo mode streams audio and drops old audio after barge-in", async () => {
   const server = await startDeepResponseServer({
@@ -542,6 +543,77 @@ test("DeepResponse HTTP session streams cascade phrase and audio events", async 
     assert.equal(audio.chunks.length, 1);
     assert.equal(audio.chunks[0].segment, "reply");
     assert.equal(Buffer.from(audio.chunks[0].audioBase64, "base64").toString("utf8"), "cascade-audio");
+  } finally {
+    await server.close();
+  }
+});
+
+test("DeepResponse HTTP session cascade exposes only spoken text when reply is truncated", async () => {
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      streamCascadeTurn({ turnID, generationID }) {
+        const pipeline = new VoicePipeline({
+          asr: {
+            async *transcribeStream() {
+              yield { type: "transcript_final", transcript: "我今天很累。" };
+            }
+          },
+          llm: {
+            async *streamTokens() {
+              yield { type: "delta", delta: "我听见你今天很累。" };
+              yield { type: "delta", delta: "我们先安静一下。" };
+              yield { type: "delta", delta: "接下来我还想继续讲很多很多内容。" };
+              yield { type: "done", timing: {} };
+            }
+          },
+          tts: {
+            async *synthesizeStream({ text }) {
+              yield { type: "audio_chunk", audioChunk: Buffer.from(`${text}:audio`), sampleRate: 24000 };
+              yield { type: "done", timing: {} };
+            }
+          }
+        });
+        return pipeline.streamCascadeTurn({
+          audioChunks: [Buffer.from("voice")],
+          turnID,
+          generationID,
+          maxSpokenReplyChars: 18
+        });
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {
+      pipelineMode: "cascade"
+    });
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+    await postBytes(`${base}/audio?turn_id=turn-short-session&seq=0`, Buffer.from("voice"));
+    await postJSON(`${base}/input-stop`, {
+      turnID: "turn-short-session",
+      generationID: "gen-short-session"
+    });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "timing");
+    });
+
+    const events = await fetchJSON(`${base}/events?cursor=0`);
+    const deltas = events.events
+      .filter((event) => event.type === "assistant_text_delta")
+      .map((event) => event.delta);
+    assert.deepEqual(deltas, ["我听见你今天很累。", "我们先安静一下。"]);
+    assert(!events.events.some((event) => /很多很多内容/u.test(event.text || event.delta || "")));
+    const timing = events.events.find((event) => event.type === "timing");
+    assert.equal(timing.timing.reply_truncated_for_length, 1);
+
+    const audio = await fetchJSON(`${base}/audio?cursor=0&generation_id=gen-short-session`);
+    assert.equal(audio.chunks.length, 2);
   } finally {
     await server.close();
   }

@@ -4,13 +4,13 @@
 
 **Goal:** Build a continuous HTTP-streamed Deep Response path for Watch: Watch uploads microphone audio chunks over HTTP, receives server events/audio chunks over HTTP/SSE/chunked/polling, and keeps a multi-turn session alive until goodbye or idle end.
 
-**Architecture:** Keep `http-turn-v2` as the known-good fallback baseline, then evolve it into an HTTP session transport. Watch transport is HTTP only for this POC. Do not plan or implement any Watch socket transport path. Server-side provider connections may use each provider's required streaming protocol because those run on Node, not on Watch.
+**Architecture:** Keep `http-turn-v2` as the known-good fallback baseline, then evolve it into an HTTP session transport. Watch transport is HTTP only for this POC. Do not plan, implement, spike, benchmark, or fall back to any Watch socket transport path. Server-side provider connections may use each provider's required streaming protocol because those run on Node, not on Watch.
 
 **Tech Stack:** watchOS SwiftUI, `URLSession` HTTP upload/download, SSE/chunked JSONL/short polling candidates, Node.js HTTP server, Doubao ASR provider, Ark LLM streaming, Doubao bidirectional TTS provider, Fire/Volcengine ECS deployment, Node test runner.
 
 **Testing policy:** This plan is self-test mode by default. Do not use user-operated Watch tests as a development gate. Exhaust Node tests, provider fixtures, local HTTP harnesses, Fire/Volcengine remote smoke tests, source-level Watch checks, simulator autoruns where available, and watchOS builds. User-operated Watch testing is not part of phase progression; it is only a product-experience spot check when the user explicitly asks for it.
 
-**2026-06-04 correction:** Do not spend implementation time on Watch WebSocket feasibility, fallback, or spike work. The Watch-side transport goal is HTTP only. Development should proceed in self-test mode by default; user-operated Watch testing is not a phase gate or a required validation step.
+**2026-06-04 correction:** Watch WebSocket is out of scope for the current target text. Do not spend implementation time on Watch WebSocket feasibility, fallback, spike, or comparison work. The Watch-side transport goal is HTTP only. Development proceeds in self-test mode by default; user-operated Watch testing is not a phase gate or a required validation step.
 
 ---
 
@@ -43,6 +43,7 @@
   - Goodbye and idle-end flows are implemented on the server and covered by smoke tests.
   - Summary/memory candidate persistence is not implemented.
   - Watch installation/launch is sometimes blocked by CoreDevice tunnel instability; do not rely on user-operated Watch testing for normal development progress.
+  - Development mode is now explicitly self-test first. A real Watch test is only a product-experience spot check after local/server/simulator/source/build checks pass.
 
 Latest remote smoke command:
 
@@ -512,6 +513,26 @@ Latest partial-ASR cascade optimization:
 - Remote stop-to-first-audio after partial-ASR: `240ms`, `228ms`.
 - Remote HTTP stop-to-first-phrase after partial-ASR: `93ms`, `87ms`.
 - Remote HTTP first-audio-after-first-phrase after partial-ASR: `147ms`, `141ms`.
+- Remote abort stale audio chunks/bytes: `0` / `0`.
+- Remote idle probe: `session_end` reason `idle_timeout`, late audio rejected with `409 session_ended`.
+- Validation mode remains self-test first; no user-operated Watch test is required for this milestone update.
+
+Latest short spoken-reply optimization:
+- Removed the previous two-step `first/more` business flow from the active experience; the active cascade path remains one real AI reply.
+- Tightened the complete-reply prompt to request 1 sentence, at most 2 sentences, and about 45 Chinese characters.
+- Reduced cascade `maxTokens` to `72` and added a stream-level `maxSpokenReplyChars` default of `48` so text/audio that would exceed the spoken reply budget is not queued to Watch.
+- Changed cascade `assistant_text_delta` semantics to expose spoken phrase deltas only, so the Watch UI does not display text that will not be spoken.
+- Added regression tests proving over-budget LLM tail text is not emitted as assistant text, phrase, or audio, and timing marks `reply_truncated_for_length`.
+- `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/deep-response-server.test.mjs`: `37/37` passed.
+- `npm run test:node`: `136/136` passed.
+- `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-volc-build build`: `BUILD SUCCEEDED`.
+- Fire/Volcengine ECS was updated by direct SSH file sync and `systemctl restart deep-response`; `/health` returned provider mode with `providerConfigured: true`.
+- Fire/Volcengine HTTP cascade smoke with `--wait-ms 800`: passed.
+- Remote turns reported `llm_started_from_partial: 1`.
+- Remote stop-to-first-audio after short spoken-reply optimization: `191ms`, `200ms`.
+- Remote HTTP stop-to-first-phrase after short spoken-reply optimization: `71ms`, `71ms`.
+- Remote HTTP first-audio-after-first-phrase after short spoken-reply optimization: `121ms`, `129ms`.
+- Remote audio chunks were bounded for concise voice interaction: `32`, `35`.
 - Remote abort stale audio chunks/bytes: `0` / `0`.
 - Remote idle probe: `session_end` reason `idle_timeout`, late audio rejected with `409 session_ended`.
 - Validation mode remains self-test first; no user-operated Watch test is required for this milestone update.
