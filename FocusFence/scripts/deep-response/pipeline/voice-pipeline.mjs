@@ -185,13 +185,13 @@ export class VoicePipeline {
     }
     const firstAttempt = await this.llm.generate({
       transcript,
-      context,
-      messages: buildFirstPhraseMessages(transcript, context),
+      context: [],
+      messages: buildFirstPhraseMessages(transcript),
       signal,
       streamFull: false,
-      maxTokens: 80,
-      minChars: 8,
-      temperature: 0.2,
+      maxTokens: 60,
+      minChars: 6,
+      temperature: 0.1,
       firstPhraseExtractor: findCompleteFirstPhrase
     });
     const firstText = firstAttempt.firstPhrase || firstAttempt.text || "";
@@ -392,21 +392,19 @@ async function* streamTTSegment(tts, { segment, text, signal }) {
   };
 }
 
-function buildFirstPhraseMessages(transcript, context = []) {
+function buildFirstPhraseMessages(transcript) {
   return [
     { role: "system", content: firstPhraseSystemPrompt() },
-    ...context,
     {
       role: "user",
       content: [
-        "只输出一句完整短句，8-28 个中文字符，必须以句号、问号或感叹号结尾。",
-        "先安静承接用户此刻的感受；不要讲道，不要长篇解释。",
-        "这一句不要引用经文，不要出现书名、章节点、引号或冒号。",
-        "如果用户表达不想活、自伤、伤人、撑不住或立即危险，第二句必须建议现在就联系现实中的可信任的人，或当地紧急支持。",
-        "危机表达不能只做属灵安慰；先稳住安全，再用 1 句温柔陪伴。",
-        "非危机场景只输出 1 句自然承接；不要输出编号、标题或 Markdown。",
+        "只输出一句完整中文短句，8-24 个中文字符，必须以句号、问号或感叹号结尾。",
+        "先承接用户此刻的感受，像真人语音陪伴一样自然。",
+        "不要给建议，不要讲道，不要解释，不要输出编号、标题或 Markdown。",
+        "这一句禁止出现宗教词、经文、书名、章节点、引号或冒号。",
+        "如果用户表达不想活、自伤、伤人或立即危险，这一句必须建议现在联系现实中的可信任的人。",
         "",
-        `用户 ASR transcript：${transcript}`
+        `用户说：${transcript}`
       ].join("\n")
     }
   ];
@@ -448,10 +446,9 @@ function buildFirstPhraseRepairMessages(transcript, rejectedText) {
 
 function firstPhraseSystemPrompt() {
   return [
-    "你只负责生成语音对话的第一句回应。",
-    "这一句只承接用户感受，不引用经文，不提圣经书名、章节、神学解释或属灵建议。",
-    "不要自称神，不代表神说话，不诊断用户。",
-    "输出必须是一句自然中文短句，适合被温柔读出来。"
+    "你是语音对话首句生成器。",
+    "你只输出一句日常中文短句，用来先承接用户感受。",
+    "绝对不要使用宗教语言、经文引用、讲道语气、建议或解释。"
   ].join("\n");
 }
 
