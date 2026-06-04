@@ -1738,6 +1738,20 @@ Latest short reply floor gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This remains HTTP-only and self-tested; no user-operated Watch test is part of this gate.
 
+Latest tighter first-audio latency gate:
+- Tightened the canonical Fire/Volcengine 8-turn conversation gate from `--max-stop-to-first-audio-ms 3500` to `--max-stop-to-first-audio-ms 2500`.
+- This turns the current roughly `1.6s-2.2s` remote first-audio behavior into an enforced regression gate, while keeping the separate smoke gate at `3000ms` because it also covers abort/idle flows.
+- Verification:
+  - RED `node --test scripts/package-scripts.test.mjs` first failed because `deep:volc:conversation:full` still used `3500ms`.
+  - `node --test scripts/package-scripts.test.mjs`: `5/5` passed after updating the package script.
+  - `npm run deep:volc:conversation:full`: passed with `stopToFirstAudioFailures: []`; one pre-full run recorded `1801ms`, `1915ms`, `1723ms`, `1905ms`, `1648ms`, `1924ms`, `1921ms`, `1931ms`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `237ms`, `235ms`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `2178ms`, `1750ms`, `1831ms`, `1634ms`, `1782ms`, `1739ms`, `1782ms`, `1691ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This remains HTTP-only and self-tested; no user-operated Watch test is part of this gate.
+
 - Unit and server tests:
   - `npm run test:node`
 
