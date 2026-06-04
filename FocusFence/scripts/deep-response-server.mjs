@@ -210,6 +210,7 @@ async function handleHTTPSessionCreate(request, response, { sessions, recordEven
       audioByTurn: new Map(),
       events: [],
       audio: [],
+      history: [],
       turnStreams: new Map(),
       nextEventSeq: 0,
       nextAudioSeq: 0,
@@ -467,6 +468,7 @@ function ensureHTTPSessionTurnStream({
     turnID,
     generationID: turnStream.generationReady.promise,
     stream: pipeline.streamSegmented({
+      context: session.history.slice(),
       audioChunks: replayChunks(rechunkPCM16Async(turnStream.queue, {
         sampleRate: session.sampleRate || 16_000,
         chunkMs: 100
@@ -559,6 +561,7 @@ async function runHTTPSessionPipeline({
         turnID,
         generationID,
         stream: pipeline.streamSegmented({
+          context: session.history.slice(),
           audioChunks: replayChunks(providerInputChunks, audioReplayIntervalMs)
         }),
         recordEvent
@@ -567,10 +570,12 @@ async function runHTTPSessionPipeline({
     }
     if (typeof pipeline.runSegmented === "function") {
       result = await pipeline.runSegmented({
+        context: session.history.slice(),
         audioChunks: replayChunks(providerInputChunks, audioReplayIntervalMs)
       });
     } else {
       const fallback = await pipeline.run({
+        context: session.history.slice(),
         audioChunks: replayChunks(providerInputChunks, audioReplayIntervalMs)
       });
       result = {
@@ -632,6 +637,10 @@ async function runHTTPSessionPipeline({
     generationID,
     timing: result.timing || {},
     providerMeta: result.providerMeta || {}
+  });
+  appendSessionHistory(session, {
+    transcript: result.transcript || "",
+    assistantText: [result.first?.text || "", result.followup?.text || ""].filter(Boolean).join(" ")
   });
   session.activeGenerations.delete(generationID);
   session.state = "listening";
@@ -744,6 +753,10 @@ async function runHTTPSessionStreamedPipeline({
     timing,
     providerMeta
   });
+  appendSessionHistory(session, {
+    transcript,
+    assistantText: [firstText, followupText].filter(Boolean).join(" ")
+  });
   session.activeGenerations.delete(eventGenerationID);
   session.state = "listening";
   recordEvent("http_session_complete", {
@@ -756,6 +769,20 @@ async function runHTTPSessionStreamedPipeline({
     audioChunks: session.audio.length,
     timing
   });
+}
+
+function appendSessionHistory(session, { transcript, assistantText }) {
+  const userText = String(transcript || "").trim();
+  const responseText = String(assistantText || "").trim();
+  if (userText) {
+    session.history.push({ role: "user", content: userText });
+  }
+  if (responseText) {
+    session.history.push({ role: "assistant", content: responseText });
+  }
+  if (session.history.length > 12) {
+    session.history = session.history.slice(-12);
+  }
 }
 
 function pushAssistantSegment(session, { turnID, generationID, segment, text, audioChunks }) {

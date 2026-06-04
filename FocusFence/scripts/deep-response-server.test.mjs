@@ -765,6 +765,62 @@ test("DeepResponse HTTP session supports multiple turns and explicit end", async
   }
 });
 
+test("DeepResponse HTTP session passes prior turns as LLM context", async () => {
+  const seenContexts = [];
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async *streamSegmented({ audioChunks, context }) {
+        const collected = [];
+        for await (const chunk of audioChunks) {
+          collected.push(Buffer.from(chunk).toString("utf8"));
+        }
+        seenContexts.push(context);
+        const turnIndex = seenContexts.length;
+        yield { type: "transcript_final", transcript: `you-${turnIndex}:${collected.join("")}` };
+        yield {
+          type: "segment",
+          segment: "first",
+          text: `god-${turnIndex}`,
+          audioChunks: [Buffer.from(`audio-${turnIndex}`)]
+        };
+        yield { type: "timing", timing: {}, providerMeta: {} };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {});
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+
+    await postBytes(`${base}/audio?turn_id=turn-memory-1&seq=0`, Buffer.from("one"));
+    await postJSON(`${base}/input-stop`, { turnID: "turn-memory-1" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "assistant_text_delta" && event.delta === "god-1");
+    });
+
+    await postBytes(`${base}/audio?turn_id=turn-memory-2&seq=0`, Buffer.from("two"));
+    await postJSON(`${base}/input-stop`, { turnID: "turn-memory-2" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "assistant_text_delta" && event.delta === "god-2");
+    });
+
+    assert.deepEqual(seenContexts[0], []);
+    assert.deepEqual(seenContexts[1], [
+      { role: "user", content: "you-1:one" },
+      { role: "assistant", content: "god-1" }
+    ]);
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse server chunks HTTP realtime turn PCM before provider pipeline", async () => {
   const seenChunkSizes = [];
   const server = await startDeepResponseServer({
