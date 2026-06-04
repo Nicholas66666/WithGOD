@@ -1238,6 +1238,28 @@ Latest standard Fire/Volcengine full-smoke script:
   - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-standard-smoke-script-build build`: `BUILD SUCCEEDED`.
 - Development remained self-test only; no user-operated Watch testing was required.
 
+Latest standard full self-test script:
+- Added `npm run deep:watchlab:build:volc` for the canonical DeepResponseWatchLab watchOS build against the Fire/Volcengine endpoint.
+- Added `npm run deep:selftest:full` to run `npm run test:node`, `npm run deep:volc:smoke:full`, and `npm run deep:watchlab:build:volc` in order.
+- Added package-script regression coverage so the full self-test command cannot silently drop Node tests, remote HTTP smoke, or the WatchLab build.
+- This is the default validation gate for continued DeepResponse development.
+- The Watch transport target remains HTTP only. Do not add Watch WebSocket feasibility, fallback, spike, benchmark, comparison, or validation work to this plan.
+- User-operated Watch testing is not part of the development gate. Only use it as an optional product-experience spot check when explicitly requested by the user.
+- Verification:
+  - RED test first failed because both standard full self-test scripts were missing.
+  - `node --test scripts/package-scripts.test.mjs`: `3/3` passed.
+  - `npm run deep:selftest:full`: passed.
+  - Nested `npm run test:node`: `153/153` passed.
+  - Nested `npm run deep:volc:smoke:full`: passed against Fire/Volcengine.
+  - Latest standard smoke memory recall: `count: 3`, `store: jsonl`.
+  - Latest standard smoke conversation memory candidate: `persisted: true`, `store: jsonl`, `turnCount: 2`.
+  - Latest standard smoke idle memory persistence gate passed.
+  - Latest standard smoke stop-to-first-audio: `199ms`, `194ms`.
+  - Latest abort stale audio chunks/bytes: `0` / `0`.
+  - Nested `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
+  - Existing watchOS deprecation warnings for AVAudioSession record permission remain warnings only.
+- Development remained self-test only; no user-operated Watch testing was required.
+
 ## File Responsibilities
 
 - Modify `scripts/deep-response/protocol/deep-response-protocol.mjs`

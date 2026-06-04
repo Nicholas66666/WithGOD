@@ -22,3 +22,23 @@ test("package exposes standard Fire Volcengine DeepResponse full smoke gate", ()
   assert.match(command, /--forbid-text-pattern '从哪卷书\|哪卷书\.\*开始\|哪句经文\.\*开始'/);
   assert.match(command, /--forbid-text-pattern '从哪里开始\|想从哪里开始'/);
 });
+
+test("package exposes standard DeepResponse WatchLab Volcengine build gate", () => {
+  const command = packageJSON.scripts?.["deep:watchlab:build:volc"] || "";
+
+  assert.match(command, /DEEP_RESPONSE_REALTIME_ENDPOINT=http:\/\/124\.174\.96\.149:8797/);
+  assert.match(command, /xcodebuild -project Focus\.xcodeproj/);
+  assert.match(command, /-scheme DeepResponseWatchLab/);
+  assert.match(command, /-destination generic\/platform=watchOS/);
+  assert.match(command, /-derivedDataPath \/private\/tmp\/focus-deepresponse-watchlab-volc-build/);
+  assert.match(command, /\bbuild\b/);
+});
+
+test("package exposes a single DeepResponse full self-test gate", () => {
+  const command = packageJSON.scripts?.["deep:selftest:full"] || "";
+
+  assert.match(command, /npm run test:node/);
+  assert.match(command, /npm run deep:volc:smoke:full/);
+  assert.match(command, /npm run deep:watchlab:build:volc/);
+  assert.match(command, /&&/);
+});
