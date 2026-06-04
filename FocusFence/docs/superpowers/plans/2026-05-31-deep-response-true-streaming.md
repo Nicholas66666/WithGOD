@@ -64,9 +64,17 @@ npm run deep:http-smoke:test -- \
   --max-stop-to-first-audio-ms 3000 \
   --retries 1 \
   --pipeline-mode cascade \
+  --expect-memory-recalled \
+  --expect-memory-persisted \
+  --expect-idle-memory-persisted \
   --expect-abort-next-turn \
+  --expect-llm-started-from-partial \
+  --expect-ark-model doubao-seed-character-251128 \
+  --expect-ark-fallback-model '' \
+  --forbid-identical-consecutive-replies \
   --forbid-text-pattern '大卫.*歌利亚' \
   --forbid-text-pattern '你知道.*为什么' \
+  --forbid-text-pattern '给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听' \
   --forbid-text-pattern '从哪卷书|哪卷书.*开始|哪句经文.*开始' \
   --forbid-text-pattern '从哪里开始|想从哪里开始'
 ```
@@ -75,7 +83,10 @@ Latest remote smoke result:
 
 - health `200`
 - two-turn conversation in one session passed
-- stop-to-first-audio on Fire/Volcengine HTTP cascade: `215ms`, `217ms`
+- stop-to-first-audio on Fire/Volcengine HTTP cascade: `212ms`, `222ms`
+- LLM started from usable ASR partial on both standard turns: `llm_started_from_partial: 1`
+- forbidden lookup-style comfort failures: `[]`
+- repeated adjacent assistant reply failures: `[]`
 - abort stale audio chunks/bytes: `0` / `0`
 - abort-next-turn same-session probe passed with transcript/text/audio in the following turn
 - idle goodbye emitted text/audio, then `session_end idle_timeout`; late audio rejected with `409 session_ended`

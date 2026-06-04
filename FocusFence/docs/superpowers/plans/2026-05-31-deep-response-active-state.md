@@ -72,13 +72,14 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `158/158` passed.
-- Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply gate enabled.
+- Node self-tests: `160/160` passed.
+- Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply and lookup-style-comfort gate enabled.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
 - Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
 - Fire/Volcengine partial-ASR LLM start: `llm_started_from_partial: 1` on both standard smoke turns.
-- Fire/Volcengine stop-to-first-audio: `214ms`, `202ms`.
+- Fire/Volcengine stop-to-first-audio: `212ms`, `222ms`.
 - Fire/Volcengine repeated reply failures: `[]`.
+- Fire/Volcengine forbidden lookup-style comfort failures: `[]`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
@@ -106,6 +107,8 @@ Latest LLM selection benchmark:
 - Standard Fire/Volcengine smoke also forbids identical adjacent assistant replies in the same session via `--forbid-identical-consecutive-replies`.
 - Standard Fire/Volcengine smoke requires every conversation turn to start LLM from usable ASR partial via `--expect-llm-started-from-partial`.
 - The LLM prompt now explicitly quotes the previous assistant reply when present and forbids repeating it, including when the user repeats the same request.
+- Standard Fire/Volcengine smoke now rejects lookup-style comfort replies such as `给你找一句`, `再给你读一句`, `你还想听`, `你还是想听`, and `你又想听`.
+- The complete-reply prompt now requires comfort-intent turns to directly承接情绪 instead of opening as a scripture lookup or repeating the user's "想听安慰" request.
 
 ## Standard Commands
 

@@ -43,7 +43,7 @@ POC 的目标不是先做完整产品，而是验证在真实 Apple Watch 场景
 - Watch / iPhone / server 的分工由实测指标决定，但首版 POC 不把 iPhone 放进核心实时链路。
 - 开发过程采用自测试模式：优先用本地电脑、脚本、模拟器、watchOS build、源码级检查和 Fire/Volcengine 远端 smoke 完成验证；用户人工 Watch 测试不进入开发阶段计划，也不作为验收门槛。
 - Phase 1 可以使用固定音频/echo audio，但必须做得很薄，只作为 Watch/server 双向音频、播放、打断、旧音频丢弃的通道验收，不发展成另一条产品路线。
-- Watch 端公网 HTTPS/HTTP streaming 是唯一 transport；完全不再规划或执行 Watch WebSocket spike、fallback、benchmark、对照路线或可行性验证。
+- Watch 端公网 HTTPS/HTTP streaming 是唯一 transport；完全不再规划或执行 Watch 端 WebSocket 可行性、fallback、benchmark、对照路线或验证工作。
 
 ## 非目标
 
@@ -150,7 +150,7 @@ POST /deep-response/sessions/{session_id}/end
 
 `/events` 可按平台实测选择 SSE、chunked JSONL 或短轮询。`/audio` 可按实测选择 chunked PCM response、range-like pull 或短轮询 chunk pull。POC 优先选择 watchOS 稳定、可观测性最高的 HTTP 形态。
 
-Watch WebSocket 不再作为本 POC 的候选、spike、fallback、benchmark、比较路线或可行性验证对象。后续开发不为 Watch 端设计、实现、验证或讨论 WebSocket transport；只允许 server 内部按 provider 要求连接 Doubao ASR/TTS 等服务。
+Watch 端 WebSocket 不再作为本 POC 的候选、fallback、benchmark、比较路线或可行性验证对象。后续开发不为 Watch 端设计、实现、验证或讨论 WebSocket transport；只允许 server 内部按 provider 要求连接 Doubao ASR/TTS 等服务。
 
 ## Volcengine / Doubao Provider Preparation
 
@@ -1380,7 +1380,8 @@ server 需要支持用本地 wav/pcm 文件模拟 Watch audio stream：
 
 处理：
 
-- POC 必须真机测。
+- POC 验收默认通过本地脚本、源码检查、watchOS build、模拟器可脚本路径和 Fire/Volcengine 远端 smoke 完成。
+- 物理 Watch 只作为用户明确要求时的集中产品体感 spot check，不进入阶段计划或验收门槛。
 - 支持断线后温和结束，而不是继续假装对话。
 - 可以保留 Quick Response 作为稳定 fallback。
 

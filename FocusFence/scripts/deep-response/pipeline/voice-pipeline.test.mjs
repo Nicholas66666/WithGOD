@@ -111,6 +111,9 @@ test("VoicePipeline creates one complete spoken reply without followup generatio
   assert.match(prompt, /不要原样重复上一轮完整回复/);
   assert.match(prompt, /不要朗读整段经文/);
   assert.match(prompt, /如果用户是在要安慰/);
+  assert.match(prompt, /不要说“我给你找一句”“我给你读一句”“你还想听”/);
+  assert.match(prompt, /不要说“你还是想听安慰的话”“你又想听安慰的话”/);
+  assert.match(prompt, /不要把回答开成查经或找经文动作/);
   assert.match(prompt, /不要把安慰请求转成圣经知识问答/);
   assert.match(prompt, /不要问用户想从哪卷书或哪句经文开始/);
   assert.match(prompt, /不要问用户想从哪里开始听/);

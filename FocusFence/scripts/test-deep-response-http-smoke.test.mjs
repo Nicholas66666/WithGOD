@@ -33,7 +33,8 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
     "--expect-ark-fallback-model", "",
     "--forbid-identical-consecutive-replies",
     "--forbid-text-pattern", "大卫.*歌利亚",
-    "--forbid-text-pattern", "你知道.*为什么"
+    "--forbid-text-pattern", "你知道.*为什么",
+    "--forbid-text-pattern", "给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听"
   ]);
 
   assert.equal(args.pcmPath, "fixtures/speech.pcm");
@@ -51,7 +52,11 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
   assert.equal(args.expectArkModel, "doubao-seed-character-251128");
   assert.equal(args.expectArkFallbackModel, "");
   assert.equal(args.forbidIdenticalConsecutiveReplies, true);
-  assert.deepEqual(args.forbiddenTextPatterns, ["大卫.*歌利亚", "你知道.*为什么"]);
+  assert.deepEqual(args.forbiddenTextPatterns, [
+    "大卫.*歌利亚",
+    "你知道.*为什么",
+    "给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听"
+  ]);
 });
 
 test("collectDebugConfigFailures flags Ark model drift", () => {
@@ -84,6 +89,33 @@ test("collectForbiddenTextFailures flags obvious comfort-intent derailments", ()
   assert.deepEqual(failures, [
     { turnID: "turn-1", forbiddenPattern: "大卫.*歌利亚", text: "那我给你讲个轻松的。你知道大卫为什么能打败歌利亚吗？" },
     { turnID: "turn-1", forbiddenPattern: "你知道.*为什么", text: "那我给你讲个轻松的。你知道大卫为什么能打败歌利亚吗？" }
+  ]);
+});
+
+test("collectForbiddenTextFailures flags lookup-style comfort replies", () => {
+  const failures = collectForbiddenTextFailures([
+    { turnID: "turn-1", text: "那我再给你找一句。《耶利米书》里说，神会赐你平安。" },
+    { turnID: "turn-2", text: "你还想听的话，我们可以继续看一节经文。" },
+    { turnID: "turn-3", text: "你还是想听安慰的话呀。《诗篇》里说，神是我们的避难所。" },
+    { turnID: "turn-4", text: "我听见你真的很累，我们先慢慢停一下。" }
+  ], ["给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听"]);
+
+  assert.deepEqual(failures, [
+    {
+      turnID: "turn-1",
+      forbiddenPattern: "给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听",
+      text: "那我再给你找一句。《耶利米书》里说，神会赐你平安。"
+    },
+    {
+      turnID: "turn-2",
+      forbiddenPattern: "给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听",
+      text: "你还想听的话，我们可以继续看一节经文。"
+    },
+    {
+      turnID: "turn-3",
+      forbiddenPattern: "给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听",
+      text: "你还是想听安慰的话呀。《诗篇》里说，神是我们的避难所。"
+    }
   ]);
 });
 

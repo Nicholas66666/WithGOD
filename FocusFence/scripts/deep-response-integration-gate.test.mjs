@@ -7,6 +7,7 @@ const gate = readFileSync("docs/superpowers/plans/2026-06-04-deep-response-integ
 const productDecision = readFileSync("docs/superpowers/plans/2026-06-05-deep-response-product-integration-decision.md", "utf8");
 const plan = readFileSync("docs/superpowers/plans/2026-05-31-deep-response-true-streaming.md", "utf8");
 const activeState = readFileSync("docs/superpowers/plans/2026-05-31-deep-response-active-state.md", "utf8");
+const xiaozhiSpec = readFileSync("docs/superpowers/specs/2026-05-29-deep-response-xiaozhi-poc-spec.md", "utf8");
 const defaultEnv = readFileSync("scripts/deep-response/lib/env.mjs", "utf8");
 const envExample = readFileSync(".env.example", "utf8");
 const supabaseEnvExample = readFileSync("supabase/.env.example", "utf8");
@@ -81,6 +82,15 @@ test("DeepResponse true-streaming plan excludes user-operated Watch testing from
   assert.match(plan, /completely self-test/u);
   assert.match(plan, /Do not ask the user to operate Apple Watch as a planned validation step/u);
   assert.doesNotMatch(plan, /user-operated Watch tests as a development gate/u);
+});
+
+test("DeepResponse Xiaozhi spec keeps Watch validation self-test first", () => {
+  assert.match(xiaozhiSpec, /开发验证完全采用自测试模式/u);
+  assert.match(xiaozhiSpec, /Watch 端公网 HTTPS\/HTTP streaming 是唯一 transport/u);
+  assert.match(xiaozhiSpec, /用户人工 Watch 测试不进入开发阶段计划，也不作为验收门槛/u);
+  assert.doesNotMatch(xiaozhiSpec, /POC 必须真机测/u);
+  assert.doesNotMatch(xiaozhiSpec, /必须.*用户人工/u);
+  assert.doesNotMatch(xiaozhiSpec, /Watch WebSocket spike/u);
 });
 
 test("DeepResponse defaults use benchmark-selected Ark model without rejected fallback", () => {
