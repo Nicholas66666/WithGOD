@@ -56,11 +56,12 @@ DeepResponse remains in the independent Lab target.
 
 Latest pushed commits:
 
+- `006347b` Use benchmark-selected DeepResponse Ark model.
+- `4dac218` Add DeepResponse LLM benchmark harness.
 - `1388a67` Add DeepResponse product integration decision gate.
 - `b85d374` Record DeepResponse HTTP-only server deployment evidence.
 - `cf342b5` Remove client-facing DeepResponse WebSocket server path.
 - `ddfd509` Remove Watch WebSocket spike from DeepResponse self-test surface.
-- `4fb5035` Add standard DeepResponse full self-test script.
 
 Latest standard self-test:
 
@@ -70,10 +71,10 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `148/148` passed.
+- Node self-tests: `149/149` passed.
 - Fire/Volcengine HTTP smoke: passed.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
-- Fire/Volcengine stop-to-first-audio: `236ms`, `221ms`.
+- Fire/Volcengine stop-to-first-audio: `235ms`, `230ms`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
@@ -94,6 +95,8 @@ Latest LLM selection benchmark:
 - Current provisional primary candidate: `doubao-seed-character-251128`, prompt variant `S`.
 - Initially configured Ark 2.0 models were rejected for realtime DeepResponse because first-token and first-phrase latency were far outside the voice target.
 - Latest one-row provider smoke against `doubao-seed-character-251128` recorded first token `506ms`, conservative first phrase `965ms`, and output passed automatic content checks. One-row smoke is only a CLI/provider-path check, not a model-selection conclusion.
+- Runtime/default model config now uses `ARK_MODEL=doubao-seed-character-251128` and `ARK_FALLBACK_MODEL=`. The old `doubao-seed-2-0-pro-260215` fallback is not a default because it failed realtime latency gates.
+- Fire/Volcengine `/debug/config` after deploying `006347b` reports `arkModel: "doubao-seed-character-251128"` and `arkFallbackModel: ""`.
 - This is a self-test/model-selection gate only; it does not introduce Watch WebSocket, user Watch testing, or product integration.
 
 ## Standard Commands
