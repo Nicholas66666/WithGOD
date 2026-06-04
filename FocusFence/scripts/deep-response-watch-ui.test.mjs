@@ -52,6 +52,14 @@ test("DeepResponse Watch debug UI has an HTTP continuous auto-listen loop", () =
   assert.match(debugViewSource, /startRecordingTurn\(reason: "Auto listening"\)/);
 });
 
+test("DeepResponse Watch continuous mode off stops active recording", () => {
+  assert.match(debugViewSource, /Task \{ await toggleContinuousMode\(\) \}/);
+  const toggleFunction = debugViewSource.match(/private func toggleContinuousMode\(\) async \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(toggleFunction, /isContinuousMode\.toggle\(\)/);
+  assert.match(toggleFunction, /if !isContinuousMode,[\s\S]*?isRecording \{[\s\S]*?_ = recorder\.stop\(\)/);
+  assert.match(toggleFunction, /conversationState = \.listening/);
+});
+
 test("DeepResponse Watch recorder exposes local silence endpointing hooks", () => {
   assert.match(recorderSource, /struct Configuration/);
   assert.match(recorderSource, /isEndpointingEnabled/);

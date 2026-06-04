@@ -112,8 +112,7 @@ struct DeepResponseDebugView: View {
 
             HStack {
                 Button {
-                    isContinuousMode.toggle()
-                    status = isContinuousMode ? "Continuous on" : "Continuous off"
+                    Task { await toggleContinuousMode() }
                 } label: {
                     Image(systemName: isContinuousMode ? "repeat.circle.fill" : "repeat.circle")
                 }
@@ -163,6 +162,18 @@ struct DeepResponseDebugView: View {
             .lineLimit(4)
             .minimumScaleFactor(0.7)
             .multilineTextAlignment(.center)
+    }
+
+    private func toggleContinuousMode() async {
+        isContinuousMode.toggle()
+        status = isContinuousMode ? "Continuous on" : "Continuous off"
+        if !isContinuousMode,
+           isRecording {
+            _ = recorder.stop()
+            isRecording = false
+            isWaitingForResponse = false
+            conversationState = .listening
+        }
     }
 
     private func toggleMicrophoneTurn() async {

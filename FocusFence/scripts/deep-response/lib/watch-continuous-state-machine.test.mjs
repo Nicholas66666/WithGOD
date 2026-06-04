@@ -58,6 +58,19 @@ test("continuous loop keeps listening after an empty recording", () => {
   assert.deepEqual(result.actions, ["start_recording:auto_listening"]);
 });
 
+test("turning continuous mode off stops active recording", () => {
+  const result = simulateDeepResponseWatchEvents([
+    { type: "toggle_continuous", enabled: true },
+    { type: "recording_started" },
+    { type: "toggle_continuous", enabled: false }
+  ]);
+
+  assert.equal(result.state.isContinuousMode, false);
+  assert.equal(result.state.conversationState, "listening");
+  assert.equal(result.state.isRecording, false);
+  assert.deepEqual(result.actions, ["stop_recording"]);
+});
+
 test("continuous barge-in abort resumes recording after local-first stop", () => {
   const afterAbort = applyDeepResponseWatchEvent({
     isContinuousMode: true,

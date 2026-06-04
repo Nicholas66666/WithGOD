@@ -34,6 +34,19 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
   const actions = [];
 
   if (event.type === "toggle_continuous") {
+    if (!event.enabled && state.isRecording) {
+      actions.push("stop_recording");
+      return {
+        state: {
+          ...state,
+          isContinuousMode: false,
+          isRecording: false,
+          isWaitingForResponse: false,
+          conversationState: state.isHTTPSessionEnded ? "ended" : "listening"
+        },
+        actions
+      };
+    }
     return {
       state: {
         ...state,

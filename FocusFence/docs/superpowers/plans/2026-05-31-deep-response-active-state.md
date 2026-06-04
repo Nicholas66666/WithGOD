@@ -79,19 +79,19 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `201/201` passed.
+- Node self-tests: `203/203` passed.
 - Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply, lookup-style-comfort, harsh repeated-comfort, mechanical tired/fatigue, incomplete-utterance, `是还想听`, formulaic scripture lead-in, awkward spoken-opening, and dangling `啦。` gates enabled.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
 - Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
 - Fire/Volcengine partial-ASR LLM start: `llm_started_from_partial: 1` on both standard smoke turns.
-- Fire/Volcengine smoke stop-to-first-audio: `222ms`, `198ms`.
+- Fire/Volcengine smoke stop-to-first-audio: `221ms`, `220ms`.
 - Fire/Volcengine repeated reply failures: `[]`.
 - Fire/Volcengine forbidden lookup/harsh/mechanical comfort failures: `[]`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`, `summary: ""`, `closureClean: true`.
 - Fire/Volcengine 8-turn continuous conversation gate now uses realtime upload pacing (`--upload-sleep-ms 1000`) and `--max-stop-to-first-audio-ms 1000`.
 - Fire/Volcengine 8-turn continuous conversation gate: passed with `session_end` reason `user_goodbye`, `memoryRecalled.count: 3`, `memory_candidate.persisted: true`, `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, and late audio `409 session_ended`.
-- Fire/Volcengine 8-turn stop-to-first-audio: `243ms`, `216ms`, `227ms`, `218ms`, `232ms`, `222ms`, `215ms`, `219ms`.
+- Fire/Volcengine 8-turn stop-to-first-audio: `200ms`, `288ms`, `272ms`, `274ms`, `283ms`, `270ms`, `223ms`, `242ms`.
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
 - Latest WatchLab barge-in self-test update: continuous-mode abort now captures the old `turn_id` / `generation_id`, stops playback locally, starts barge-in recording before waiting for the `/abort` server ack, and posts the abort in the background. Full `npm run deep:selftest:full` passed after this change; no user-operated Watch test was required.
 - Latest WatchLab late-abort/session-end gate: continuous-mode state machine now keeps the session ended if a delayed `/abort` ack arrives after `session_end`; it must not start another `barge_in` recording after the server has closed the session. `DeepResponseDebugView.abortCurrentTurn()` now checks `client.isHTTPSessionEnded` again after awaiting the background abort task in the continuous barge-in branch and calls `markSessionEnded()` if closure arrived during the new recording start. Source and state-machine gates cover this out-of-order event path; no user-operated Watch test was required.
@@ -102,6 +102,7 @@ Latest result:
 - Latest remote idle-memory summary gate: the standard Fire/Volcengine HTTP smoke probe now returns `memoryCandidate.summary` and `closureClean`, and fails if the idle-goodbye closure text appears in persisted memory. Full `npm run deep:selftest:full` passed with remote idle `closureClean: true`; no user-operated Watch test was required.
 - Latest WatchLab HTTP-only endpoint gate: `DeepResponseRealtimeClient.endpointURL()` now rejects configured endpoints whose scheme is not `http` or `https`, and no longer maps `wss` to `https`. Source gates assert the WatchLab config layer has no `ws/wss` scheme case while preserving `https` for HTTP transport. Full `npm run deep:selftest:full` passed; no user-operated Watch test was required.
 - Latest WatchLab empty-recording recovery gate: continuous mode now keeps the hands-free loop alive when a recording turn produces no local audio and no uploaded chunks. `finishRecordingTurn()` restarts `Auto listening` instead of dropping to `listening`, and the scriptable state machine covers the same `empty_recording` path. Full `npm run deep:selftest:full` passed; no user-operated Watch test was required.
+- Latest WatchLab continuous-off recording gate: turning continuous mode off while recording now stops the local recorder, clears waiting state, and returns the loop to `listening` instead of leaving the mic active. The scriptable state machine emits `stop_recording`, Swift source gates cover `toggleContinuousMode()`, and full `npm run deep:selftest:full` passed. No user-operated Watch test was required.
 - Latest WatchLab state self-test update: continuous-mode runtime now has an explicit `assistantThinking` state between user speech ending and playback becoming active. This separates “server/AI is thinking” from idle waiting and assistant speaking in the scriptable Watch state model and Swift source gate.
 - Latest WatchLab ending-state self-test update: continuous-mode runtime now includes an explicit `ending` state before final `ended` when a server session end is observed. This makes the Watch state model match the planned listening/user-speaking/assistant-thinking/assistant-speaking/idle-waiting/ending/ended lifecycle and blocks auto-listen during session closure.
 - Latest spoken-text quality gate: VoicePipeline strips dangling quote lead-ins such as trailing `主说：`, `他说：`, `经上说：`, and `圣经说：` before emitting assistant text, phrase events, or TTS audio. Standard Fire/Volcengine smoke and 8-turn conversation scripts now also reject assistant text that ends with `:` or `：`.
