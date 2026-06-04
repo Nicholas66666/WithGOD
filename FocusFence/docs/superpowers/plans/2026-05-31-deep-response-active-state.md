@@ -38,6 +38,8 @@ Watch 持续会话
 - Implementation plan: `docs/superpowers/plans/2026-05-31-deep-response-true-streaming.md`
 - Render service: `https://withgod-deep-response.onrender.com`
 - Render service id: `srv-d8dbodsm0tmc73dp7560`
+- Volcengine ECS endpoint: `http://124.174.96.149:8797`
+- Volcengine deployment record: `docs/superpowers/plans/2026-06-04-deep-response-volcengine-deployment.md`
 - Watch device id: `6B873DBC-11D7-5F93-AA64-96FB0531C28B`
 - Stable old-app baseline tag: `baseline/2026-05-30-presence-stable-deeplab-isolated`
 - DeepLab v2 client checkpoint: `checkpoint/2026-05-30-deeplab-phase2a-v2-client-build`
@@ -92,6 +94,15 @@ Latest status as of 2026-06-04:
   - `Network.NWError error 60 - Operation timed out`
   - Treat this as Watch/Mac connectivity, not a code regression.
 - Do not ask for user testing until the Watch device is reachable and the latest `DeepLab.app` is installed.
+- Volcengine test ECS is now running the DeepResponse provider server:
+  - endpoint: `http://124.174.96.149:8797`
+  - ECS: `i-yenp6zqgao4c5qvvn50z`
+  - EIP: `124.174.96.149`
+  - EIP bandwidth: `5Mbps`
+  - health: `200`
+  - latest smoke stop-to-first-audio: `448ms`, `454ms`
+  - latest smoke abort stale audio chunks/bytes: `0` / `0`
+  - Render remains rollback until real Watch validates the Volcengine endpoint.
 
 Current recommended validation command before any server migration/manual Watch test:
 
@@ -109,6 +120,21 @@ npm run deep:http-smoke:test -- \
 ```
 
 If sandboxed Node DNS returns `ENOTFOUND` while `curl /health` succeeds, rerun this command with non-sandbox network permission. This happened on 2026-06-04; the non-sandbox run passed.
+
+Current recommended Volcengine validation command:
+
+```bash
+npm run deep:http-smoke:test -- \
+  --endpoint http://124.174.96.149:8797 \
+  --pcm /private/tmp/deep-response-http-speed.pcm \
+  --turns 2 \
+  --chunk-ms 1000 \
+  --upload-sleep-ms 1000 \
+  --poll-ms 50 \
+  --timeout-ms 120000 \
+  --observe-ms 3000 \
+  --max-stop-to-first-audio-ms 3000
+```
 
 Milestone 1 server/provider harness is implemented and self-tested as of commit `62335c3`.
 

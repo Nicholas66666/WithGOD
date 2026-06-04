@@ -6,6 +6,7 @@ xcuserdata/
 *.xcuserdatad/
 .DS_Store
 .env.local
+.volcengine/
 supabase/.env.local
 supabase/.temp/
 xiaozhi-esp32-server/
