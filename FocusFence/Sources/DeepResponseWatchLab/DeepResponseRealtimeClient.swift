@@ -54,6 +54,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private var httpPendingUploadAudio = Data()
     private var httpUploadFailureCount = 0
     private var isDrainingHTTPUploads = false
+    private var httpUploadDrainTask: Task<Void, Never>?
     private var httpStopStartedAt: Date?
     private var httpUploadDrainMs: Int?
     private var httpInputStopResponseMs: Int?
@@ -265,6 +266,8 @@ final class DeepResponseRealtimeClient: ObservableObject {
         httpPendingUploadAudio = Data()
         httpUploadFailureCount = 0
         isDrainingHTTPUploads = false
+        httpUploadDrainTask?.cancel()
+        httpUploadDrainTask = nil
         httpStopStartedAt = nil
         httpUploadDrainMs = nil
         httpInputStopResponseMs = nil
@@ -366,13 +369,13 @@ final class DeepResponseRealtimeClient: ObservableObject {
             return
         }
         isDrainingHTTPUploads = true
-        Task { [weak self] in
+        httpUploadDrainTask = Task { [weak self] in
             await self?.drainHTTPSessionUploadQueue()
         }
     }
 
     private func drainHTTPSessionUploadQueue() async {
-        while !httpUploadQueue.isEmpty {
+        while !Task.isCancelled && !httpUploadQueue.isEmpty {
             let audio = httpUploadQueue.removeFirst()
             let uploaded = await uploadHTTPSessionAudio(audio)
             if !uploaded {
@@ -380,9 +383,10 @@ final class DeepResponseRealtimeClient: ObservableObject {
             }
         }
         isDrainingHTTPUploads = false
-        if !httpUploadQueue.isEmpty {
+        httpUploadDrainTask = nil
+        if !Task.isCancelled && !httpUploadQueue.isEmpty {
             isDrainingHTTPUploads = true
-            Task { [weak self] in
+            httpUploadDrainTask = Task { [weak self] in
                 await self?.drainHTTPSessionUploadQueue()
             }
         }
@@ -537,6 +541,11 @@ final class DeepResponseRealtimeClient: ObservableObject {
     func stopHTTPSessionRuntime() {
         httpSessionPollTask?.cancel()
         httpSessionPollTask = nil
+        httpUploadDrainTask?.cancel()
+        httpUploadDrainTask = nil
+        httpUploadQueue = []
+        httpPendingUploadAudio = Data()
+        isDrainingHTTPUploads = false
         player.stop()
         isHTTPSessionPlaybackActive = false
         canAbortHTTPSessionTurn = false

@@ -131,6 +131,18 @@ test("DeepResponse Watch view teardown stops local HTTP session runtime", () => 
   assert.match(cleanupFunction, /canAbortHTTPSessionTurn = false/);
 });
 
+test("DeepResponse Watch teardown cancels pending HTTP audio uploads", () => {
+  assert.match(realtimeClientSource, /private var httpUploadDrainTask: Task<Void, Never>\?/);
+  assert.match(realtimeClientSource, /httpUploadDrainTask = Task \{ \[weak self\] in/);
+
+  const cleanupFunction = realtimeClientSource.match(/func stopHTTPSessionRuntime\(\) \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(cleanupFunction, /httpUploadDrainTask\?\.cancel\(\)/);
+  assert.match(cleanupFunction, /httpUploadDrainTask = nil/);
+  assert.match(cleanupFunction, /httpUploadQueue = \[\]/);
+  assert.match(cleanupFunction, /httpPendingUploadAudio = Data\(\)/);
+  assert.match(cleanupFunction, /isDrainingHTTPUploads = false/);
+});
+
 test("DeepResponse Watch marks server wait as assistantThinking before playback", () => {
   const finishFunction = debugViewSource.match(/private func finishRecordingTurn\(reason: String\) async \{[\s\S]*?\n    \}/)?.[0] || "";
   assert.match(finishFunction, /isWaitingForResponse = true[\s\S]*?conversationState = \.assistantThinking[\s\S]*?await client\.finishHTTPSessionTurn\(\)/);
