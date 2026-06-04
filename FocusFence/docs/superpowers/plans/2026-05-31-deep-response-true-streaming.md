@@ -1349,6 +1349,29 @@ Latest S6 product integration decision artifact:
   - Nested `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
 - Development remained self-test only; no user-operated Watch testing was required.
 
+Latest active-state handoff refresh:
+- Rewrote `docs/superpowers/plans/2026-05-31-deep-response-active-state.md` as the current persistent handoff entry.
+- Removed stale guidance that allowed a Watch WebSocket feasibility path or treated manual Watch gates as normal phase progression.
+- The active-state handoff now records:
+  - Watch 端 transport 固定使用 HTTP.
+  - 完全不再考虑 Watch WebSocket.
+  - DeepResponse server has no client-facing WebSocket upgrade route.
+  - 自测试优先.
+  - 用户人工 Watch 真机测试不作为常规推进条件.
+  - current canonical commands and latest pushed commits.
+- Strengthened `scripts/deep-response-integration-gate.test.mjs` so the active-state handoff must match the current HTTP-only self-test policy.
+- Verification:
+  - RED `node --test scripts/deep-response-integration-gate.test.mjs` first failed because the active-state file still described the old WebSocket spike/manual gate policy.
+  - `node --test scripts/deep-response-integration-gate.test.mjs`: `7/7` passed.
+  - `npm run deep:selftest:full`: passed.
+  - Nested `npm run test:node`: `146/146` passed.
+  - Nested Fire/Volcengine smoke memory recall: `count: 3`, `store: jsonl`.
+  - Nested Fire/Volcengine smoke stop-to-first-audio: `193ms`, `202ms`.
+  - Nested Fire/Volcengine smoke abort stale audio chunks/bytes: `0` / `0`.
+  - Nested Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
+  - Nested `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
+- Development remained self-test only; no user-operated Watch testing was required.
+
 ## File Responsibilities
 
 - Modify `scripts/deep-response/providers/doubao-asr.mjs`

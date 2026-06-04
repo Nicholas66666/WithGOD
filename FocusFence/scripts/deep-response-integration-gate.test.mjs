@@ -6,6 +6,7 @@ import { join } from "node:path";
 const gate = readFileSync("docs/superpowers/plans/2026-06-04-deep-response-integration-gate.md", "utf8");
 const productDecision = readFileSync("docs/superpowers/plans/2026-06-05-deep-response-product-integration-decision.md", "utf8");
 const plan = readFileSync("docs/superpowers/plans/2026-05-31-deep-response-true-streaming.md", "utf8");
+const activeState = readFileSync("docs/superpowers/plans/2026-05-31-deep-response-active-state.md", "utf8");
 const presenceWatchApp = readFileSync("Sources/PresenceWatchApp/PresenceWatchApp.swift", "utf8");
 const deepLabClient = readFileSync("Sources/DeepResponseWatchLab/DeepResponseRealtimeClient.swift", "utf8");
 const deepResponseServer = readFileSync("scripts/deep-response-server.mjs", "utf8");
@@ -55,6 +56,16 @@ test("DeepResponse integration gate matches current code boundaries", () => {
   assert.match(deepLabClient, /URLSession\.shared\.data/);
   assert.match(plan, /No change to Quick Response main flow until user explicitly approves product integration/);
   assert.match(plan, /There is a rollback tag before integration/);
+});
+
+test("DeepResponse active-state handoff matches current HTTP-only self-test policy", () => {
+  assert.match(activeState, /Watch 端 transport 固定使用 HTTP/u);
+  assert.match(activeState, /完全不再考虑 Watch WebSocket/u);
+  assert.match(activeState, /自测试优先/u);
+  assert.match(activeState, /用户人工 Watch 真机测试不作为常规推进条件/u);
+  assert.match(activeState, /DeepResponseWatchLab/u);
+  assert.match(activeState, /Quick Response/u);
+  assert.doesNotMatch(activeState, /WebSocket Spike Rules|feasibility spike|只允许做隔离 feasibility spike/u);
 });
 
 test("DeepResponse integration gate scans all Quick Response app sources", () => {
