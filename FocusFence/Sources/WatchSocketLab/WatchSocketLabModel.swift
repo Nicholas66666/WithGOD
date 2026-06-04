@@ -94,7 +94,11 @@ final class WatchSocketLabModel: ObservableObject {
 
     func startBinaryEcho() {
         guard client.isConnected else {
-            connect()
+            state = "connect_first"
+            appendLog("stream_blocked", [
+                "run_id": runID,
+                "reason": "websocket_not_open",
+            ])
             return
         }
         guard streamTask == nil else {

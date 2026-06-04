@@ -14,17 +14,18 @@ final class WatchSocketEchoClient: NSObject, URLSessionWebSocketDelegate {
     private var connectStartedAt: Date?
     private var receiveTask: Task<Void, Never>?
     private var pendingSendMs: [UInt64: Int64] = [:]
+    private var didOpen = false
 
     var isConnected: Bool {
-        task != nil
+        task != nil && didOpen
     }
 
-    func connect(url: URL) async throws -> Int {
+    func connect(url: URL, timeoutSeconds: UInt64 = 15) async throws -> Int {
         disconnect(closeCode: .goingAway)
 
         let configuration = URLSessionConfiguration.default
-        configuration.waitsForConnectivity = true
-        configuration.timeoutIntervalForRequest = 30
+        configuration.waitsForConnectivity = false
+        configuration.timeoutIntervalForRequest = TimeInterval(timeoutSeconds)
 
         let session = URLSession(configuration: configuration, delegate: self, delegateQueue: nil)
         let task = session.webSocketTask(with: url)
@@ -32,9 +33,24 @@ final class WatchSocketEchoClient: NSObject, URLSessionWebSocketDelegate {
         self.task = task
         connectStartedAt = Date()
 
-        return try await withCheckedThrowingContinuation { continuation in
-            openContinuation = continuation
-            task.resume()
+        return try await withThrowingTaskGroup(of: Int.self) { group in
+            group.addTask { [weak self] in
+                try await withCheckedThrowingContinuation { continuation in
+                    self?.openContinuation = continuation
+                    task.resume()
+                }
+            }
+            group.addTask { [weak self] in
+                try await Task.sleep(nanoseconds: timeoutSeconds * 1_000_000_000)
+                self?.failPendingConnect(URLError(.timedOut))
+                throw URLError(.timedOut)
+            }
+
+            guard let elapsed = try await group.next() else {
+                throw URLError(.cannotConnectToHost)
+            }
+            group.cancelAll()
+            return elapsed
         }
     }
 
@@ -46,7 +62,7 @@ final class WatchSocketEchoClient: NSObject, URLSessionWebSocketDelegate {
     }
 
     func sendBinary(generation: UInt32, sequence: UInt64) async throws {
-        guard let task else {
+        guard let task, isConnected else {
             throw URLError(.notConnectedToInternet)
         }
 
@@ -61,7 +77,7 @@ final class WatchSocketEchoClient: NSObject, URLSessionWebSocketDelegate {
     }
 
     func sendAbort(generation: UInt32) async throws {
-        guard let task else {
+        guard let task, isConnected else {
             throw URLError(.notConnectedToInternet)
         }
         pendingSendMs.removeAll()
@@ -73,8 +89,10 @@ final class WatchSocketEchoClient: NSObject, URLSessionWebSocketDelegate {
     func disconnect(closeCode: URLSessionWebSocketTask.CloseCode = .normalClosure) {
         receiveTask?.cancel()
         receiveTask = nil
+        failPendingConnect(URLError(.cancelled))
         task?.cancel(with: closeCode, reason: nil)
         task = nil
+        didOpen = false
         session?.invalidateAndCancel()
         session = nil
         pendingSendMs.removeAll()
@@ -86,6 +104,7 @@ final class WatchSocketEchoClient: NSObject, URLSessionWebSocketDelegate {
         didOpenWithProtocol protocol: String?
     ) {
         let elapsedMs = Int(Date().timeIntervalSince(connectStartedAt ?? Date()) * 1_000)
+        didOpen = true
         openContinuation?.resume(returning: elapsedMs)
         openContinuation = nil
         emit("connect_success", ["connect_ms": elapsedMs])
@@ -102,6 +121,12 @@ final class WatchSocketEchoClient: NSObject, URLSessionWebSocketDelegate {
             "reason": reason.flatMap { String(data: $0, encoding: .utf8) } ?? "",
         ])
         task = nil
+        didOpen = false
+    }
+
+    private func failPendingConnect(_ error: Error) {
+        openContinuation?.resume(throwing: error)
+        openContinuation = nil
     }
 
     private func receiveLoop() async {
