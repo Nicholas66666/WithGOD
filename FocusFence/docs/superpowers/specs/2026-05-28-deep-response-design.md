@@ -135,18 +135,20 @@ OpenAI Realtime 只有在满足以下条件时，才进入 Deep Response 主链�
 - 首句音频播放时间稳定达到目标。
 - 打断体验、语气自然度和连续对话稳定性明显优于级联链路。
 
-当前已经跑通的 Watch Realtime smoke test 只证明：
+历史 Watch Realtime smoke test 已被后续 HTTP-only 决策 superseded。它只证明：
 
 - Watch 模拟器可以建立 WebSocket。
 - Watch 可以把 PCM 分片发到 Supabase。
 - Supabase 可以连 OpenAI Realtime 并返回一屏文本回应。
 
-它没有证明：
+它没有证明，也不再作为 Deep Response 后续目标或候选路线：
 
 - 真机 Watch 麦克风持续 realtime 采集稳定。
 - 端到端语音首响足够快。
 - 支持自然打断。
 - 适合作为 Deep Response 的主语音对话链路。
+
+2026-06-05 纠正：后续 Deep Response Watch 端完全不再考虑 WebSocket。Watch transport 固定采用 HTTP upload/download/polling/streaming 形态，开发验证采用自测试模式；用户人工 Watch 测试不作为阶段计划或验收门槛。
 
 ## 延迟验收指标
 

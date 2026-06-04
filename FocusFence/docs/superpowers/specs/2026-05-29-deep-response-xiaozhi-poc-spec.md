@@ -2,6 +2,7 @@
 
 日期：2026-05-29
 更新：2026-05-31，目标升级为小智式持续语音会话。
+纠正：2026-06-05，Watch 端完全不再考虑 WebSocket；开发验证完全采用自测试模式，用户人工 Watch 测试不作为阶段计划或验收门槛。
 
 ## 目标
 
@@ -40,9 +41,9 @@ POC 的目标不是先做完整产品，而是验证在真实 Apple Watch 场景
 - 长时间没有用户输入时，AI 可以先轻声确认一次，随后温和告别并关闭 session。
 - 用户明确说“拜拜”“好了”“先这样”“结束吧”等结束意图时，AI 应完成简短告别并关闭 session。
 - Watch / iPhone / server 的分工由实测指标决定，但首版 POC 不把 iPhone 放进核心实时链路。
-- 开发过程采用自测试模式：优先用本地电脑、脚本、模拟器、watchOS build、源码级检查和 Fire/Volcengine 远端 smoke 完成验证；用户人工 Watch 测试不作为开发阶段门槛。
+- 开发过程采用自测试模式：优先用本地电脑、脚本、模拟器、watchOS build、源码级检查和 Fire/Volcengine 远端 smoke 完成验证；用户人工 Watch 测试不进入开发阶段计划，也不作为验收门槛。
 - Phase 1 可以使用固定音频/echo audio，但必须做得很薄，只作为 Watch/server 双向音频、播放、打断、旧音频丢弃的通道验收，不发展成另一条产品路线。
-- Watch 端公网 HTTPS/HTTP streaming 是唯一主线 transport；不再规划 Watch WebSocket spike、fallback 或对照路线。
+- Watch 端公网 HTTPS/HTTP streaming 是唯一 transport；完全不再规划或执行 Watch WebSocket spike、fallback、benchmark、对照路线或可行性验证。
 
 ## 非目标
 
@@ -149,7 +150,7 @@ POST /deep-response/sessions/{session_id}/end
 
 `/events` 可按平台实测选择 SSE、chunked JSONL 或短轮询。`/audio` 可按实测选择 chunked PCM response、range-like pull 或短轮询 chunk pull。POC 优先选择 watchOS 稳定、可观测性最高的 HTTP 形态。
 
-Watch WebSocket 不再作为本 POC 的候选、spike、fallback 或比较路线。后续开发不为 Watch 端设计、实现或验证 WebSocket transport。
+Watch WebSocket 不再作为本 POC 的候选、spike、fallback、benchmark、比较路线或可行性验证对象。后续开发不为 Watch 端设计、实现、验证或讨论 WebSocket transport；只允许 server 内部按 provider 要求连接 Doubao ASR/TTS 等服务。
 
 ## Volcengine / Doubao Provider Preparation
 
@@ -1214,7 +1215,7 @@ PASSED 15/15 checks
 
 ### Phase 1：Watch Direct PCM HTTP Realtime
 
-目标：先用脚本和 watchOS 模拟器验证 PCM16 HTTP 双向流，再进入 Watch 真机直连 server 验收。
+目标：先用脚本、watchOS build、源码级检查、模拟器可自动化路径和远端 HTTP smoke 验证 PCM16 HTTP 双向流。Watch 真机人工测试不作为 Phase 1 验收门槛；只有用户明确要求产品体感 spot check 时才单独安排。
 
 Phase 1 允许使用固定音频或 echo audio，不要求接入真实 TTS。
 

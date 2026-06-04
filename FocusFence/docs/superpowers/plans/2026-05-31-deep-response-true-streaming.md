@@ -10,7 +10,7 @@
 
 **Testing policy:** This plan is self-test mode by default. Do not use user-operated Watch tests as a development gate. Exhaust Node tests, provider fixtures, local HTTP harnesses, Fire/Volcengine remote smoke tests, source-level Watch checks, simulator autoruns where available, and watchOS builds. User-operated Watch testing is not part of phase progression; it is only a product-experience spot check when the user explicitly asks for it.
 
-**2026-06-04 correction:** Watch WebSocket is out of scope for the current target text. Do not spend implementation time on Watch WebSocket feasibility, fallback, spike, or comparison work. The Watch-side transport goal is HTTP only. Development proceeds in self-test mode by default; user-operated Watch testing is not a phase gate or a required validation step.
+**2026-06-05 correction:** Watch WebSocket is completely out of scope for the current target text. Do not spend implementation time on Watch WebSocket feasibility, fallback, spike, benchmark, comparison, or validation work. The Watch-side transport goal is HTTP only. Development proceeds in self-test mode by default; user-operated Watch testing is not part of the implementation plan, phase gate, or required validation loop.
 
 ---
 
