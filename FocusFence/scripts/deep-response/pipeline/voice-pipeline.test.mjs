@@ -57,8 +57,9 @@ test("VoicePipeline orchestrates ASR to LLM to TTS and records timing", async ()
   assert.equal(result.timing.tts_first_audio_ms, 8);
 });
 
-test("VoicePipeline creates first and followup spoken segments", async () => {
+test("VoicePipeline creates one complete spoken reply without followup generation", async () => {
   const llmCalls = [];
+  const spokenTexts = [];
   const asr = {
     async transcribe() {
       return {
@@ -68,126 +69,12 @@ test("VoicePipeline creates first and followup spoken segments", async () => {
     }
   };
   const llm = {
-    async generate({ transcript, streamFull }) {
-      llmCalls.push({ transcript, streamFull });
-      if (llmCalls.length === 1) {
-        return {
-          text: "我听见你真的很累。",
-          firstPhrase: "我听见你真的很累。",
-          timing: { llm_first_phrase_ms: 200 }
-        };
-      }
+    async generate({ transcript, streamFull, messages }) {
+      llmCalls.push({ transcript, streamFull, messages });
       return {
-        text: "我们先停在这里，耶和华靠近伤心的人。",
-        firstPhrase: "我们先停在这里，耶和华靠近伤心的人。",
-        timing: { llm_followup_done_ms: 300 }
-      };
-    }
-  };
-  const tts = {
-    async synthesize({ text }) {
-      return {
-        audioChunks: [Buffer.from(text)],
-        timing: { tts_first_audio_ms: text.length }
-      };
-    }
-  };
-
-  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20]) });
-  const result = await pipeline.runSegmented({
-    audioChunks: [Buffer.from("voice")]
-  });
-
-  assert.equal(result.transcript, "我今天很累");
-  assert.equal(result.first.text, "我听见你真的很累。");
-  assert.equal(result.followup.text, "我们先停在这里，耶和华靠近伤心的人。");
-  assert.equal(Buffer.concat(result.first.audioChunks).toString("utf8"), "我听见你真的很累。");
-  assert.equal(Buffer.concat(result.followup.audioChunks).toString("utf8"), "我们先停在这里，耶和华靠近伤心的人。");
-  assert.equal(llmCalls[0].streamFull, false);
-  assert.equal(llmCalls[1].streamFull, true);
-  assert.match(llmCalls[1].transcript, /不要重复已经说过的第一句/);
-});
-
-test("VoicePipeline retries an invalid scripture quote first phrase", async () => {
-  const llmCalls = [];
-  const asr = {
-    async transcribe() {
-      return {
-        transcript: "今天我有点累，想听一句安慰的话。",
-        timing: { transcript_final_ms: 100 }
-      };
-    }
-  };
-  const llm = {
-    async generate({ messages, streamFull }) {
-      llmCalls.push({ messages, streamFull });
-      if (llmCalls.length === 1) {
-        return {
-          text: "主耶稣说：“凡劳苦担重担的人。",
-          firstPhrase: "主耶稣说：“凡劳苦担重担的人。",
-          timing: { llm_first_phrase_ms: 200 }
-        };
-      }
-      if (llmCalls.length === 2) {
-        return {
-          text: "我听见你今天真的很累。",
-          firstPhrase: "我听见你今天真的很累。",
-          timing: { llm_first_phrase_ms: 120 }
-        };
-      }
-      return {
-        text: "我们先把这口气慢慢放下来。",
-        firstPhrase: "我们先把这口气慢慢放下来。",
-        timing: { llm_followup_done_ms: 300 }
-      };
-    }
-  };
-  const tts = {
-    async synthesize({ text }) {
-      return {
-        audioChunks: [Buffer.from(text)],
-        timing: { tts_first_audio_ms: text.length }
-      };
-    }
-  };
-
-  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20]) });
-  const result = await pipeline.runSegmented({
-    audioChunks: [Buffer.from("voice")]
-  });
-
-  assert.equal(result.first.text, "我听见你今天真的很累。");
-  assert.equal(Buffer.concat(result.first.audioChunks).toString("utf8"), "我听见你今天真的很累。");
-  assert.equal(llmCalls.length, 3);
-  assert.equal(llmCalls[0].streamFull, false);
-  assert.equal(llmCalls[1].streamFull, false);
-  assert.match(llmCalls[1].messages.at(-1).content, /刚才这句不适合作为语音首句/);
-  assert.equal(result.timing.llm_first_phrase_retry_count, 1);
-});
-
-test("VoicePipeline does not speak an invalid first phrase after retry fails", async () => {
-  const spokenTexts = [];
-  const asr = {
-    async transcribe() {
-      return {
-        transcript: "今天我有点累，想听一句安慰的话。",
-        timing: { transcript_final_ms: 100 }
-      };
-    }
-  };
-  const llm = {
-    async generate({ streamFull }) {
-      if (streamFull) {
-        return {
-          text: "我们先慢慢来。",
-          firstPhrase: "我们先慢慢来。",
-          timing: {}
-        };
-      }
-      return {
-        text: "主耶稣说：“凡劳苦担重担的人。",
-        firstPhrase: "主耶稣说：“凡劳苦担重担的人。",
-        timing: { llm_first_phrase_ms: 120 }
+        text: "我听见你真的很累，我们先慢慢停一下，记得主靠近伤心的人。",
+        firstPhrase: "我听见你真的很累，我们先慢慢停一下，记得主靠近伤心的人。",
+        timing: { llm_first_token_ms: 120, llm_total_ms: 340 }
       };
     }
   };
@@ -206,65 +93,20 @@ test("VoicePipeline does not speak an invalid first phrase after retry fails", a
     audioChunks: [Buffer.from("voice")]
   });
 
-  assert.equal(result.first.text, "我听见你今天真的很累。");
-  assert.equal(spokenTexts[0], "我听见你今天真的很累。");
-  assert.equal(result.timing.llm_first_phrase_retry_count, 2);
-  assert.equal(result.timing.llm_first_phrase_fallback, 1);
-});
-
-test("VoicePipeline can use a local first phrase template before followup LLM", async () => {
-  const llmCalls = [];
-  const asr = {
-    async transcribe() {
-      return {
-        transcript: "我今天有点累",
-        timing: { transcript_final_ms: 100 }
-      };
-    }
-  };
-  const llm = {
-    async generate({ transcript, streamFull }) {
-      llmCalls.push({ transcript, streamFull });
-      return {
-        text: "我们先停一下，慢慢呼吸。",
-        firstPhrase: "我们先停一下，慢慢呼吸。",
-        timing: { llm_first_phrase_ms: 200 }
-      };
-    }
-  };
-  const tts = {
-    async synthesize({ text }) {
-      return {
-        audioChunks: [Buffer.from(text)],
-        timing: { tts_first_audio_ms: 10 }
-      };
-    }
-  };
-
-  const pipeline = new VoicePipeline({
-    asr,
-    llm,
-    tts,
-    firstPhraseMode: "template",
-    clock: fakeClock([0, 10, 20])
-  });
-  const result = await pipeline.runSegmented({
-    audioChunks: [Buffer.from("voice")]
-  });
-
-  assert.equal(result.first.text, "我听见你真的很累。");
-  assert.equal(result.timing.llm_first_phrase_ms, 0);
-  assert.equal(result.timing.llm_first_phrase_mode, "template");
+  assert.equal(result.transcript, "我今天很累");
+  assert.equal(result.first.text, "我听见你真的很累，我们先慢慢停一下，记得主靠近伤心的人。");
+  assert.equal(result.followup.text, "");
+  assert.equal(Buffer.concat(result.first.audioChunks).toString("utf8"), "我听见你真的很累，我们先慢慢停一下，记得主靠近伤心的人。");
+  assert.deepEqual(result.followup.audioChunks, []);
+  assert.deepEqual(spokenTexts, ["我听见你真的很累，我们先慢慢停一下，记得主靠近伤心的人。"]);
   assert.equal(llmCalls.length, 1);
   assert.equal(llmCalls[0].streamFull, true);
-  assert.match(llmCalls[0].transcript, /已经说过的第一句：我听见你真的很累。/);
+  assert.match(llmCalls[0].transcript, /我今天很累/);
+  assert.doesNotMatch(llmCalls[0].transcript, /已经说过的第一句/);
 });
 
-test("VoicePipeline streamSegmented yields first audio before followup generation finishes", async () => {
-  let releaseFollowup;
-  const followupStarted = new Promise((resolve) => {
-    releaseFollowup = resolve;
-  });
+test("VoicePipeline streamSegmented emits one reply segment and no followup segment", async () => {
+  const llmCalls = [];
   const asr = {
     async transcribe() {
       return {
@@ -274,19 +116,12 @@ test("VoicePipeline streamSegmented yields first audio before followup generatio
     }
   };
   const llm = {
-    async generate({ streamFull }) {
-      if (!streamFull) {
-        return {
-          text: "我听见你真的很累。",
-          firstPhrase: "我听见你真的很累。",
-          timing: { llm_first_phrase_ms: 200 }
-        };
-      }
-      await followupStarted;
+    async generate({ transcript, streamFull, messages }) {
+      llmCalls.push({ transcript, streamFull, messages });
       return {
-        text: "我们先停在这里。",
-        firstPhrase: "我们先停在这里。",
-        timing: { llm_followup_done_ms: 300 }
+        text: "我听见你真的很累，我们先慢一点。",
+        firstPhrase: "我听见你真的很累，我们先慢一点。",
+        timing: { llm_first_token_ms: 120, llm_total_ms: 300 }
       };
     }
   };
@@ -299,34 +134,25 @@ test("VoicePipeline streamSegmented yields first audio before followup generatio
     }
   };
 
-  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20, 30]) });
-  const iterator = pipeline.streamSegmented({
-    audioChunks: [Buffer.from("voice")]
-  })[Symbol.asyncIterator]();
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20]) });
+  const events = [];
+  for await (const event of pipeline.streamSegmented({ audioChunks: [Buffer.from("voice")] })) {
+    events.push(event);
+  }
 
-  assert.deepEqual(await iterator.next(), {
-    value: {
-      type: "transcript_final",
-      transcript: "我今天很累"
-    },
-    done: false
-  });
-
-  const first = await iterator.next();
-  assert.equal(first.done, false);
-  assert.equal(first.value.type, "segment");
-  assert.equal(first.value.segment, "first");
-  assert.equal(first.value.text, "我听见你真的很累。");
-  assert.equal(Buffer.concat(first.value.audioChunks).toString("utf8"), "我听见你真的很累。");
-
-  releaseFollowup();
-  const followup = await iterator.next();
-  assert.equal(followup.done, false);
-  assert.equal(followup.value.type, "segment");
-  assert.equal(followup.value.segment, "followup");
+  assert.deepEqual(
+    events.map((event) => event.type),
+    ["transcript_final", "segment", "timing"]
+  );
+  assert.equal(events[1].segment, "reply");
+  assert.equal(events[1].text, "我听见你真的很累，我们先慢一点。");
+  assert.equal(Buffer.concat(events[1].audioChunks).toString("utf8"), "我听见你真的很累，我们先慢一点。");
+  assert.equal(llmCalls.length, 1);
+  assert.equal(llmCalls[0].streamFull, true);
+  assert.match(llmCalls[0].messages.at(-1).content, /完整中文语音回复/);
 });
 
-test("VoicePipeline streamSegmented yields streaming TTS audio before TTS completes", async () => {
+test("VoicePipeline streamSegmented yields streaming reply audio before TTS completes", async () => {
   let releaseSecondAudio;
   const secondAudioGate = new Promise((resolve) => {
     releaseSecondAudio = resolve;
@@ -340,18 +166,11 @@ test("VoicePipeline streamSegmented yields streaming TTS audio before TTS comple
     }
   };
   const llm = {
-    async generate({ streamFull }) {
-      if (!streamFull) {
-        return {
-          text: "我听见你真的很累。",
-          firstPhrase: "我听见你真的很累。",
-          timing: { llm_first_phrase_ms: 200 }
-        };
-      }
+    async generate() {
       return {
-        text: "",
-        firstPhrase: "",
-        timing: {}
+        text: "我听见你真的很累。",
+        firstPhrase: "我听见你真的很累。",
+        timing: { llm_total_ms: 200 }
       };
     }
   };
@@ -385,7 +204,7 @@ test("VoicePipeline streamSegmented yields streaming TTS audio before TTS comple
   assert.deepEqual(await iterator.next(), {
     value: {
       type: "segment_text",
-      segment: "first",
+      segment: "reply",
       text: "我听见你真的很累。"
     },
     done: false
@@ -394,17 +213,18 @@ test("VoicePipeline streamSegmented yields streaming TTS audio before TTS comple
   const firstAudio = await iterator.next();
   assert.equal(firstAudio.done, false);
   assert.equal(firstAudio.value.type, "audio_chunk");
-  assert.equal(firstAudio.value.segment, "first");
+  assert.equal(firstAudio.value.segment, "reply");
   assert.equal(firstAudio.value.audioChunk.toString("utf8"), "我听见你真的很累。:first");
 
   releaseSecondAudio();
   const secondAudio = await iterator.next();
   assert.equal(secondAudio.done, false);
   assert.equal(secondAudio.value.type, "audio_chunk");
+  assert.equal(secondAudio.value.segment, "reply");
   assert.equal(secondAudio.value.audioChunk.toString("utf8"), "我听见你真的很累。:second");
 });
 
-test("VoicePipeline streamSegmented can speak AI first phrase from ASR partial before final transcript", async () => {
+test("VoicePipeline streamSegmented with streaming ASR waits for final transcript before one reply", async () => {
   let releaseFinal;
   const finalGate = new Promise((resolve) => {
     releaseFinal = resolve;
@@ -432,17 +252,10 @@ test("VoicePipeline streamSegmented can speak AI first phrase from ASR partial b
   const llm = {
     async generate({ transcript, streamFull }) {
       llmCalls.push({ transcript, streamFull });
-      if (!streamFull) {
-        return {
-          text: "听起来你今天真的有些累。",
-          firstPhrase: "听起来你今天真的有些累。",
-          timing: { llm_first_phrase_ms: 700 }
-        };
-      }
       return {
-        text: "我们先停一下，听听耶稣怎样安慰劳苦的人。",
-        firstPhrase: "我们先停一下，听听耶稣怎样安慰劳苦的人。",
-        timing: { llm_first_phrase_ms: 1200 }
+        text: "听起来你今天真的有些累，我们先停一下，听听耶稣怎样安慰劳苦的人。",
+        firstPhrase: "听起来你今天真的有些累，我们先停一下，听听耶稣怎样安慰劳苦的人。",
+        timing: { llm_total_ms: 1200 }
       };
     }
   };
@@ -456,7 +269,7 @@ test("VoicePipeline streamSegmented can speak AI first phrase from ASR partial b
       yield {
         type: "done",
         timing: { tts_first_audio_ms: 600 },
-        connectID: "tts-first"
+        connectID: "tts-reply"
       };
     }
   };
@@ -471,36 +284,37 @@ test("VoicePipeline streamSegmented can speak AI first phrase from ASR partial b
     audioChunks: [Buffer.from("voice")]
   })[Symbol.asyncIterator]();
 
-  assert.deepEqual(await iterator.next(), {
-    value: {
-      type: "segment_text",
-      segment: "first",
-      text: "听起来你今天真的有些累。"
-    },
-    done: false
-  });
-  const firstAudio = await iterator.next();
-  assert.equal(firstAudio.done, false);
-  assert.equal(firstAudio.value.type, "audio_chunk");
-  assert.equal(firstAudio.value.segment, "first");
-  assert.equal(firstAudio.value.audioChunk.toString("utf8"), "听起来你今天真的有些累。:audio");
-  assert.equal(llmCalls.length, 1);
-  assert.equal(llmCalls[0].streamFull, false);
-  assert.match(llmCalls[0].transcript, /今天我有点累/);
+  const pendingNext = iterator.next();
+  const early = await Promise.race([
+    pendingNext.then(() => "yielded"),
+    delay(10).then(() => "waiting")
+  ]);
+  assert.equal(early, "waiting");
+  assert.equal(llmCalls.length, 0);
 
   releaseFinal();
-  const finalTranscript = await iterator.next();
+  const finalTranscript = await pendingNext;
   assert.equal(finalTranscript.done, false);
   assert.equal(finalTranscript.value.type, "transcript_final");
   assert.equal(finalTranscript.value.transcript, "今天我有点累，想听一句安慰的话。");
-  const followupText = await iterator.next();
-  assert.equal(followupText.done, false);
-  assert.equal(followupText.value.type, "segment_text");
-  assert.equal(followupText.value.segment, "followup");
-  assert.equal(llmCalls.length, 2);
-  assert.equal(llmCalls[1].streamFull, true);
-  assert.match(llmCalls[1].transcript, /今天我有点累，想听一句安慰的话。/);
+  const replyText = await iterator.next();
+  assert.equal(replyText.done, false);
+  assert.equal(replyText.value.type, "segment_text");
+  assert.equal(replyText.value.segment, "reply");
+  assert.equal(replyText.value.text, "听起来你今天真的有些累，我们先停一下，听听耶稣怎样安慰劳苦的人。");
+  const replyAudio = await iterator.next();
+  assert.equal(replyAudio.done, false);
+  assert.equal(replyAudio.value.type, "audio_chunk");
+  assert.equal(replyAudio.value.segment, "reply");
+  assert.equal(replyAudio.value.audioChunk.toString("utf8"), "听起来你今天真的有些累，我们先停一下，听听耶稣怎样安慰劳苦的人。:audio");
+  assert.equal(llmCalls.length, 1);
+  assert.equal(llmCalls[0].streamFull, true);
+  assert.equal(llmCalls[0].transcript, "今天我有点累，想听一句安慰的话。");
 });
+
+function delay(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 function fakeClock(values) {
   let index = 0;

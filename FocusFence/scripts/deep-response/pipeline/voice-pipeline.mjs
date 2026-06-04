@@ -48,46 +48,31 @@ export class VoicePipeline {
   async runSegmented({ audioChunks, context = [], signal } = {}) {
     const startedAt = this.clock();
     const asrResult = await this.asr.transcribe(toAsyncIterable(audioChunks), { signal });
-    const firstLLM = await this.generateFirstPhrase({ transcript: asrResult.transcript, context, signal });
-    const firstText = firstLLM.firstPhrase || firstLLM.text || "";
-    const followupPromise = this.llm.generate({
-      transcript: buildFollowupPrompt(asrResult.transcript, firstText),
-      context,
-      messages: buildFollowupMessages(asrResult.transcript, firstText, context),
-      signal,
-      streamFull: true,
-      maxTokens: 64
-    });
-    const firstTTS = await this.tts.synthesize({
-      text: firstText,
+    const replyLLM = await this.generateCompleteReply({ transcript: asrResult.transcript, context, signal });
+    const replyText = replyLLM.text || replyLLM.firstPhrase || "";
+    const replyTTS = await this.tts.synthesize({
+      text: replyText,
       signal
     });
 
-    const followupLLM = await followupPromise;
-    const followupText = removeRepeatedPrefix(followupLLM.text || followupLLM.firstPhrase || "", firstText);
-    const followupTTS = followupText
-      ? await this.tts.synthesize({ text: followupText, signal })
-      : { audioChunks: [], timing: {} };
-
     const timing = {
       ...asrResult.timing,
-      ...firstLLM.timing,
-      first_tts_first_audio_ms: firstTTS.timing?.tts_first_audio_ms,
-      ...prefixTiming(followupLLM.timing, "followup_"),
-      followup_tts_first_audio_ms: followupTTS.timing?.tts_first_audio_ms,
+      ...replyLLM.timing,
+      first_tts_first_audio_ms: replyTTS.timing?.tts_first_audio_ms,
+      reply_tts_first_audio_ms: replyTTS.timing?.tts_first_audio_ms,
       voice_pipeline_total_ms: Math.round(this.clock() - startedAt)
     };
 
     return {
       transcript: asrResult.transcript,
-      first: buildSegment(firstText, firstTTS),
-      followup: buildSegment(followupText, followupTTS),
+      first: buildSegment(replyText, replyTTS),
+      followup: buildSegment("", { audioChunks: [], timing: {} }),
       timing,
       providerMeta: {
         asrConnectID: asrResult.connectID,
-        firstTtsConnectID: firstTTS.connectID,
-        followupTtsConnectID: followupTTS.connectID,
-        ttsMode: firstTTS.mode || followupTTS.mode || "websocket"
+        firstTtsConnectID: replyTTS.connectID,
+        replyTtsConnectID: replyTTS.connectID,
+        ttsMode: replyTTS.mode || "websocket"
       }
     };
   }
@@ -105,55 +90,30 @@ export class VoicePipeline {
       transcript: asrResult.transcript
     };
 
-    const firstLLM = await this.generateFirstPhrase({ transcript: asrResult.transcript, context, signal });
-    const firstText = firstLLM.firstPhrase || firstLLM.text || "";
-    const followupPromise = this.llm.generate({
-      transcript: buildFollowupPrompt(asrResult.transcript, firstText),
-      context,
-      messages: buildFollowupMessages(asrResult.transcript, firstText, context),
-      signal,
-      streamFull: true,
-      maxTokens: 64
-    });
-    let firstTTS;
+    const replyLLM = await this.generateCompleteReply({ transcript: asrResult.transcript, context, signal });
+    const replyText = replyLLM.text || replyLLM.firstPhrase || "";
+    let replyTTS;
     if (typeof this.tts.synthesizeStream === "function") {
-      yield { type: "segment_text", segment: "first", text: firstText };
-      firstTTS = yield* streamTTSegment(this.tts, { segment: "first", text: firstText, signal });
+      yield { type: "segment_text", segment: "reply", text: replyText };
+      replyTTS = yield* streamTTSegment(this.tts, { segment: "reply", text: replyText, signal });
     } else {
-      firstTTS = await this.tts.synthesize({
-        text: firstText,
+      replyTTS = await this.tts.synthesize({
+        text: replyText,
         signal
       });
       yield {
         type: "segment",
-        segment: "first",
-        text: firstText,
-        ...buildSegment(firstText, firstTTS)
-      };
-    }
-
-    const followupLLM = await followupPromise;
-    const followupText = removeRepeatedPrefix(followupLLM.text || followupLLM.firstPhrase || "", firstText);
-    let followupTTS = { audioChunks: [], timing: {} };
-    if (followupText && typeof this.tts.synthesizeStream === "function") {
-      yield { type: "segment_text", segment: "followup", text: followupText };
-      followupTTS = yield* streamTTSegment(this.tts, { segment: "followup", text: followupText, signal });
-    } else if (followupText) {
-      followupTTS = await this.tts.synthesize({ text: followupText, signal });
-      yield {
-        type: "segment",
-        segment: "followup",
-        text: followupText,
-        ...buildSegment(followupText, followupTTS)
+        segment: "reply",
+        text: replyText,
+        ...buildSegment(replyText, replyTTS)
       };
     }
 
     const timing = {
       ...asrResult.timing,
-      ...firstLLM.timing,
-      first_tts_first_audio_ms: firstTTS.timing?.tts_first_audio_ms,
-      ...prefixTiming(followupLLM.timing, "followup_"),
-      followup_tts_first_audio_ms: followupTTS.timing?.tts_first_audio_ms,
+      ...replyLLM.timing,
+      first_tts_first_audio_ms: replyTTS.timing?.tts_first_audio_ms,
+      reply_tts_first_audio_ms: replyTTS.timing?.tts_first_audio_ms,
       voice_pipeline_total_ms: Math.round(this.clock() - startedAt)
     };
     yield {
@@ -161,11 +121,23 @@ export class VoicePipeline {
       timing,
       providerMeta: {
         asrConnectID: asrResult.connectID,
-        firstTtsConnectID: firstTTS.connectID,
-        followupTtsConnectID: followupTTS.connectID,
-        ttsMode: firstTTS.mode || followupTTS.mode || "websocket"
+        firstTtsConnectID: replyTTS.connectID,
+        replyTtsConnectID: replyTTS.connectID,
+        ttsMode: replyTTS.mode || "websocket"
       }
     };
+  }
+
+  async generateCompleteReply({ transcript, context = [], signal } = {}) {
+    return this.llm.generate({
+      transcript,
+      context,
+      messages: buildCompleteReplyMessages(transcript, context),
+      signal,
+      streamFull: true,
+      maxTokens: 96,
+      temperature: 0.2
+    });
   }
 
   async generateFirstPhrase({ transcript, context = [], signal } = {}) {
@@ -249,30 +221,11 @@ export class VoicePipeline {
     let transcript = "";
     let asrTiming = {};
     let asrConnectID = "";
-    let firstText = "";
-    let firstTTS = null;
-    let firstLLM = null;
 
     for await (const event of this.asr.transcribeStream(toAsyncIterable(audioChunks), { signal })) {
       if ((event.type === "transcript_delta" || event.type === "transcript_partial") && event.transcript) {
         transcript = event.transcript;
         asrTiming = { ...asrTiming, ...(event.timing || {}) };
-        if (!firstText && shouldSpeakFromPartial(transcript)) {
-          firstLLM = await this.generateFirstPhrase({ transcript, context, signal });
-          firstText = firstLLM.firstPhrase || firstLLM.text || "";
-          if (typeof this.tts.synthesizeStream === "function") {
-            yield { type: "segment_text", segment: "first", text: firstText };
-            firstTTS = yield* streamTTSegment(this.tts, { segment: "first", text: firstText, signal });
-          } else {
-            firstTTS = await this.tts.synthesize({ text: firstText, signal });
-            yield {
-              type: "segment",
-              segment: "first",
-              text: firstText,
-              ...buildSegment(firstText, firstTTS)
-            };
-          }
-        }
       } else if (event.type === "transcript_final") {
         transcript = event.transcript || transcript;
         asrTiming = { ...asrTiming, ...(event.timing || {}) };
@@ -284,52 +237,27 @@ export class VoicePipeline {
       }
     }
 
-    if (!firstText) {
-      firstLLM = await this.generateFirstPhrase({ transcript, context, signal });
-      firstText = firstLLM.firstPhrase || firstLLM.text || "";
-      if (typeof this.tts.synthesizeStream === "function") {
-        yield { type: "segment_text", segment: "first", text: firstText };
-        firstTTS = yield* streamTTSegment(this.tts, { segment: "first", text: firstText, signal });
-      } else {
-        firstTTS = await this.tts.synthesize({ text: firstText, signal });
-        yield {
-          type: "segment",
-          segment: "first",
-          text: firstText,
-          ...buildSegment(firstText, firstTTS)
-        };
-      }
-    }
-
-    const followupLLM = await this.llm.generate({
-      transcript: buildFollowupPrompt(transcript, firstText),
-      context,
-      messages: buildFollowupMessages(transcript, firstText, context),
-      signal,
-      streamFull: true,
-      maxTokens: 64
-    });
-    const followupText = removeRepeatedPrefix(followupLLM.text || followupLLM.firstPhrase || "", firstText);
-    let followupTTS = { audioChunks: [], timing: {} };
-    if (followupText && typeof this.tts.synthesizeStream === "function") {
-      yield { type: "segment_text", segment: "followup", text: followupText };
-      followupTTS = yield* streamTTSegment(this.tts, { segment: "followup", text: followupText, signal });
-    } else if (followupText) {
-      followupTTS = await this.tts.synthesize({ text: followupText, signal });
+    const replyLLM = await this.generateCompleteReply({ transcript, context, signal });
+    const replyText = replyLLM.text || replyLLM.firstPhrase || "";
+    let replyTTS;
+    if (typeof this.tts.synthesizeStream === "function") {
+      yield { type: "segment_text", segment: "reply", text: replyText };
+      replyTTS = yield* streamTTSegment(this.tts, { segment: "reply", text: replyText, signal });
+    } else {
+      replyTTS = await this.tts.synthesize({ text: replyText, signal });
       yield {
         type: "segment",
-        segment: "followup",
-        text: followupText,
-        ...buildSegment(followupText, followupTTS)
+        segment: "reply",
+        text: replyText,
+        ...buildSegment(replyText, replyTTS)
       };
     }
 
     const timing = {
       ...asrTiming,
-      ...(firstLLM?.timing || {}),
-      first_tts_first_audio_ms: firstTTS?.timing?.tts_first_audio_ms,
-      ...prefixTiming(followupLLM.timing, "followup_"),
-      followup_tts_first_audio_ms: followupTTS.timing?.tts_first_audio_ms,
+      ...replyLLM.timing,
+      first_tts_first_audio_ms: replyTTS.timing?.tts_first_audio_ms,
+      reply_tts_first_audio_ms: replyTTS.timing?.tts_first_audio_ms,
       voice_pipeline_total_ms: Math.round(this.clock() - startedAt)
     };
     yield {
@@ -337,9 +265,9 @@ export class VoicePipeline {
       timing,
       providerMeta: {
         asrConnectID,
-        firstTtsConnectID: firstTTS?.connectID,
-        followupTtsConnectID: followupTTS.connectID,
-        ttsMode: firstTTS?.mode || followupTTS.mode || "websocket"
+        firstTtsConnectID: replyTTS.connectID,
+        replyTtsConnectID: replyTTS.connectID,
+        ttsMode: replyTTS.mode || "websocket"
       }
     };
   }
@@ -467,6 +395,25 @@ function buildFollowupMessages(transcript, firstText, context = []) {
     {
       role: "user",
       content: buildFollowupPrompt(transcript, firstText)
+    }
+  ];
+}
+
+function buildCompleteReplyMessages(transcript, context = []) {
+  return [
+    { role: "system", content: scriptureCompanionSystemPrompt() },
+    ...context,
+    {
+      role: "user",
+      content: [
+        "请直接生成这一轮要说出的完整中文语音回复。",
+        "不要拆成 first/more，不要输出 JSON，不要输出标题、编号或 Markdown。",
+        "1-2 句即可，整体尽量短，但必须真实回应用户刚说的话。",
+        "先自然承接用户，再在合适时轻轻带到经文；不要每次都固定用同一句开头。",
+        "如果用户只是日常闲聊或报平安，可以自然回应，不要强行讲道。",
+        "",
+        `用户说：${transcript}`
+      ].join("\n")
     }
   ];
 }
