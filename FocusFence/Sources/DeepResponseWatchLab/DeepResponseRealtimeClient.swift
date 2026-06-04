@@ -538,6 +538,16 @@ final class DeepResponseRealtimeClient: ObservableObject {
         await abortTask.value
     }
 
+    func beginEndHTTPSessionRuntime(reason: String) -> Task<Void, Never>? {
+        guard let sessionID = httpSessionID else {
+            return nil
+        }
+
+        return Task { [weak self] in
+            await self?.finishHTTPSessionEnd(sessionID: sessionID, reason: reason)
+        }
+    }
+
     func stopHTTPSessionRuntime() {
         httpSessionPollTask?.cancel()
         httpSessionPollTask = nil
@@ -557,6 +567,25 @@ final class DeepResponseRealtimeClient: ObservableObject {
         httpEventCursor = 0
         httpOutputAudioCursor = 0
         isHTTPSessionEnded = false
+    }
+
+    private func finishHTTPSessionEnd(sessionID: String, reason: String) async {
+        do {
+            var request = URLRequest(url: try Self.httpSessionURL(path: "/deep-response/sessions/\(sessionID)/end"))
+            request.httpMethod = "POST"
+            request.timeoutInterval = 5
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue("DeepLab-watchOS", forHTTPHeaderField: "X-Deep-Response-Client")
+            request.httpBody = try JSONEncoder().encode(DeepResponseHTTPSessionEndRequest(reason: reason))
+            let (_, response) = try await URLSession.shared.data(for: request)
+            let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+            lastHealthStatus = "End \(statusCode)"
+            if statusCode == 200 {
+                connectionStage = "http_session:end_200"
+            }
+        } catch {
+            connectionStage = "http_session:end_fail"
+        }
     }
 
     private func finishHTTPSessionAbort(
@@ -975,6 +1004,10 @@ private struct DeepResponseHTTPSessionInputStopResponse: Decodable {
 private struct DeepResponseHTTPSessionAbortRequest: Encodable {
     let turnID: String
     let generationID: String
+    let reason: String
+}
+
+private struct DeepResponseHTTPSessionEndRequest: Encodable {
     let reason: String
 }
 

@@ -154,6 +154,20 @@ test("DeepResponse Watch teardown clears reusable HTTP session identity", () => 
   assert.match(cleanupFunction, /isHTTPSessionEnded = false/);
 });
 
+test("DeepResponse Watch teardown best-effort ends the server HTTP session", () => {
+  const disappearBlock = debugViewSource.match(/\.onDisappear \{[\s\S]*?\n        \}/)?.[0] || "";
+  assert.match(disappearBlock, /client\.beginEndHTTPSessionRuntime\(reason: "watch_teardown"\)/);
+  assert.match(disappearBlock, /client\.stopHTTPSessionRuntime\(\)/);
+
+  assert.match(realtimeClientSource, /func beginEndHTTPSessionRuntime\(reason: String\) -> Task<Void, Never>\?/);
+  assert.match(realtimeClientSource, /let sessionID = httpSessionID/);
+  assert.match(realtimeClientSource, /finishHTTPSessionEnd\(sessionID: sessionID, reason: reason\)/);
+  assert.match(realtimeClientSource, /private func finishHTTPSessionEnd\(sessionID: String, reason: String\) async/);
+  assert.match(realtimeClientSource, /httpSessionURL\(path: "\/deep-response\/sessions\/\\\(sessionID\)\/end"\)/);
+  assert.match(realtimeClientSource, /request\.httpMethod = "POST"/);
+  assert.match(realtimeClientSource, /DeepResponseHTTPSessionEndRequest\(reason: reason\)/);
+});
+
 test("DeepResponse Watch marks server wait as assistantThinking before playback", () => {
   const finishFunction = debugViewSource.match(/private func finishRecordingTurn\(reason: String\) async \{[\s\S]*?\n    \}/)?.[0] || "";
   assert.match(finishFunction, /isWaitingForResponse = true[\s\S]*?conversationState = \.assistantThinking[\s\S]*?await client\.finishHTTPSessionTurn\(\)/);
