@@ -528,7 +528,8 @@ test("DeepResponse HTTP session streams cascade phrase and audio events", async 
     await waitFor(async () => {
       const events = await fetchJSON(`${base}/events?cursor=0`);
       return events.events.some((event) => event.type === "assistant_phrase")
-        && events.events.some((event) => event.type === "timing");
+        && events.events.some((event) => event.type === "timing")
+        && events.events.some((event) => event.type === "turn_done");
     });
 
     const events = await fetchJSON(`${base}/events?cursor=0`);
@@ -541,6 +542,10 @@ test("DeepResponse HTTP session streams cascade phrase and audio events", async 
     assert(events.events.some((event) => event.type === "timing"
       && event.providerMeta.transport === "cascade"
       && event.timing.voice_pipeline_total_ms === 200));
+    assert(events.events.some((event) => event.type === "turn_done"
+      && event.generationID === "gen-cascade"
+      && event.transcript === "今天我很累。"
+      && event.assistantText === "我听见你真的很累。"));
 
     const audio = await fetchJSON(`${base}/audio?cursor=0&generation_id=gen-cascade`);
     assert.equal(audio.chunks.length, 1);

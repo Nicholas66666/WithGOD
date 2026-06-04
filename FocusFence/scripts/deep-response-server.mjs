@@ -790,6 +790,14 @@ async function runHTTPSessionPipeline({
     timing: result.timing || {},
     providerMeta: result.providerMeta || {}
   });
+  pushSessionEvent(session, {
+    type: "turn_done",
+    sessionID: session.sessionID,
+    turnID,
+    generationID,
+    transcript: result.transcript || "",
+    assistantText: [result.first?.text || "", result.followup?.text || ""].filter(Boolean).join(" ")
+  });
   appendSessionHistory(session, {
     transcript: result.transcript || "",
     assistantText: [result.first?.text || "", result.followup?.text || ""].filter(Boolean).join(" ")
@@ -940,6 +948,14 @@ async function runHTTPSessionStreamedPipeline({
     generationID: eventGenerationID,
     timing,
     providerMeta
+  });
+  pushSessionEvent(session, {
+    type: "turn_done",
+    sessionID: session.sessionID,
+    turnID,
+    generationID: eventGenerationID,
+    transcript,
+    assistantText: [firstText, followupText].filter(Boolean).join(" ")
   });
   appendSessionHistory(session, {
     transcript,

@@ -90,6 +90,29 @@ test("summarizeTurn reports HTTP phrase and audio receive timing", () => {
   assert.equal(summary.timing.http_first_audio_after_first_phrase_ms, 40);
 });
 
+test("summarizeTurn records authoritative turn_done completion", () => {
+  const summary = summarizeTurn({
+    turnID: "turn-1",
+    generationID: "gen-1",
+    turnStartedAt: 0,
+    uploadStartedAt: 0,
+    uploadEndedAt: 100,
+    endedAt: 600,
+    firstAudioAt: 260,
+    uploadChunks: 1,
+    encodedUploadBytes: 10,
+    decodedUploadBytes: 10,
+    events: [
+      { type: "audio_done", generationID: "gen-1" },
+      { type: "turn_done", generationID: "gen-1" }
+    ],
+    audioChunks: [{ audioByteLength: 100, receivedAtMs: 260 }]
+  });
+
+  assert.equal(summary.audioDone, true);
+  assert.equal(summary.turnDone, true);
+});
+
 test("collectSessionLifecycleEvents keeps memory candidate from same batch as session end", () => {
   const state = collectSessionLifecycleEvents([
     { type: "memory_recalled", count: 2, store: "jsonl" },

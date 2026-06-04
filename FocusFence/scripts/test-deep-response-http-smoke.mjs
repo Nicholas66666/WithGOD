@@ -151,6 +151,7 @@ export async function runHTTPSmokeProbe(args) {
       || !turn.text
       || turn.audioChunks <= 0
       || turn.audioByteLength <= 0
+      || turn.turnDone !== true
       || turn.stopToFirstAudioMs == null
       || turn.stopToFirstAudioMs > args.maxStopToFirstAudioMs;
   });
@@ -177,6 +178,8 @@ export async function runHTTPSmokeProbe(args) {
         stopToFirstAudioMs: turn.stopToFirstAudioMs,
         transcript: turn.transcript,
         text: turn.text,
+        audioDone: turn.audioDone,
+        turnDone: turn.turnDone,
         audioChunks: turn.audioChunks,
         audioByteLength: turn.audioByteLength,
         timing: turn.timing
@@ -207,6 +210,8 @@ export async function runHTTPSmokeProbe(args) {
         stopToFirstAudioMs: turn.stopToFirstAudioMs,
         hasTranscript: Boolean(turn.transcript),
         hasText: Boolean(turn.text),
+        audioDone: turn.audioDone,
+        turnDone: turn.turnDone,
         audioChunks: turn.audioChunks,
         audioByteLength: turn.audioByteLength
       })),

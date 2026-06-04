@@ -162,7 +162,8 @@ export async function runHTTPConversationProbe(args) {
       const audioReceivedAtMs = Math.round(performance.now() - turnStartedAt);
       audioChunks.push(...turnAudio.map((chunk) => ({ ...chunk, receivedAtMs: audioReceivedAtMs })));
       return events.some((event) => event.type === "timing" && event.generationID === generationID)
-        && events.some((event) => event.type === "audio_done" && event.generationID === generationID);
+        && events.some((event) => event.type === "audio_done" && event.generationID === generationID)
+        && events.some((event) => event.type === "turn_done" && event.generationID === generationID);
     }, { timeoutMs: args.timeoutMs, intervalMs: args.pollMs });
 
     turns.push(summarizeTurn({
@@ -272,6 +273,8 @@ export function summarizeTurn({
     .map((event) => event.delta || "")
     .join("");
   const timing = events.find((event) => event.type === "timing")?.timing || null;
+  const audioDone = events.some((event) => event.type === "audio_done" && event.generationID === generationID);
+  const turnDone = events.some((event) => event.type === "turn_done" && event.generationID === generationID);
   const firstPhraseEvent = events.find((event) => event.type === "assistant_phrase");
   const firstAudioChunk = audioChunks[0] || null;
   const stopAtMs = Math.round(uploadEndedAt - turnStartedAt);
@@ -299,6 +302,8 @@ export function summarizeTurn({
     decodedUploadBytes,
     transcript,
     text,
+    audioDone,
+    turnDone,
     audioByteLength: audioChunks.reduce((sum, chunk) => sum + Number(chunk.audioByteLength || 0), 0),
     audioChunks: audioChunks.length,
     timing: timingWithHTTP
