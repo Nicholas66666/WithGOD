@@ -41,3 +41,15 @@ test("chunkLLMText does not flush an unfinished scripture reference fragment", (
     { index: 1, text: "（诗篇 34:18）我们先停在这里。", reason: "punctuation" }
   ]);
 });
+
+test("chunkLLMText flushes the lead-in before a scripture quote", () => {
+  const chunks = chunkLLMText([
+    "那我就给你读一句《圣经》里的话吧：",
+    "“你们得力在乎平静安稳。”"
+  ], { maxChars: 24 });
+
+  assert.deepEqual(chunks, [
+    { index: 0, text: "那我就给你读一句《圣经》里的话吧：", reason: "quote_intro" },
+    { index: 1, text: "“你们得力在乎平静安稳。”", reason: "punctuation" }
+  ]);
+});

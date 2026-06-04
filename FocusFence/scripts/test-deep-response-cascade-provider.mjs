@@ -132,9 +132,15 @@ export function summarizeCascadeEvents({ elapsedMs, events }) {
       transcript_final_ms: timing.transcript_final_ms ?? 0,
       llm_first_token_ms: timing.llm_first_token_ms ?? 0,
       first_phrase_elapsed_ms: firstPhraseEvent?.receivedAtMs ?? 0,
+      first_phrase_after_transcript_final_ms: firstPhraseEvent?.receivedAtMs && timing.transcript_final_ms
+        ? firstPhraseEvent.receivedAtMs - timing.transcript_final_ms
+        : 0,
       first_audio_elapsed_ms: firstAudioEvent?.receivedAtMs ?? 0,
       first_audio_after_transcript_final_ms: firstAudioEvent?.receivedAtMs && timing.transcript_final_ms
         ? firstAudioEvent.receivedAtMs - timing.transcript_final_ms
+        : 0,
+      first_audio_after_first_phrase_ms: firstAudioEvent?.receivedAtMs && firstPhraseEvent?.receivedAtMs
+        ? firstAudioEvent.receivedAtMs - firstPhraseEvent.receivedAtMs
         : 0,
       first_phrase_event_index: firstPhraseIndex,
       first_audio_event_index: firstAudioIndex,

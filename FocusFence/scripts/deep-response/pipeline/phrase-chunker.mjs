@@ -109,7 +109,17 @@ function nextFlush(buffer, { maxChars }) {
   }
 
   for (let index = 0; index < text.length; index += 1) {
-    if (FLUSH_PUNCTUATION.test(text[index])) {
+    if (isQuoteIntroBoundary(text, index)) {
+      const candidate = text.slice(0, index + 1).trim();
+      if (candidate && isSpeakable(candidate)) {
+        return {
+          text: candidate,
+          length: index + 1,
+          reason: "quote_intro"
+        };
+      }
+    }
+    if (FLUSH_PUNCTUATION.test(text[index]) || isClosingQuoteAfterPunctuation(text, index)) {
       const candidate = text.slice(0, index + 1).trim();
       if (candidate && isSpeakable(candidate)) {
         return {
@@ -131,6 +141,21 @@ function nextFlush(buffer, { maxChars }) {
   }
 
   return null;
+}
+
+function isQuoteIntroBoundary(text, index) {
+  if (!/[：:]/u.test(text[index])) {
+    return false;
+  }
+  const next = text[index + 1] || "";
+  return /[“"「『]/u.test(next);
+}
+
+function isClosingQuoteAfterPunctuation(text, index) {
+  if (!/[”"」』]/u.test(text[index])) {
+    return false;
+  }
+  return index > 0 && FLUSH_PUNCTUATION.test(text[index - 1]);
 }
 
 function isSpeakable(text) {
