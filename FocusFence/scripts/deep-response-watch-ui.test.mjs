@@ -86,7 +86,13 @@ test("DeepResponse Watch continuous mode has explicit conversation state transit
   assert.match(debugViewSource, /conversationState = \.assistantThinking/);
   assert.match(debugViewSource, /conversationState = \.assistantSpeaking/);
   assert.match(debugViewSource, /conversationState = \.bargeIn/);
+  assert.match(debugViewSource, /conversationState = \.ending/);
   assert.match(debugViewSource, /conversationState = \.ended/);
+});
+
+test("DeepResponse Watch marks session closure as ending before ended", () => {
+  assert.match(debugViewSource, /case ending/);
+  assert.match(debugViewSource, /conversationState = \.ending[\s\S]*?conversationState = \.ended/);
 });
 
 test("DeepResponse Watch marks server wait as assistantThinking before playback", () => {

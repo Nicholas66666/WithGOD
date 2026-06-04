@@ -102,7 +102,7 @@ Latest full self-test update:
 - Added conversation-level `--forbid-text-pattern` support so long continuous probes reject lookup-style, harsh repeated-comfort, and mechanical tired/fatigue replies in turn text and memory summaries, not only in the 2-turn smoke.
 - Added memory recall sanitization for lookup-style, harsh repeated-comfort, and mechanical tired/fatigue phrases before persisted summaries enter LLM context.
 - Added VoicePipeline output normalization so lookup-style, harsh repeated-comfort, and mechanical tired/fatigue openings are corrected before `assistant_text_delta`, `assistant_phrase`, and TTS audio.
-- Latest `npm run deep:selftest:full`: passed; Node `177/177`, nested Fire/Volcengine smoke stop-to-first-audio `194ms` / `193ms`, 8-turn continuous gate `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
+- Latest `npm run deep:selftest:full`: passed; Node `179/179`, nested Fire/Volcengine smoke stop-to-first-audio `214ms` / `224ms`, 8-turn continuous gate `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
 
 ## Next Target: Full Streaming Pipeline
 
@@ -655,6 +655,7 @@ Completed evidence:
 - Wired DeepLab continuous mode so recorder silence automatically calls `finishRecordingTurn(reason: "Auto silence")`.
 - Removed unused Watch-side WebSocket client/delegate/message encoder from `DeepResponseWatchLab`; Watch Lab is HTTP-only at the code level.
 - Added explicit `DeepResponseConversationState` in DeepLab with `listening`, `userSpeaking`, `assistantSpeaking`, `bargeIn`, `idleWaiting`, and `ended` states.
+- Extended the Watch state model with `assistantThinking` and `ending`, so the scripted and Swift lifecycles cover listening, user speech, server/AI processing, assistant playback, idle waiting, session closure, and final ended.
 - Added local 8-turn HTTP session self-test covering rolling context, automatic goodbye-intent `session_end`, and late audio `409 session_ended`.
 - Extended the HTTP conversation probe with `--end-reason`, `--expect-session-end`, and `--expect-late-audio-409` for reusable remote session lifecycle validation.
 - Added Watch VAD calibration fixtures that parse the Swift threshold and verify digital silence / low room noise stay below threshold while quiet speech / normal speech exceed it.
@@ -1613,6 +1614,22 @@ Latest WatchLab assistant-thinking state update:
   - `npm run test:node`: `176/176` passed.
   - `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
 - This is a WatchLab-only state/observability change; no user-operated Watch test was required.
+
+Latest WatchLab ending-state update:
+- Added an explicit `ending` runtime state to the DeepResponseWatchLab continuous conversation model.
+- Scripted `session_end` now transitions into `ending`, records `stop_auto_listen` / `finalize_session_end` actions, and only then finalizes as `ended`; this keeps auto-listen blocked during session closure.
+- Swift `DeepResponseDebugView` now includes `case ending` and routes session-ended branches through `markSessionEnded()`, which clears recording/waiting state before final `ended`.
+- Verification:
+  - RED `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs` first failed because `ending` did not exist and `session_end` went directly to `ended`.
+  - `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`: `27/27` passed.
+  - `npm run test:node`: `179/179` passed.
+  - `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Fire/Volcengine smoke stop-to-first-audio: `214ms`, `224ms`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Fire/Volcengine 8-turn stop-to-first-audio: `1724ms`, `1893ms`, `1746ms`, `1752ms`, `1729ms`, `1973ms`, `1923ms`, `1895ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This is a WatchLab/state-model self-test update; no server deployment or user-operated Watch test was required.
 
 Latest dangling quote lead-in quality gate:
 - Added a VoicePipeline normalization gate for truncated spoken phrases that would otherwise end with a dangling quote lead-in, for example `那咱靠着主歇会儿。主说：`.

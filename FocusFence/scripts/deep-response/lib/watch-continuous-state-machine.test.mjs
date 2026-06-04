@@ -95,3 +95,26 @@ test("session end blocks auto-listen and keeps the loop ended", () => {
   assert.equal(result.state.isRecording, false);
   assert.deepEqual(result.actions, []);
 });
+
+test("session end enters ending before final ended state", () => {
+  const afterSessionEnd = applyDeepResponseWatchEvent({
+    isContinuousMode: true,
+    isRecording: false,
+    isWaitingForResponse: false,
+    isHTTPSessionEnded: false,
+    lastError: null,
+    conversationState: "assistantSpeaking"
+  }, { type: "session_end" });
+
+  assert.equal(afterSessionEnd.state.conversationState, "ending");
+  assert.equal(afterSessionEnd.state.isHTTPSessionEnded, true);
+  assert.deepEqual(afterSessionEnd.actions, ["stop_auto_listen", "finalize_session_end"]);
+
+  const afterFinalized = applyDeepResponseWatchEvent(afterSessionEnd.state, {
+    type: "session_end_finalized"
+  });
+
+  assert.equal(afterFinalized.state.conversationState, "ended");
+  assert.equal(afterFinalized.state.isRecording, false);
+  assert.equal(afterFinalized.state.isWaitingForResponse, false);
+});

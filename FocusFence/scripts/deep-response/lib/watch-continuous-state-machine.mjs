@@ -5,6 +5,7 @@ export const deepResponseWatchConversationStates = [
   "assistantSpeaking",
   "bargeIn",
   "idleWaiting",
+  "ending",
   "ended"
 ];
 
@@ -191,6 +192,21 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
   }
 
   if (event.type === "session_end") {
+    actions.push("stop_auto_listen");
+    actions.push("finalize_session_end");
+    return {
+      state: {
+        ...state,
+        isRecording: false,
+        isWaitingForResponse: false,
+        isHTTPSessionEnded: true,
+        conversationState: "ending"
+      },
+      actions
+    };
+  }
+
+  if (event.type === "session_end_finalized") {
     return {
       state: {
         ...state,

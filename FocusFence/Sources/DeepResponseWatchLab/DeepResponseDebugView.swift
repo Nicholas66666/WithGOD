@@ -7,6 +7,7 @@ enum DeepResponseConversationState {
     case assistantSpeaking
     case bargeIn
     case idleWaiting
+    case ending
     case ended
 }
 
@@ -176,7 +177,7 @@ struct DeepResponseDebugView: View {
     private func startRecordingTurn(reason: String) async {
         guard !isRecording, !isWaitingForResponse, !client.isHTTPSessionEnded else {
             if client.isHTTPSessionEnded {
-                conversationState = .ended
+                markSessionEnded()
             }
             return
         }
@@ -231,13 +232,17 @@ struct DeepResponseDebugView: View {
             }
         } else {
             status = client.lastError == nil ? "HTTP session done" : "HTTP session failed"
-            conversationState = client.isHTTPSessionEnded ? .ended : .listening
+            if client.isHTTPSessionEnded {
+                markSessionEnded()
+            } else {
+                conversationState = .listening
+            }
         }
     }
 
     private func handlePlaybackDrained() {
         if client.isHTTPSessionEnded {
-            conversationState = .ended
+            markSessionEnded()
             return
         }
         guard isContinuousMode,
@@ -265,8 +270,19 @@ struct DeepResponseDebugView: View {
         } else {
             await abortTask?.value
             status = client.lastError == nil ? "Aborted" : "Abort failed"
-            conversationState = client.isHTTPSessionEnded ? .ended : .listening
+            if client.isHTTPSessionEnded {
+                markSessionEnded()
+            } else {
+                conversationState = .listening
+            }
         }
+    }
+
+    private func markSessionEnded() {
+        isRecording = false
+        isWaitingForResponse = false
+        conversationState = .ending
+        conversationState = .ended
     }
 
     private func runAutorunFixtureIfRequested() async {
