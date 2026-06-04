@@ -22,6 +22,7 @@ export function parseHTTPConversationArgs(argv) {
     expectMemoryCandidate: false,
     expectMemoryPersisted: false,
     expectMemoryRecalled: false,
+    forbiddenTextPatterns: [],
     verbose: false
   };
 
@@ -68,6 +69,9 @@ export function parseHTTPConversationArgs(argv) {
       args.expectMemoryCandidate = true;
     } else if (arg === "--expect-memory-recalled") {
       args.expectMemoryRecalled = true;
+    } else if (arg === "--forbid-text-pattern") {
+      args.forbiddenTextPatterns.push(argv[index + 1] || "");
+      index += 1;
     } else if (arg === "--verbose") {
       args.verbose = true;
     } else if (arg === "--help" || arg === "-h") {
@@ -216,6 +220,13 @@ export async function runHTTPConversationProbe(args) {
       throw new Error(`Expected persisted memory candidate, got ${JSON.stringify(memoryCandidate)}`);
     }
   }
+  const forbiddenTextFailures = collectForbiddenConversationTextFailures({
+    turns,
+    memoryCandidate
+  }, args.forbiddenTextPatterns);
+  if (forbiddenTextFailures.length > 0) {
+    throw new Error(`Forbidden conversation text failures: ${JSON.stringify(forbiddenTextFailures, null, 2)}`);
+  }
 
   let lateAudioRejected = null;
   if (args.expectLateAudio409) {
@@ -247,6 +258,7 @@ export async function runHTTPConversationProbe(args) {
     sessionEnd,
     memoryRecalled,
     memoryCandidate,
+    forbiddenTextFailures,
     lateAudioRejected,
     elapsedMs: Math.round(performance.now() - startedAt),
     turns
@@ -326,6 +338,41 @@ export function collectSessionLifecycleEvents(events, {
     }
   }
   return { sessionEnd, memoryCandidate, memoryRecalled };
+}
+
+export function collectForbiddenConversationTextFailures({
+  turns = [],
+  memoryCandidate = null
+} = {}, forbiddenTextPatterns = []) {
+  const patterns = forbiddenTextPatterns
+    .filter(Boolean)
+    .map((pattern) => ({ source: pattern, regexp: new RegExp(pattern, "u") }));
+  const failures = [];
+  for (const turn of turns || []) {
+    const text = turn?.text || "";
+    for (const pattern of patterns) {
+      if (pattern.regexp.test(text)) {
+        failures.push({
+          source: "turn",
+          turnID: turn?.turnID || "",
+          forbiddenPattern: pattern.source,
+          text
+        });
+      }
+    }
+  }
+  const memoryText = memoryCandidate?.summary || "";
+  for (const pattern of patterns) {
+    if (pattern.regexp.test(memoryText)) {
+      failures.push({
+        source: "memory_candidate",
+        turnID: "",
+        forbiddenPattern: pattern.source,
+        text: memoryText
+      });
+    }
+  }
+  return failures;
 }
 
 function buildURL(endpoint, path) {
@@ -408,6 +455,8 @@ Options:
                         Require memory_candidate.persisted=true and a non-empty store.
   --expect-memory-recalled
                         Require session creation to recall persisted memory into context.
+  --forbid-text-pattern <regex>
+                        Fail if any turn text or memory summary matches the regex. Repeatable.
   --verbose             Print turn event batches.
 `);
 }

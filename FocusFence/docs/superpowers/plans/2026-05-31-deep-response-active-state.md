@@ -72,16 +72,17 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `160/160` passed.
+- Node self-tests: `164/164` passed.
 - Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply and lookup-style-comfort gate enabled.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
 - Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
 - Fire/Volcengine partial-ASR LLM start: `llm_started_from_partial: 1` on both standard smoke turns.
-- Fire/Volcengine stop-to-first-audio: `212ms`, `222ms`.
+- Fire/Volcengine stop-to-first-audio: `200ms`, `184ms`.
 - Fire/Volcengine repeated reply failures: `[]`.
 - Fire/Volcengine forbidden lookup-style comfort failures: `[]`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`.
+- Fire/Volcengine 8-turn continuous conversation gate: passed with `session_end` reason `user_goodbye`, `memoryRecalled.count: 3`, `memory_candidate.persisted: true`, `forbiddenTextFailures: []`, and late audio `409 session_ended`.
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
 
 Latest remote deployment note:
@@ -109,6 +110,9 @@ Latest LLM selection benchmark:
 - The LLM prompt now explicitly quotes the previous assistant reply when present and forbids repeating it, including when the user repeats the same request.
 - Standard Fire/Volcengine smoke now rejects lookup-style comfort replies such as `给你找一句`, `再给你读一句`, `你还想听`, `你还是想听`, and `你又想听`.
 - The complete-reply prompt now requires comfort-intent turns to directly承接情绪 instead of opening as a scripture lookup or repeating the user's "想听安慰" request.
+- Standard `deep:selftest:full` now includes an 8-turn Fire/Volcengine continuous conversation gate with memory recall/persist, explicit user-goodbye session end, late-audio rejection, and lookup-style comfort text rejection.
+- Server memory recall sanitizes lookup-style comfort phrases before placing persisted summaries into LLM context.
+- VoicePipeline normalizes lookup-style comfort openings before emitting assistant text, phrase events, or TTS audio.
 
 ## Standard Commands
 
@@ -128,6 +132,12 @@ Fire/Volcengine smoke:
 
 ```bash
 npm run deep:volc:smoke:full
+```
+
+Fire/Volcengine continuous 8-turn conversation:
+
+```bash
+npm run deep:volc:conversation:full
 ```
 
 WatchLab build against Fire/Volcengine:
@@ -168,6 +178,7 @@ npm run deep:provider:benchmark -- \
 - Fire/Volcengine HTTP session cascade.
 - WatchLab HTTP upload, long-poll event pull, HTTP audio pull, local-first abort, and compact diagnostics.
 - Continuous conversation self-test gate: multi-turn context, goodbye intent, idle goodbye, late audio rejection.
+- Fire/Volcengine continuous 8-turn gate is part of the standard full self-test.
 - Watch continuous-loop state-machine self-test: auto-listen after playback drain, immediate auto-listen without queued playback, barge-in resume, and session-end stop.
 - Memory candidate generation, JSONL persistence, recall, dedupe, and remote probe gates.
 - Quick Response source guard for `Sources/PresenceWatchApp` and `Sources/PresenceApp`.

@@ -91,6 +91,19 @@ Latest remote smoke result:
 - abort-next-turn same-session probe passed with transcript/text/audio in the following turn
 - idle goodbye emitted text/audio, then `session_end idle_timeout`; late audio rejected with `409 session_ended`
 
+Latest full self-test update:
+- Added `npm run deep:volc:conversation:full` to the standard full self-test gate.
+- `npm run deep:selftest:full` now runs, in order:
+  - `npm run test:node`
+  - `npm run deep:volc:smoke:full`
+  - `npm run deep:volc:conversation:full`
+  - `npm run deep:watchlab:build:volc`
+- The 8-turn Fire/Volcengine continuous gate verifies one HTTP session across 8 turns, `memory_recalled`, persisted `memory_candidate`, explicit `/end` with reason `user_goodbye`, late audio `409 session_ended`, and `forbiddenTextFailures: []`.
+- Added conversation-level `--forbid-text-pattern` support so long continuous probes reject lookup-style comfort replies in turn text and memory summaries, not only in the 2-turn smoke.
+- Added memory recall sanitization for lookup-style comfort phrases before persisted summaries enter LLM context.
+- Added VoicePipeline output normalization so lookup-style comfort openings are corrected before `assistant_text_delta`, `assistant_phrase`, and TTS audio.
+- Latest `npm run deep:selftest:full`: passed; Node `164/164`, nested Fire/Volcengine smoke stop-to-first-audio `200ms` / `184ms`, 8-turn continuous gate `forbiddenTextFailures: []`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
+
 ## Next Target: Full Streaming Pipeline
 
 The next target is not another two-step reply trick. The target is a real cascade:

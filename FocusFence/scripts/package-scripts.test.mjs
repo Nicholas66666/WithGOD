@@ -39,11 +39,29 @@ test("package exposes standard DeepResponse WatchLab Volcengine build gate", () 
   assert.match(command, /\bbuild\b/);
 });
 
+test("package exposes standard Fire Volcengine DeepResponse continuous conversation gate", () => {
+  const command = packageJSON.scripts?.["deep:volc:conversation:full"] || "";
+
+  assert.match(command, /npm run deep:http-conversation:test --/);
+  assert.match(command, /--endpoint http:\/\/124\.174\.96\.149:8797/);
+  assert.match(command, /--pcm \/private\/tmp\/deep-response-http-speed\.pcm/);
+  assert.match(command, /--turns 8/);
+  assert.match(command, /--pipeline-mode cascade/);
+  assert.match(command, /--wait-ms 800/);
+  assert.match(command, /--end-reason user_goodbye/);
+  assert.match(command, /--expect-session-end/);
+  assert.match(command, /--expect-late-audio-409/);
+  assert.match(command, /--expect-memory-recalled/);
+  assert.match(command, /--expect-memory-persisted/);
+  assert.match(command, /--forbid-text-pattern '给你\(找\|读\)一句\|再给你\(找\|读\)一句\|再找一句\|你还想听\|你还是想听\|你又想听'/);
+});
+
 test("package exposes a single DeepResponse full self-test gate", () => {
   const command = packageJSON.scripts?.["deep:selftest:full"] || "";
 
   assert.match(command, /npm run test:node/);
   assert.match(command, /npm run deep:volc:smoke:full/);
+  assert.match(command, /npm run deep:volc:conversation:full/);
   assert.match(command, /npm run deep:watchlab:build:volc/);
   assert.match(command, /&&/);
 });

@@ -52,7 +52,7 @@ export class VoicePipeline {
     const startedAt = this.clock();
     const asrResult = await this.asr.transcribe(toAsyncIterable(audioChunks), { signal });
     const replyLLM = await this.generateCompleteReply({ transcript: asrResult.transcript, context, signal });
-    const replyText = replyLLM.text || replyLLM.firstPhrase || "";
+    const replyText = normalizeAssistantPhraseText(replyLLM.text || replyLLM.firstPhrase || "");
     const replyTTS = await this.tts.synthesize({
       text: replyText,
       signal
@@ -94,7 +94,7 @@ export class VoicePipeline {
     };
 
     const replyLLM = await this.generateCompleteReply({ transcript: asrResult.transcript, context, signal });
-    const replyText = replyLLM.text || replyLLM.firstPhrase || "";
+    const replyText = normalizeAssistantPhraseText(replyLLM.text || replyLLM.firstPhrase || "");
     let replyTTS;
     if (typeof this.tts.synthesizeStream === "function") {
       yield { type: "segment_text", segment: "reply", text: replyText };
@@ -200,52 +200,60 @@ export class VoicePipeline {
             }
 
             for (const phrase of phraseChunker.push(delta)) {
-              if (wouldExceedSpokenReplyLimit(spokenReplyChars, phrase.text, maxSpokenReplyChars)) {
+              const phraseText = normalizeAssistantPhraseText(phrase.text);
+              if (!phraseText) {
+                continue;
+              }
+              if (wouldExceedSpokenReplyLimit(spokenReplyChars, phraseText, maxSpokenReplyChars)) {
                 replyTruncatedForLength = true;
                 return;
               }
-              spokenReplyChars += countSpokenChars(phrase.text);
-              assistantText += phrase.text;
+              spokenReplyChars += countSpokenChars(phraseText);
+              assistantText += phraseText;
               outputQueue.push({
                 type: "assistant_text_delta",
                 turnID,
                 generationID,
-                delta: phrase.text
+                delta: phraseText
               });
               outputQueue.push({
                 type: "assistant_phrase",
                 turnID,
                 generationID,
                 phraseIndex: phrase.index,
-                text: phrase.text,
+                text: phraseText,
                 reason: phrase.reason
               });
-              phraseQueue.push({ index: phrase.index, text: phrase.text });
+              phraseQueue.push({ index: phrase.index, text: phraseText });
             }
           }
 
           for (const phrase of phraseChunker.flush()) {
-            if (wouldExceedSpokenReplyLimit(spokenReplyChars, phrase.text, maxSpokenReplyChars)) {
+            const phraseText = normalizeAssistantPhraseText(phrase.text);
+            if (!phraseText) {
+              continue;
+            }
+            if (wouldExceedSpokenReplyLimit(spokenReplyChars, phraseText, maxSpokenReplyChars)) {
               replyTruncatedForLength = true;
               break;
             }
-            spokenReplyChars += countSpokenChars(phrase.text);
-            assistantText += phrase.text;
+            spokenReplyChars += countSpokenChars(phraseText);
+            assistantText += phraseText;
             outputQueue.push({
               type: "assistant_text_delta",
               turnID,
               generationID,
-              delta: phrase.text
+              delta: phraseText
             });
             outputQueue.push({
               type: "assistant_phrase",
               turnID,
               generationID,
               phraseIndex: phrase.index,
-              text: phrase.text,
+              text: phraseText,
               reason: phrase.reason
             });
-            phraseQueue.push({ index: phrase.index, text: phrase.text });
+            phraseQueue.push({ index: phrase.index, text: phraseText });
           }
         } finally {
           phraseQueue.close();
@@ -708,6 +716,7 @@ function buildCompleteReplyMessages(transcript, context = []) {
         "如果用户是在要安慰，必须直接安慰他的感受。",
         "如果用户是在要安慰，第一句要先像日常陪伴一样承接情绪，不要说“我给你找一句”“我给你读一句”“你还想听”。",
         "用户重复要安慰时，直接承接具体感受，不要说“你还是想听安慰的话”“你又想听安慰的话”。",
+        "绝对不要说“你还想听安慰呀”“你还想听安慰的话呀”“你还是想听安慰呀”。",
         "不要把回答开成查经或找经文动作；经文只能作为陪伴中的轻轻一句。",
         "不要把安慰请求转成圣经知识问答、猜谜、讲故事开场或轻松测试。",
         "不要问用户想从哪卷书或哪句经文开始，除非用户主动提出要查经。",
@@ -768,6 +777,12 @@ function wouldExceedSpokenReplyLimit(currentChars, nextText, maxChars) {
 
 function countSpokenChars(text) {
   return [...String(text || "").replace(/\s+/g, "")].length;
+}
+
+function normalizeAssistantPhraseText(text) {
+  return String(text || "")
+    .replace(/^你(?:还|还是|又)?想听安慰(?:的话)?呀?[，。]?/u, "你又累了呀。")
+    .trim();
 }
 
 function findCompleteFirstPhrase(text, { minChars = 8 } = {}) {

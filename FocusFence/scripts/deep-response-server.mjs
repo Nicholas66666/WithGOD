@@ -276,7 +276,10 @@ async function loadHTTPSessionMemoryContext(env = {}) {
   const summaries = [];
   const seenSummaries = new Set();
   for (const row of rows.slice().reverse()) {
-    const summary = row.summary.trim().slice(0, 600);
+    const summary = sanitizeHTTPSessionMemorySummary(row.summary).slice(0, 600);
+    if (!summary) {
+      continue;
+    }
     if (seenSummaries.has(summary)) {
       continue;
     }
@@ -1246,6 +1249,9 @@ function buildHTTPSessionMemoryCandidate(session, {
     })
     .filter((line) => !line.endsWith(":"))
     .join("\n")
+    .split("\n")
+    .filter((line) => !isLookupStyleComfortLine(line))
+    .join("\n")
     .slice(0, 1200);
   return {
     sessionID: session.sessionID,
@@ -1257,6 +1263,19 @@ function buildHTTPSessionMemoryCandidate(session, {
     persisted: false,
     createdAt: new Date().toISOString()
   };
+}
+
+function sanitizeHTTPSessionMemorySummary(summary) {
+  return String(summary || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => line && !isLookupStyleComfortLine(line))
+    .join("\n")
+    .trim();
+}
+
+function isLookupStyleComfortLine(line) {
+  return /给你(找|读)一句|再给你(找|读)一句|再找一句|你还想听|你还是想听|你又想听/u.test(String(line || ""));
 }
 
 function isGoodbyeTranscript(transcript) {
