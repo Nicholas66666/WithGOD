@@ -11,6 +11,7 @@
     "deep:server:provider": "DEEP_RESPONSE_MODE=provider node scripts/deep-response-server.mjs",
     "deep:render:deploy": "node scripts/render-deploy.mjs",
     "deep:render:sync-env": "node scripts/render-sync-deep-env.mjs",
+    "deep:volc:deploy": "node scripts/deploy-deep-response-volcengine.mjs",
     "deep:echo:test": "node scripts/test-deep-response-echo.mjs",
     "deep:realtime:test": "node scripts/test-deep-response-realtime.mjs",
     "deep:http-session:test": "node scripts/test-deep-response-http-session.mjs",
