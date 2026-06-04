@@ -168,6 +168,14 @@ test("DeepResponse Watch teardown best-effort ends the server HTTP session", () 
   assert.match(realtimeClientSource, /DeepResponseHTTPSessionEndRequest\(reason: reason\)/);
 });
 
+test("DeepResponse Watch resets reusable debug state when the view appears", () => {
+  const appearBlock = debugViewSource.match(/\.onAppear \{[\s\S]*?\n        \}/)?.[0] || "";
+  assert.match(appearBlock, /status = "Ready"/);
+  assert.match(appearBlock, /isWaitingForResponse = false/);
+  assert.match(appearBlock, /isContinuousMode = false/);
+  assert.match(appearBlock, /conversationState = \.listening/);
+});
+
 test("DeepResponse Watch marks server wait as assistantThinking before playback", () => {
   const finishFunction = debugViewSource.match(/private func finishRecordingTurn\(reason: String\) async \{[\s\S]*?\n    \}/)?.[0] || "";
   assert.match(finishFunction, /isWaitingForResponse = true[\s\S]*?conversationState = \.assistantThinking[\s\S]*?await client\.finishHTTPSessionTurn\(\)/);

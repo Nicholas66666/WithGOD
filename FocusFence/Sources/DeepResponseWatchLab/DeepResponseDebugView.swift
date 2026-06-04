@@ -148,6 +148,10 @@ struct DeepResponseDebugView: View {
             conversationState = .ended
         }
         .onAppear {
+            status = "Ready"
+            isWaitingForResponse = false
+            isContinuousMode = false
+            conversationState = .listening
             client.onHTTPSessionPlaybackDrained = {
                 handlePlaybackDrained()
             }

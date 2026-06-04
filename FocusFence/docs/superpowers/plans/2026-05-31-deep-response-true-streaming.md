@@ -2057,6 +2057,21 @@ Latest WatchLab server-end teardown gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This is a WatchLab lifecycle self-test update; no ECS deploy and no user-operated Watch test were required.
 
+Latest WatchLab reusable-view appear gate:
+- Strengthened DeepLab page lifecycle recovery so returning to the debug screen after teardown starts from an operable listening state instead of inheriting the prior `.ended` state.
+- `DeepResponseDebugView.onAppear` now resets `status = "Ready"`, `isWaitingForResponse = false`, `isContinuousMode = false`, and `conversationState = .listening` before restoring `client.onHTTPSessionPlaybackDrained`.
+- Verification:
+  - RED `node --test --test-name-pattern "resets reusable debug state" scripts/deep-response-watch-ui.test.mjs` first failed because `onAppear` only restored the callback.
+  - `node --test --test-name-pattern "resets reusable debug state" scripts/deep-response-watch-ui.test.mjs`: `1/1` passed.
+  - `node --test scripts/deep-response-watch-ui.test.mjs scripts/deep-response-integration-gate.test.mjs`: `40/40` passed.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Node self-tests: `208/208` passed.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `232ms`, `222ms`; idle `memoryCandidate.summary: ""`, `closureClean: true`; smoke failures `[]`; abort stale audio chunks/bytes: `0` / `0`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `223ms`, `218ms`, `205ms`, `215ms`, `216ms`, `208ms`, `226ms`, `200ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This is a WatchLab lifecycle self-test update; no ECS deploy and no user-operated Watch test were required.
+
 - Unit and server tests:
   - `npm run test:node`
 
