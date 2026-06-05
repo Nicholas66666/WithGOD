@@ -177,6 +177,13 @@ struct DeepResponseDebugView: View {
     private func toggleContinuousMode() async {
         isContinuousMode.toggle()
         status = isContinuousMode ? "Continuous on" : "Continuous off"
+        if isContinuousMode,
+           !isRecording,
+           !isWaitingForResponse,
+           !client.isHTTPSessionEnded {
+            await startRecordingTurn(reason: "Auto listening")
+            return
+        }
         if !isContinuousMode,
            isRecording {
             _ = recorder.stop()

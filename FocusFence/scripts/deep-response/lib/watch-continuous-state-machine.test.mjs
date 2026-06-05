@@ -6,6 +6,22 @@ import {
   simulateDeepResponseWatchEvents
 } from "./watch-continuous-state-machine.mjs";
 
+test("turning continuous mode on starts initial auto-listening recording", () => {
+  const afterToggle = applyDeepResponseWatchEvent({
+    isContinuousMode: false,
+    isRecording: false,
+    isWaitingForResponse: false,
+    isHTTPSessionEnded: false,
+    lastError: null,
+    conversationState: "listening"
+  }, { type: "toggle_continuous", enabled: true });
+
+  assert.equal(afterToggle.state.isContinuousMode, true);
+  assert.equal(afterToggle.state.isRecording, true);
+  assert.equal(afterToggle.state.conversationState, "userSpeaking");
+  assert.deepEqual(afterToggle.actions, ["start_recording:continuous_on"]);
+});
+
 test("continuous loop restarts listening after playback drains", () => {
   const result = simulateDeepResponseWatchEvents([
     { type: "toggle_continuous", enabled: true },
@@ -17,6 +33,7 @@ test("continuous loop restarts listening after playback drains", () => {
   assert.equal(result.state.conversationState, "userSpeaking");
   assert.equal(result.state.isRecording, true);
   assert.deepEqual(result.actions, [
+    "start_recording:continuous_on",
     "wait_for_playback",
     "start_recording:auto_listening"
   ]);
@@ -31,7 +48,10 @@ test("continuous loop enters assistantThinking after speech before playback star
 
   assert.equal(result.state.conversationState, "assistantThinking");
   assert.equal(result.state.isRecording, false);
-  assert.deepEqual(result.actions, ["wait_for_playback"]);
+  assert.deepEqual(result.actions, [
+    "start_recording:continuous_on",
+    "wait_for_playback"
+  ]);
 });
 
 test("continuous loop enters assistantSpeaking when first audio arrives", () => {
@@ -45,7 +65,10 @@ test("continuous loop enters assistantSpeaking when first audio arrives", () => 
   assert.equal(result.state.conversationState, "assistantSpeaking");
   assert.equal(result.state.isRecording, false);
   assert.equal(result.state.isWaitingForResponse, false);
-  assert.deepEqual(result.actions, ["wait_for_playback"]);
+  assert.deepEqual(result.actions, [
+    "start_recording:continuous_on",
+    "wait_for_playback"
+  ]);
 });
 
 test("continuous loop waits for playback drain when turn completes with queued audio", () => {
@@ -152,7 +175,10 @@ test("continuous loop restarts immediately when a turn has no queued playback", 
 
   assert.equal(result.state.conversationState, "userSpeaking");
   assert.equal(result.state.isRecording, true);
-  assert.deepEqual(result.actions, ["start_recording:auto_listening"]);
+  assert.deepEqual(result.actions, [
+    "start_recording:continuous_on",
+    "start_recording:auto_listening"
+  ]);
 });
 
 test("continuous loop keeps listening after an empty recording", () => {
@@ -164,7 +190,10 @@ test("continuous loop keeps listening after an empty recording", () => {
 
   assert.equal(result.state.conversationState, "userSpeaking");
   assert.equal(result.state.isRecording, true);
-  assert.deepEqual(result.actions, ["start_recording:auto_listening"]);
+  assert.deepEqual(result.actions, [
+    "start_recording:continuous_on",
+    "start_recording:auto_listening"
+  ]);
 });
 
 test("turning continuous mode off stops active recording", () => {
@@ -177,7 +206,10 @@ test("turning continuous mode off stops active recording", () => {
   assert.equal(result.state.isContinuousMode, false);
   assert.equal(result.state.conversationState, "listening");
   assert.equal(result.state.isRecording, false);
-  assert.deepEqual(result.actions, ["stop_recording"]);
+  assert.deepEqual(result.actions, [
+    "start_recording:continuous_on",
+    "stop_recording"
+  ]);
 });
 
 test("turning continuous mode off during assistant speech stops local playback", () => {
@@ -194,6 +226,7 @@ test("turning continuous mode off during assistant speech stops local playback",
   assert.equal(result.state.isRecording, false);
   assert.equal(result.state.isWaitingForResponse, false);
   assert.deepEqual(result.actions, [
+    "start_recording:continuous_on",
     "wait_for_playback",
     "local_stop_playback"
   ]);
@@ -211,7 +244,10 @@ test("turning continuous mode off while assistant is thinking clears waiting sta
   assert.equal(result.state.conversationState, "listening");
   assert.equal(result.state.isRecording, false);
   assert.equal(result.state.isWaitingForResponse, false);
-  assert.deepEqual(result.actions, ["wait_for_playback"]);
+  assert.deepEqual(result.actions, [
+    "start_recording:continuous_on",
+    "wait_for_playback"
+  ]);
 });
 
 test("in-flight playback after continuous mode off still shows speaking until drained", () => {
@@ -287,6 +323,7 @@ test("mic press during assistant speaking performs local-first barge-in", () => 
   assert.equal(result.state.isRecording, true);
   assert.equal(result.state.isWaitingForResponse, false);
   assert.deepEqual(result.actions, [
+    "start_recording:continuous_on",
     "wait_for_playback",
     "local_stop_playback",
     "post_abort:background",
@@ -306,6 +343,7 @@ test("mic press during assistant thinking aborts generation and starts barge-in"
   assert.equal(result.state.isRecording, true);
   assert.equal(result.state.isWaitingForResponse, false);
   assert.deepEqual(result.actions, [
+    "start_recording:continuous_on",
     "wait_for_playback",
     "post_abort:background",
     "start_recording:barge_in"
@@ -326,6 +364,7 @@ test("mic press during post-turn playback stops local audio without server abort
   assert.equal(result.state.isRecording, true);
   assert.equal(result.state.isWaitingForResponse, false);
   assert.deepEqual(result.actions, [
+    "start_recording:continuous_on",
     "wait_for_playback",
     "local_stop_playback",
     "start_recording:barge_in"
@@ -343,6 +382,7 @@ test("session end blocks auto-listen while queued playback drains", () => {
   assert.equal(result.state.conversationState, "ended");
   assert.equal(result.state.isRecording, false);
   assert.deepEqual(result.actions, [
+    "start_recording:continuous_on",
     "wait_for_playback_drain",
     "finalize_session_end"
   ]);
@@ -481,6 +521,7 @@ test("late abort ack after session end does not resume barge-in recording", () =
   assert.equal(result.state.isRecording, false);
   assert.equal(result.state.isHTTPSessionEnded, true);
   assert.deepEqual(result.actions, [
+    "start_recording:continuous_on",
     "wait_for_playback",
     "local_stop_playback",
     "post_abort:background",

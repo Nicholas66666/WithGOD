@@ -52,6 +52,11 @@ test("DeepResponse Watch debug UI has an HTTP continuous auto-listen loop", () =
   assert.match(debugViewSource, /startRecordingTurn\(reason: "Auto listening"\)/);
 });
 
+test("DeepResponse Watch continuous mode on starts initial recording", () => {
+  const toggleFunction = debugViewSource.match(/private func toggleContinuousMode\(\) async \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(toggleFunction, /if isContinuousMode,[\s\S]*?!isRecording,[\s\S]*?!isWaitingForResponse,[\s\S]*?!client\.isHTTPSessionEnded[\s\S]*?await startRecordingTurn\(reason: "Auto listening"\)/);
+});
+
 test("DeepResponse Watch continuous mode off stops active recording", () => {
   assert.match(debugViewSource, /Task \{ await toggleContinuousMode\(\) \}/);
   const toggleFunction = debugViewSource.match(/private func toggleContinuousMode\(\) async \{[\s\S]*?\n    \}/)?.[0] || "";
