@@ -392,10 +392,15 @@ test("DeepResponse Watch continuous barge-in handles session end after abort ack
   assert.match(continuousBranch, /if client\.isHTTPSessionEnded \{[\s\S]*?markSessionEnded\(\)/);
 });
 
-test("DeepResponse Watch HTTP polling waits for turn_done or session_end, not audio_done", () => {
+test("DeepResponse Watch HTTP polling waits for audio after turn_done before exiting", () => {
   const pollFunction = realtimeClientSource.match(/private func pollHTTPSessionUntilDone\(sessionID: String\) async throws \{[\s\S]*?\n    \}/)?.[0] || "";
-  assert.doesNotMatch(pollFunction, /event\.type == "audio_done"[\s\S]*?isDone = true/);
-  assert.match(pollFunction, /event\.type == "turn_done"[\s\S]*?isDone = true/);
+  assert.match(pollFunction, /var sawTurnDone = false/);
+  assert.match(pollFunction, /var sawAudioDone = false/);
+  assert.match(pollFunction, /var receivedAudioForCurrentTurn = false/);
+  assert.doesNotMatch(pollFunction, /event\.type == "turn_done" \|\| event\.type == "session_end"[\s\S]*?isDone = true/);
+  assert.match(pollFunction, /event\.type == "turn_done"[\s\S]*?sawTurnDone = true/);
+  assert.match(pollFunction, /event\.type == "audio_done"[\s\S]*?sawAudioDone = true/);
+  assert.match(pollFunction, /isDone = sawTurnDone && sawAudioDone && \(receivedAudioForCurrentTurn \|\| lastError != nil\)/);
   assert.match(pollFunction, /event\.type == "session_end"[\s\S]*?isDone = true/);
 });
 

@@ -52,6 +52,12 @@ test("package exposes DeepResponse WatchLab simulator fake mic run", () => {
   assert.match(command, /node scripts\/run-deep-response-watch-sim-fakemic\.mjs/);
 });
 
+test("package exposes DeepResponse product self-test lab", () => {
+  const command = packageJSON.scripts?.["deep:lab:selftest"] || "";
+
+  assert.match(command, /node scripts\/deep-response-lab\.mjs/);
+});
+
 test("package exposes standard Fire Volcengine DeepResponse continuous conversation gate", () => {
   const command = packageJSON.scripts?.["deep:volc:conversation:full"] || "";
 

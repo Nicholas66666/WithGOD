@@ -55,6 +55,7 @@ export function parseWatchSimFakeMicArgs(argv) {
 export function findBootedWatchDevice() {
   const raw = execFileSync("xcrun", ["simctl", "list", "devices", "available", "--json"], { encoding: "utf8" });
   const parsed = JSON.parse(raw);
+  let firstAvailable = null;
   for (const [runtime, devices] of Object.entries(parsed.devices || {})) {
     if (!runtime.toLowerCase().includes("watchos")) {
       continue;
@@ -63,8 +64,13 @@ export function findBootedWatchDevice() {
     if (booted?.udid) {
       return booted.udid;
     }
+    firstAvailable ||= devices.find((device) => device.isAvailable && device.udid)?.udid || null;
   }
-  throw new Error("No booted watchOS simulator found. Boot one in Simulator first.");
+  if (!firstAvailable) {
+    throw new Error("No available watchOS simulator found.");
+  }
+  execFileSync("xcrun", ["simctl", "boot", firstAvailable], { stdio: "ignore" });
+  return firstAvailable;
 }
 
 export function runWatchSimFakeMic(args) {

@@ -689,6 +689,9 @@ final class DeepResponseRealtimeClient: ObservableObject {
     private func pollHTTPSessionUntilDone(sessionID: String) async throws {
         let startedAt = Date()
         var isDone = false
+        var sawTurnDone = false
+        var sawAudioDone = false
+        var receivedAudioForCurrentTurn = false
         while !isDone && Date().timeIntervalSince(startedAt) < 120 {
             let waitMilliseconds = Self.httpPollWaitMilliseconds(hasReceivedFirstAudio: httpFirstAudioMs != nil)
             let eventsURL = try Self.httpSessionURL(path: "/deep-response/sessions/\(sessionID)/events?cursor=\(httpEventCursor)&wait_ms=\(waitMilliseconds)")
@@ -706,7 +709,11 @@ final class DeepResponseRealtimeClient: ObservableObject {
                 httpEventCursor = batch.nextCursor
                 for event in batch.events {
                     handleHTTPSessionEvent(event)
-                    if event.type == "turn_done" || event.type == "session_end" {
+                    if event.type == "turn_done" {
+                        sawTurnDone = true
+                    } else if event.type == "audio_done" {
+                        sawAudioDone = true
+                    } else if event.type == "session_end" {
                         isDone = true
                     }
                 }
@@ -733,6 +740,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
                     }
                     receivedAudioChunks += 1
                     receivedAudioBytes += data.count
+                    receivedAudioForCurrentTurn = true
                     playbackSampleRate = chunk.sampleRate ?? playbackSampleRate ?? 24_000
                     playbackAudio.append(data)
                 }
@@ -745,6 +753,10 @@ final class DeepResponseRealtimeClient: ObservableObject {
                     isHTTPSessionPlaybackActive = true
                     player.enqueuePCM16(playbackAudio, sampleRate: playbackSampleRate ?? 24_000)
                 }
+            }
+
+            if !isDone {
+                isDone = sawTurnDone && sawAudioDone && (receivedAudioForCurrentTurn || lastError != nil)
             }
 
             if !isDone {

@@ -33,6 +33,7 @@ export function parseHTTPConversationArgs(argv) {
     maxStopToFirstAudioMs: 0,
     maxFirstAudioAfterFirstPhraseMs: 0,
     forbiddenTextPatterns: [],
+    includeEvidence: false,
     verbose: false
   };
 
@@ -108,6 +109,8 @@ export function parseHTTPConversationArgs(argv) {
     } else if (arg === "--forbid-text-pattern") {
       args.forbiddenTextPatterns.push(argv[index + 1] || "");
       index += 1;
+    } else if (arg === "--include-evidence") {
+      args.includeEvidence = true;
     } else if (arg === "--verbose") {
       args.verbose = true;
     } else if (arg === "--help" || arg === "-h") {
@@ -231,7 +234,8 @@ export async function runHTTPConversationProbe(args) {
       encodedUploadBytes,
       decodedUploadBytes,
       events,
-      audioChunks
+      audioChunks,
+      includeEvidence: args.includeEvidence
     }));
   }
 
@@ -396,7 +400,8 @@ export function summarizeTurn({
   encodedUploadBytes,
   decodedUploadBytes,
   events,
-  audioChunks
+  audioChunks,
+  includeEvidence = false
 }) {
   const transcript = events.find((event) => event.type === "transcript_final")?.text || "";
   const text = events
@@ -422,7 +427,7 @@ export function summarizeTurn({
       ? { http_first_audio_after_first_phrase_ms: firstAudioAtMs - firstPhraseAtMs }
       : {})
   };
-  return {
+  const summary = {
     turnID,
     generationID,
     elapsedMs: Math.round(endedAt - turnStartedAt),
@@ -441,6 +446,38 @@ export function summarizeTurn({
     audioChunks: audioChunks.length,
     timing: timingWithHTTP
   };
+  if (includeEvidence) {
+    summary.evidence = {
+      events: events.map((event) => ({
+        seq: event.seq,
+        at: event.at,
+        receivedAtMs: event.receivedAtMs,
+        type: event.type,
+        sessionID: event.sessionID,
+        turnID: event.turnID,
+        generationID: event.generationID,
+        segment: event.segment,
+        text: event.text,
+        delta: event.delta,
+        reason: event.reason,
+        timing: event.timing,
+        providerMeta: event.providerMeta,
+        error: event.error,
+        message: event.message
+      })),
+      audioChunks: audioChunks.map((chunk) => ({
+        seq: chunk.seq,
+        receivedAtMs: chunk.receivedAtMs,
+        turnID: chunk.turnID,
+        generationID: chunk.generationID,
+        segment: chunk.segment,
+        audioBase64: chunk.audioBase64,
+        audioByteLength: chunk.audioByteLength,
+        sampleRate: chunk.sampleRate
+      }))
+    };
+  }
+  return summary;
 }
 
 export function collectSessionLifecycleEvents(events, {

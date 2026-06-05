@@ -438,3 +438,59 @@ Verification:
 - `node --test scripts/deep-response-watch-ui.test.mjs`: `47/47` passed.
 - `npm run deep:watchlab:sim:fakemic -- --skip-build --turns 2 --out-dir /private/tmp/deep-response-watch-sim-fakemic-afterfix` confirmed visible final state `Sim mic done`, two HTTP turns in one session, and timing display like `asr 3593 · llm1 424 · llm 680`.
 - `npm run test:node`: `262/262` passed.
+
+## Latest Increment: Product Self-Test Lab
+
+New standard product self-test entry:
+
+```bash
+npm run deep:lab:selftest
+```
+
+Purpose:
+
+- Build a deliverable self-test laboratory for future DeepResponse Codex work before continuing product feature expansion.
+- Keep scope limited to `DeepResponseWatchLab` and the DeepResponse HTTP server.
+- Preserve Watch main transport as HTTP-only.
+- Avoid user-operated Watch testing as a development or acceptance gate.
+
+Evidence categories in every `summary.json`:
+
+- `mouth`: fixture-driven speech scenarios: normal turn, multi-turn, silent/no-input recovery, goodbye session end, and interrupt/barge-in entry.
+- `eye`: Watch Simulator fake-mic run screenshots from the visible `DeepResponseWatchLab` path.
+- `ear`: PCM16 audit of returned assistant audio, including non-silence, duration, RMS, peak, clipping, received/queued/scheduled/completed byte proxies, and expected duration versus drain timing.
+- `server`: session/turn/generation event evidence, timing, upload/download byte summaries, `turn_done`, `session_end`, abort, and provider-error evidence when emitted.
+- `judge`: deterministic PASS/FAIL and failure reasons.
+
+Report files:
+
+- `summary.json`
+- `summary.md`
+- `server-events.json`
+- `timing.json`
+- `turns.json`
+- `audio-audit.json`
+- `audio/*.pcm`
+- `screenshots/running.png`
+- `screenshots/done.png`
+
+Runbook:
+
+- `docs/deep-response-product-selftest-lab.md`
+
+Important limitation:
+
+- The ear audit proves returned PCM bytes are non-silent and plausible; it cannot replace real speaker/AirPods/human hearing confirmation.
+- The eye audit archives simulator screenshots and relies on source/state-machine gates for exact state logic; it is not a complete OCR or real-device substitute.
+- `--skip-sim` is allowed only for debugging server/audio/report behavior and intentionally cannot satisfy the final product self-test gate.
+
+Regression already covered:
+
+- The previous Watch timing display bug where cascade turns showed `llm 0 · tts 0` remains covered by `scripts/deep-response-watch-ui.test.mjs`, which asserts cascade timing fields decode through `DeepResponseTiming.watchSummaryText` and the UI renders that summary instead of old direct `llm_first_phrase_ms` / `tts_first_audio_ms` fields.
+
+Bug captured by the new lab:
+
+- A full `npm run deep:lab:selftest` run exposed a real Watch product risk: server `turn_done` could be observed by the client before the next audio pull returned first audio (`firstAudioMs 4746`, `turnDoneReceivedAtMs 4625` in the failing run).
+- Before the fix, `DeepResponseRealtimeClient.pollHTTPSessionUntilDone()` exited as soon as it saw `turn_done` or `session_end`; if the concurrent audio request returned empty in that loop, the Watch could miss audio that became available immediately after `turn_done`.
+- Fix: Watch polling now tracks `sawTurnDone`, `sawAudioDone`, and `receivedAudioForCurrentTurn`; normal turns exit only after `turn_done` + `audio_done` + actual audio receipt, while `session_end` can still end immediately and provider errors can exit through `lastError`.
+- Regression gate: `scripts/deep-response-watch-ui.test.mjs` now fails if Watch polling goes back to directly ending on `turn_done`.
