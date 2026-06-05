@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 
 import {
   collectSessionLifecycleEvents,
@@ -16,6 +17,14 @@ import {
   parseHTTPConversationArgs,
   summarizeTurn
 } from "./test-deep-response-http-conversation.mjs";
+
+const conversationProbeSource = readFileSync("scripts/test-deep-response-http-conversation.mjs", "utf8");
+
+test("HTTP conversation probe polls events and audio concurrently", () => {
+  assert.match(conversationProbeSource, /Promise\.all\(\[/);
+  assert.match(conversationProbeSource, /\/events\?cursor=/);
+  assert.match(conversationProbeSource, /\/audio\?cursor=/);
+});
 
 test("parseHTTPConversationArgs accepts cascade pipeline mode", () => {
   const args = parseHTTPConversationArgs([

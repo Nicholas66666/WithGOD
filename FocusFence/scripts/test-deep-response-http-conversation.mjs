@@ -178,9 +178,22 @@ export async function runHTTPConversationProbe(args) {
     const audioChunks = [];
 
     await waitFor(async () => {
-      const eventBatch = await fetchJSON(buildURL(args.endpoint, `${basePath}/events?cursor=${eventCursor}${buildWaitQuery(args.waitMs)}`));
+      const [eventResult, audioResult] = await Promise.all([
+        fetchJSON(buildURL(args.endpoint, `${basePath}/events?cursor=${eventCursor}${buildWaitQuery(args.waitMs)}`))
+          .then((batch) => ({
+            batch,
+            receivedAtMs: Math.round(performance.now() - turnStartedAt)
+          })),
+        fetchJSON(buildURL(args.endpoint, `${basePath}/audio?cursor=${audioCursor}${buildWaitQuery(args.waitMs)}`))
+          .then((batch) => ({
+            batch,
+            receivedAtMs: Math.round(performance.now() - turnStartedAt)
+          }))
+      ]);
+
+      const eventBatch = eventResult.batch;
       eventCursor = eventBatch.nextCursor;
-      const eventReceivedAtMs = Math.round(performance.now() - turnStartedAt);
+      const eventReceivedAtMs = eventResult.receivedAtMs;
       const turnEvents = eventBatch.events.filter((event) => event.turnID === turnID || event.type === "session_ready");
       events.push(...turnEvents.map((event) => ({ ...event, receivedAtMs: eventReceivedAtMs })));
       if (args.verbose && turnEvents.length > 0) {
@@ -189,13 +202,13 @@ export async function runHTTPConversationProbe(args) {
         }
       }
 
-      const audioBatch = await fetchJSON(buildURL(args.endpoint, `${basePath}/audio?cursor=${audioCursor}${buildWaitQuery(args.waitMs)}`));
+      const audioBatch = audioResult.batch;
       audioCursor = audioBatch.nextCursor;
       const turnAudio = audioBatch.chunks.filter((chunk) => chunk.generationID === generationID);
       if (firstAudioAt == null && turnAudio.length > 0) {
         firstAudioAt = performance.now();
       }
-      const audioReceivedAtMs = Math.round(performance.now() - turnStartedAt);
+      const audioReceivedAtMs = audioResult.receivedAtMs;
       audioChunks.push(...turnAudio.map((chunk) => ({ ...chunk, receivedAtMs: audioReceivedAtMs })));
       return events.some((event) => event.type === "timing" && event.generationID === generationID)
         && events.some((event) => event.type === "audio_done" && event.generationID === generationID)
