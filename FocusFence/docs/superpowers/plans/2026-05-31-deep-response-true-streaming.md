@@ -45,6 +45,7 @@
   - Goodbye and idle-end flows are implemented on the server and covered by smoke tests.
   - Summary/memory candidate JSONL persistence is implemented, and new HTTP sessions can recall bounded recent JSONL memory into LLM context.
   - Continuous mode initial entry now starts the first Watch recording turn immediately; this path is covered by the state-machine test and a Swift source gate after a real Watch report showed the UI could toggle `Continuous on` without opening the microphone.
+  - Continuous mode now waits for authoritative `turn_done` if local playback drains first, preventing early next-turn startup from cancelling the previous poll task and surfacing `-999 cancelled`.
   - Watch installation/launch is sometimes blocked by CoreDevice tunnel instability; do not rely on user-operated Watch testing for normal development progress.
   - Development mode is now completely self-test. Do not ask the user to operate Apple Watch as a planned validation step; local/server/simulator/source/build checks are the phase gates.
 
@@ -2379,6 +2380,19 @@ Latest WatchLab continuous-on initial recording gate:
   - RED focused test first failed for the missing source/state transition.
   - `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`: `72/72` passed.
   - `npm run test:node`: `250/250` passed.
+  - Fire/Volcengine WatchLab build succeeded.
+  - `DeepLab` was installed and launched on the connected Watch using `devicectl`.
+- This is still HTTP-only Watch transport. No Watch WebSocket or client-facing server WebSocket work was introduced.
+
+Latest WatchLab playback-drain-before-turn-done gate:
+- Fixed a continuous-loop race observed on real Watch after the first successful reply: local playback could drain before the HTTP session poll received authoritative `turn_done`.
+- Previous behavior: `handlePlaybackDrained()` started the next recording while `finishHTTPSessionTurn()` was still awaiting the previous poll task; `startHTTPSessionTurn()` cancelled that previous task, which surfaced as yellow `-999 cancelled` and stopped the loop.
+- New behavior: `handlePlaybackDrained()` returns while `client.canAbortHTTPSessionTurn` is true. That keeps the UI waiting for `turn_done`; once `finishHTTPSessionTurn()` completes and playback is already drained, the existing finish path starts the next `Auto listening` turn.
+- Verification:
+  - RED focused test first failed for `playback drain before authoritative turn done` and the Swift source gate.
+  - Focused test passed after implementation.
+  - `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`: `74/74` passed.
+  - `npm run test:node`: `252/252` passed.
   - Fire/Volcengine WatchLab build succeeded.
   - `DeepLab` was installed and launched on the connected Watch using `devicectl`.
 - This is still HTTP-only Watch transport. No Watch WebSocket or client-facing server WebSocket work was introduced.

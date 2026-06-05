@@ -56,6 +56,7 @@ DeepResponse remains in the independent Lab target.
 
 Latest pushed commits:
 
+- `b140137` Wait for DeepResponse turn done before auto-listen.
 - `4fe9aee` Start DeepResponse recording when continuous turns on.
 - `3de76d0` Gate DeepResponse phrase-to-audio cascade latency.
 - `1fbce0e` Wait for DeepResponse goodbye audio after turn done.
@@ -267,6 +268,7 @@ npm run deep:provider:benchmark -- \
 - Fire/Volcengine continuous 8-turn gate is part of the standard full self-test.
 - Watch continuous-loop state-machine self-test: auto-listen after playback drain, immediate auto-listen without queued playback, barge-in resume, and session-end stop.
 - Watch continuous-mode entry gate: turning Continuous on from idle/listening must immediately start the first recording turn, not merely toggle UI state.
+- Watch early-playback-drain gate: if local playback drains before authoritative `turn_done`, continuous mode must wait and must not start the next recording early.
 - Watch barge-in local-first self-test: continuous-mode `abort_requested` starts recording before server abort ack while preserving stale generation discard.
 - Watch assistant-thinking self-test: continuous mode enters `assistantThinking` while waiting for server response before playback starts.
 - Watch ending-state self-test: continuous mode enters `ending` during server session closure before final `ended`.
@@ -325,3 +327,35 @@ Verification:
   - `npm run test:node`: `250/250` passed.
   - Watch build with Fire/Volcengine endpoint succeeded.
   - Installed and launched `DeepLab` on `Niu's Apple Watch` through `devicectl`.
+
+## Latest Increment: Playback Drain Before Turn Done
+
+User-observed Watch feedback after the previous fix:
+
+- Continuous mode entered recording and produced one reply.
+- The UI then showed yellow `NSURLErrorDomain -999 cancelled`.
+- The loop did not continue to the next turn.
+
+Root cause:
+
+- For short replies, local audio playback can drain before the server emits authoritative `turn_done`.
+- `handleFirstAudioReceived()` correctly cleared `isWaitingForResponse` so barge-in stays tappable, but `handlePlaybackDrained()` then saw continuous mode idle and started the next recording too early.
+- Starting the next turn calls `startHTTPSessionTurn()`, which cancels the previous `httpSessionPollTask` while `finishHTTPSessionTurn()` is still awaiting it.
+- That cancellation surfaced as `-999 cancelled`, set `client.lastError`, and blocked further auto-listen.
+
+Fix:
+
+- `handlePlaybackDrained()` now returns while `client.canAbortHTTPSessionTurn` is true, meaning the previous generation is still awaiting `turn_done`/session completion.
+- The state-machine model has `canAbortHTTPSessionTurn` and action `wait_for_turn_done` for this ordering.
+- When `finishHTTPSessionTurn()` later completes with playback already drained, the existing finish path starts the next auto-listening turn.
+
+Verification:
+
+- RED focused test first failed for:
+  - `node --test --test-name-pattern "playback drain before authoritative|playback drained waits for authoritative" scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`
+- After implementation:
+  - focused test passed.
+  - `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`: `74/74` passed.
+  - `npm run test:node`: `252/252` passed.
+  - Watch build with Fire/Volcengine endpoint succeeded.
+  - Installed and launched `DeepLab` on the connected Watch through `devicectl`.
