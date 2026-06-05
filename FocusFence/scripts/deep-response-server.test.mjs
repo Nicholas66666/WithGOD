@@ -50,6 +50,7 @@ test("DeepResponse server exposes non-secret debug config", async () => {
       ARK_FALLBACK_MODEL: "",
       DOUBAO_ASR_MODEL_NAME: "asr-model",
       DOUBAO_ASR_END_WINDOW_SIZE_MS: "300",
+      DEEP_RESPONSE_TTS_HTTP_FALLBACK: "1",
       DEEP_RESPONSE_AUDIO_REPLAY_INTERVAL_MS: "25"
     }
   });
@@ -64,6 +65,7 @@ test("DeepResponse server exposes non-secret debug config", async () => {
     assert.equal(config.arkFallbackModel, "");
     assert.equal(config.asrModelName, "asr-model");
     assert.equal(config.asrEndWindowSizeMs, "300");
+    assert.equal(config.ttsHTTPFallback, "1");
   } finally {
     await server.close();
   }

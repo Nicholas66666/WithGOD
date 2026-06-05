@@ -71,7 +71,8 @@ export async function startDeepResponseServer({
         arkFallbackModel: env.ARK_FALLBACK_MODEL || "",
         asrModelName: env.DOUBAO_ASR_MODEL_NAME || "",
         asrEndWindowSizeMs: env.DOUBAO_ASR_END_WINDOW_SIZE_MS || "",
-        ttsSpeakerID: env.DOUBAO_TTS_SPEAKER_ID || ""
+        ttsSpeakerID: env.DOUBAO_TTS_SPEAKER_ID || "",
+        ttsHTTPFallback: env.DEEP_RESPONSE_TTS_HTTP_FALLBACK || ""
       });
       return;
     }
