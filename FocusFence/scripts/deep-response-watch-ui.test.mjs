@@ -282,6 +282,20 @@ test("DeepResponse Watch simulator autoruns a continuous HTTP fixture loop", () 
   assert.match(debugViewSource, /conversationState = \.ended/);
 });
 
+test("DeepResponse Watch simulator can autorun the visible continuous microphone flow", () => {
+  assert.match(debugViewSource, /DEEP_RESPONSE_AUTORUN_SIMULATED_MIC_CONTINUOUS/);
+  assert.match(debugViewSource, /DEEP_RESPONSE_AUTORUN_SIMULATED_MIC_TURNS/);
+  assert.match(debugViewSource, /simulatedMicTurnsRemaining/);
+  assert.match(debugViewSource, /await toggleContinuousMode\(\)/);
+  assert.match(debugViewSource, /status = client\.lastError == nil \? "Sim mic done" : "Sim mic failed"/);
+  assert.match(recorderSource, /DEEP_RESPONSE_SIMULATED_MIC/);
+  assert.match(recorderSource, /startSimulatedMicrophone\(configuration: configuration, onChunk: onChunk, onSilence: onSilence\)/);
+  assert.match(recorderSource, /Bundle\.main\.url\(forResource: "simulated-mic-speech", withExtension: "pcm"\)/);
+  assert.match(recorderSource, /try\? await Task\.sleep\(nanoseconds: 100_000_000\)/);
+  assert.match(recorderSource, /try\? await Task\.sleep\(nanoseconds: 900_000_000\)/);
+  assert.match(recorderSource, /self\.emitSilenceIfNeeded\(\)/);
+});
+
 test("DeepResponse Watch continuous fixture waits for playback drain between turns", () => {
   const fixtureLoop = debugViewSource.match(/private func runContinuousFixtureLoop\(turns: Int\) async \{[\s\S]*?\n    \}/)?.[0] || "";
   assert.match(fixtureLoop, /await waitForFixturePlaybackDrain\(\)/);

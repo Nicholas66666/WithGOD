@@ -22,6 +22,9 @@ final class DeepResponseMicrophoneRecorder {
     private var lastVoiceAt: Date?
     private var didEmitSilence = false
     private var isRunning = false
+    #if targetEnvironment(simulator)
+    private var simulatedMicTask: Task<Void, Never>?
+    #endif
 
     func start(
         configuration: Configuration = .init(),
@@ -31,6 +34,13 @@ final class DeepResponseMicrophoneRecorder {
         guard !isRunning else {
             return
         }
+
+        #if targetEnvironment(simulator)
+        if ProcessInfo.processInfo.environment["DEEP_RESPONSE_SIMULATED_MIC"] == "1" {
+            startSimulatedMicrophone(configuration: configuration, onChunk: onChunk, onSilence: onSilence)
+            return
+        }
+        #endif
 
         try await requestRecordPermission()
 
@@ -78,6 +88,10 @@ final class DeepResponseMicrophoneRecorder {
     }
 
     func stop() -> Data {
+        #if targetEnvironment(simulator)
+        simulatedMicTask?.cancel()
+        simulatedMicTask = nil
+        #endif
         if isRunning {
             engine.inputNode.removeTap(onBus: 0)
             engine.stop()
@@ -103,6 +117,69 @@ final class DeepResponseMicrophoneRecorder {
             return audio
         }
     }
+
+    #if targetEnvironment(simulator)
+    private func startSimulatedMicrophone(
+        configuration: Configuration,
+        onChunk: ((Data) -> Void)?,
+        onSilence: (() -> Void)?
+    ) {
+        queue.sync {
+            chunks = []
+            self.onChunk = onChunk
+            self.onSilence = onSilence
+            self.configuration = configuration
+            recordingStartedAt = Date()
+            speechStartedAt = Date()
+            lastVoiceAt = Date()
+            didEmitSilence = false
+        }
+        isRunning = true
+        simulatedMicTask = Task { [weak self] in
+            guard let self else { return }
+            let speech = Self.simulatedSpeechPCM()
+            let chunkBytes = 16_000 * MemoryLayout<Int16>.size / 10
+            var offset = 0
+            while offset < speech.count, !Task.isCancelled {
+                let end = min(offset + chunkBytes, speech.count)
+                let chunk = speech.subdata(in: offset..<end)
+                queue.async {
+                    self.chunks.append(chunk)
+                    self.onChunk?(chunk)
+                    self.lastVoiceAt = Date()
+                }
+                offset = end
+                try? await Task.sleep(nanoseconds: 100_000_000)
+            }
+            try? await Task.sleep(nanoseconds: 900_000_000)
+            guard !Task.isCancelled else { return }
+            queue.async {
+                self.emitSilenceIfNeeded()
+            }
+        }
+    }
+
+    private static func simulatedSpeechPCM() -> Data {
+        if let url = Bundle.main.url(forResource: "simulated-mic-speech", withExtension: "pcm"),
+           let data = try? Data(contentsOf: url),
+           !data.isEmpty {
+            return data
+        }
+
+        let sampleRate = 16_000
+        let totalFrames = sampleRate * 2
+        var data = Data(capacity: totalFrames * MemoryLayout<Int16>.size)
+        for frame in 0..<totalFrames {
+            let envelope = sin(Double(frame) / Double(totalFrames) * .pi)
+            let carrier = sin(2 * .pi * 220 * Double(frame) / Double(sampleRate))
+            var sample = Int16(max(-1, min(1, carrier * envelope)) * 7_000)
+            withUnsafeBytes(of: &sample) { bytes in
+                data.append(contentsOf: bytes)
+            }
+        }
+        return data
+    }
+    #endif
 
     private func requestRecordPermission() async throws {
         let session = AVAudioSession.sharedInstance()

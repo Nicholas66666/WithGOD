@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const project = readFileSync(new URL("../project.yml", import.meta.url), "utf8");
+const pbxProject = readFileSync(new URL("../Focus.xcodeproj/project.pbxproj", import.meta.url), "utf8");
 const presenceWatchApp = readFileSync(new URL("../Sources/PresenceWatchApp/PresenceWatchApp.swift", import.meta.url), "utf8");
 const labInfo = readFileSync(new URL("../Sources/DeepResponseWatchLab/Info.plist", import.meta.url), "utf8");
 const realtimeClient = readFileSync(new URL("../Sources/DeepResponseWatchLab/DeepResponseRealtimeClient.swift", import.meta.url), "utf8");
@@ -29,4 +30,13 @@ test("DeepResponseWatchLab preserves HTTPS endpoints for HTTP transport", () => 
   assert(!realtimeClient.includes("case \"ws\":"));
   assert.match(realtimeClient, /let scheme = url\.scheme\?\.lowercased\(\)/);
   assert.match(realtimeClient, /scheme == "http" \|\| scheme == "https"/);
+});
+
+test("DeepResponseWatchLab owns the simulator microphone speech fixture", () => {
+  assert.match(pbxProject, /simulated-mic-speech\.pcm/);
+  const deepLabResources = pbxProject.match(/425A24DAC6CC8748CBF4C3FB \/\* Resources \*\/ = \{[\s\S]*?\n\t\t\};/)?.[0] || "";
+  assert.match(deepLabResources, /simulated-mic-speech\.pcm in Resources/);
+
+  const presenceWatchResources = pbxProject.match(/6D963380F387F53AAA5645DD \/\* Resources \*\/ = \{[\s\S]*?\n\t\t\};/)?.[0] || "";
+  assert.doesNotMatch(presenceWatchResources, /simulated-mic-speech\.pcm/);
 });

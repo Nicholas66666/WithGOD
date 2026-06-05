@@ -29,6 +29,7 @@
 		568F961F5204764A3F067504 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 21FDEF89FEFF8F8C2ED25382 /* Assets.xcassets */; };
 		6440CDD58B93EEF31AB93720 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 21FDEF89FEFF8F8C2ED25382 /* Assets.xcassets */; };
 		6FCA0283815DE0949222175B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 21FDEF89FEFF8F8C2ED25382 /* Assets.xcassets */; };
+		74F837B0F6EF4A7A9E2D6F13 /* simulated-mic-speech.pcm in Resources */ = {isa = PBXBuildFile; fileRef = 91F3B8540E914A6192C3DF41 /* simulated-mic-speech.pcm */; };
 		7CCFE07B3DB30E40710AA1A8 /* FocusFenceConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A6C8CA77569ABA26AA2E820 /* FocusFenceConstants.swift */; };
 		8C2C915FC3A2519AF4DEA16B /* RuleStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A042FA540F4C87F2086CEE32 /* RuleStore.swift */; };
 		97B7C387E4828225076A5394 /* PresenceAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = F35208749A215B6D29DED858 /* PresenceAnalyzer.swift */; };
@@ -161,6 +162,7 @@
 		831236D35A54273C71CA24D0 /* WatchSocketLab.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WatchSocketLab.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		85A822DF16BC1422456A1788 /* TurningAppIntents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TurningAppIntents.swift; sourceTree = "<group>"; };
 		905DE6DA016970D15CD97928 /* FocusFenceShieldConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusFenceShieldConfiguration.swift; sourceTree = "<group>"; };
+		91F3B8540E914A6192C3DF41 /* simulated-mic-speech.pcm */ = {isa = PBXFileReference; lastKnownFileType = file; path = "DeepResponseWatchLab/simulated-mic-speech.pcm"; sourceTree = "<group>"; };
 		946FEF15A2C8D278CE24CAE7 /* WatchSocketLabApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchSocketLabApp.swift; sourceTree = "<group>"; };
 		947645C34194A9FDD586FE99 /* DeepResponseDebugView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeepResponseDebugView.swift; sourceTree = "<group>"; };
 		95F45E72B4FBCAD2552AEA88 /* PresenceSpeechTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PresenceSpeechTranscriber.swift; sourceTree = "<group>"; };
@@ -256,6 +258,7 @@
 			isa = PBXGroup;
 			children = (
 				21FDEF89FEFF8F8C2ED25382 /* Assets.xcassets */,
+				91F3B8540E914A6192C3DF41 /* simulated-mic-speech.pcm */,
 				35200746B4813331D29D412E /* Brand */,
 			);
 			path = Resources;
@@ -584,6 +587,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				EE07F51705867F91D546BF07 /* Assets.xcassets in Resources */,
+				74F837B0F6EF4A7A9E2D6F13 /* simulated-mic-speech.pcm in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -20,6 +20,7 @@ struct DeepResponseDebugView: View {
     @State private var isWaitingForResponse = false
     @State private var isContinuousMode = false
     @State private var conversationState: DeepResponseConversationState = .listening
+    @State private var simulatedMicTurnsRemaining: Int?
 
     var body: some View {
         VStack(spacing: 8) {
@@ -280,11 +281,14 @@ struct DeepResponseDebugView: View {
         conversationState = .assistantThinking
         await client.finishHTTPSessionTurn()
         isWaitingForResponse = false
+        markSimulatedMicTurnCompletedIfNeeded()
         if isContinuousMode, client.lastError == nil, !client.isHTTPSessionEnded {
             if client.isHTTPSessionPlaybackActive {
                 status = "Waiting playback"
                 conversationState = .assistantSpeaking
                 await waitForPlaybackDrainAfterTurnDone()
+            } else if stopSimulatedMicAutorunIfComplete() {
+                return
             } else {
                 await startRecordingTurn(reason: "Auto listening")
             }
@@ -333,6 +337,9 @@ struct DeepResponseDebugView: View {
             return
         }
         if client.canAbortHTTPSessionTurn {
+            return
+        }
+        if stopSimulatedMicAutorunIfComplete() {
             return
         }
         guard isContinuousMode,
@@ -399,13 +406,19 @@ struct DeepResponseDebugView: View {
 
     private func runAutorunFixtureIfRequested() async {
         #if targetEnvironment(simulator)
-        guard !didRunAutorunFixture,
-              ProcessInfo.processInfo.environment["DEEP_RESPONSE_AUTORUN_FIXTURE"] == "1"
-                || ProcessInfo.processInfo.environment["DEEP_RESPONSE_AUTORUN_ECHO"] == "1"
-                || ProcessInfo.processInfo.environment["DEEP_RESPONSE_AUTORUN_CONTINUOUS_FIXTURE"] == "1" else {
+        let shouldAutorun = ProcessInfo.processInfo.environment["DEEP_RESPONSE_AUTORUN_FIXTURE"] == "1"
+            || ProcessInfo.processInfo.environment["DEEP_RESPONSE_AUTORUN_ECHO"] == "1"
+            || ProcessInfo.processInfo.environment["DEEP_RESPONSE_AUTORUN_CONTINUOUS_FIXTURE"] == "1"
+            || ProcessInfo.processInfo.environment["DEEP_RESPONSE_AUTORUN_SIMULATED_MIC_CONTINUOUS"] == "1"
+        guard !didRunAutorunFixture, shouldAutorun else {
             return
         }
         didRunAutorunFixture = true
+        if ProcessInfo.processInfo.environment["DEEP_RESPONSE_AUTORUN_SIMULATED_MIC_CONTINUOUS"] == "1" {
+            simulatedMicTurnsRemaining = Int(ProcessInfo.processInfo.environment["DEEP_RESPONSE_AUTORUN_SIMULATED_MIC_TURNS"] ?? "2") ?? 2
+            await toggleContinuousMode()
+            return
+        }
         if ProcessInfo.processInfo.environment["DEEP_RESPONSE_AUTORUN_CONTINUOUS_FIXTURE"] == "1" {
             await runContinuousFixtureLoop(turns: 3)
             return
@@ -455,6 +468,32 @@ struct DeepResponseDebugView: View {
             status = "Loop fixture playback timeout"
             client.stopHTTPSessionPlaybackForBargeIn()
         }
+        #endif
+    }
+
+    private func markSimulatedMicTurnCompletedIfNeeded() {
+        #if targetEnvironment(simulator)
+        guard let remaining = simulatedMicTurnsRemaining else {
+            return
+        }
+        simulatedMicTurnsRemaining = max(0, remaining - 1)
+        #endif
+    }
+
+    private func stopSimulatedMicAutorunIfComplete() -> Bool {
+        #if targetEnvironment(simulator)
+        guard let remaining = simulatedMicTurnsRemaining,
+              remaining <= 0 else {
+            return false
+        }
+        simulatedMicTurnsRemaining = nil
+        isContinuousMode = false
+        isWaitingForResponse = false
+        status = client.lastError == nil ? "Sim mic done" : "Sim mic failed"
+        conversationState = client.isHTTPSessionPlaybackActive ? .assistantSpeaking : .listening
+        return true
+        #else
+        return false
         #endif
     }
 }

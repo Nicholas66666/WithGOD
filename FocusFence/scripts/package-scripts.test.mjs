@@ -46,6 +46,12 @@ test("package exposes standard DeepResponse WatchLab Volcengine build gate", () 
   assert.match(command, /\bbuild\b/);
 });
 
+test("package exposes DeepResponse WatchLab simulator fake mic run", () => {
+  const command = packageJSON.scripts?.["deep:watchlab:sim:fakemic"] || "";
+
+  assert.match(command, /node scripts\/run-deep-response-watch-sim-fakemic\.mjs/);
+});
+
 test("package exposes standard Fire Volcengine DeepResponse continuous conversation gate", () => {
   const command = packageJSON.scripts?.["deep:volc:conversation:full"] || "";
 
