@@ -220,6 +220,56 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
     };
   }
 
+  if (event.type === "turn_done") {
+    if (state.isHTTPSessionEnded || event.sessionEnded) {
+      return {
+        state: {
+          ...state,
+          isRecording: false,
+          isWaitingForResponse: false,
+          isHTTPSessionEnded: true,
+          conversationState: "ended"
+        },
+        actions
+      };
+    }
+    if (state.lastError || !state.isContinuousMode) {
+      return {
+        state: {
+          ...state,
+          isRecording: false,
+          isWaitingForResponse: false,
+          conversationState: "listening"
+        },
+        actions
+      };
+    }
+    if (event.playbackActive) {
+      if (state.conversationState !== "assistantSpeaking") {
+        actions.push("wait_for_playback");
+      }
+      return {
+        state: {
+          ...state,
+          isRecording: false,
+          isWaitingForResponse: false,
+          conversationState: "assistantSpeaking"
+        },
+        actions
+      };
+    }
+    actions.push("start_recording:auto_listening");
+    return {
+      state: {
+        ...state,
+        isRecording: true,
+        isWaitingForResponse: false,
+        conversationState: "userSpeaking"
+      },
+      actions
+    };
+  }
+
   if (event.type === "playback_drained") {
     if (state.isHTTPSessionEnded) {
       if (state.conversationState === "ending") {

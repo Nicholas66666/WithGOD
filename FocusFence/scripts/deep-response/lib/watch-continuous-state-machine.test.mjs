@@ -48,6 +48,46 @@ test("continuous loop enters assistantSpeaking when first audio arrives", () => 
   assert.deepEqual(result.actions, ["wait_for_playback"]);
 });
 
+test("continuous loop waits for playback drain when turn completes with queued audio", () => {
+  const afterTurnDone = applyDeepResponseWatchEvent({
+    isContinuousMode: true,
+    isRecording: false,
+    isWaitingForResponse: true,
+    isHTTPSessionEnded: false,
+    lastError: null,
+    conversationState: "assistantThinking"
+  }, { type: "turn_done", playbackActive: true });
+
+  assert.equal(afterTurnDone.state.conversationState, "assistantSpeaking");
+  assert.equal(afterTurnDone.state.isRecording, false);
+  assert.equal(afterTurnDone.state.isWaitingForResponse, false);
+  assert.deepEqual(afterTurnDone.actions, ["wait_for_playback"]);
+
+  const afterDrain = applyDeepResponseWatchEvent(afterTurnDone.state, {
+    type: "playback_drained"
+  });
+
+  assert.equal(afterDrain.state.conversationState, "userSpeaking");
+  assert.equal(afterDrain.state.isRecording, true);
+  assert.deepEqual(afterDrain.actions, ["start_recording:auto_listening"]);
+});
+
+test("continuous loop restarts recording when turn completes without queued audio", () => {
+  const afterTurnDone = applyDeepResponseWatchEvent({
+    isContinuousMode: true,
+    isRecording: false,
+    isWaitingForResponse: true,
+    isHTTPSessionEnded: false,
+    lastError: null,
+    conversationState: "assistantThinking"
+  }, { type: "turn_done", playbackActive: false });
+
+  assert.equal(afterTurnDone.state.conversationState, "userSpeaking");
+  assert.equal(afterTurnDone.state.isRecording, true);
+  assert.equal(afterTurnDone.state.isWaitingForResponse, false);
+  assert.deepEqual(afterTurnDone.actions, ["start_recording:auto_listening"]);
+});
+
 test("late first audio is ignored while a new local recording is active", () => {
   const afterFirstAudio = applyDeepResponseWatchEvent({
     isContinuousMode: false,
@@ -254,7 +294,7 @@ test("mic press during post-turn playback stops local audio without server abort
     { type: "recording_started" },
     { type: "recording_finished", playbackActive: true },
     { type: "first_audio_received" },
-    { type: "turn_done" },
+    { type: "turn_done", playbackActive: true },
     { type: "mic_pressed", canAbort: false }
   ]);
 
