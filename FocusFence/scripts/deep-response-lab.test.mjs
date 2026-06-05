@@ -62,6 +62,7 @@ test("summarizeTurn includes raw evidence only when requested", () => {
 import {
   auditPCM16Audio,
   buildLabSummary,
+  collectLabServerEvents,
   judgeLabResults,
   parseDeepResponseLabArgs
 } from "./deep-response-lab.mjs";
@@ -165,4 +166,57 @@ test("judgeLabResults fails when required scenarios are missing", () => {
   assert.match(judge.failures.join("\n"), /silent_recovery/);
   assert.match(judge.failures.join("\n"), /goodbye_end/);
   assert.match(judge.failures.join("\n"), /interrupt_entry/);
+});
+
+test("collectLabServerEvents preserves lifecycle idle and abort evidence", () => {
+  const events = collectLabServerEvents({
+    conversation: {
+      turns: [
+        {
+          evidence: {
+            events: [
+              { type: "turn_done", sessionID: "conversation", turnID: "turn-1", generationID: "gen-1" }
+            ]
+          }
+        }
+      ],
+      sessionEnd: { type: "session_end", sessionID: "conversation", reason: "user_goodbye" },
+      memoryCandidate: { type: "memory_candidate", sessionID: "conversation", summary: "User: hello" }
+    },
+    idle: {
+      evidence: {
+        events: [
+          { type: "session_end", sessionID: "idle", reason: "idle_timeout" },
+          { type: "audio_done", sessionID: "idle", reason: "idle_goodbye_complete" }
+        ]
+      }
+    },
+    abort: {
+      evidence: {
+        events: [
+          { type: "abort", sessionID: "abort", turnID: "turn-abort", generationID: "gen-abort" }
+        ]
+      },
+      nextTurn: {
+        evidence: {
+          events: [
+            { type: "turn_done", sessionID: "abort", turnID: "turn-after-abort", generationID: "gen-after-abort" }
+          ]
+        }
+      }
+    }
+  });
+
+  assert.deepEqual(
+    events.map((event) => [event.source, event.type, event.reason || ""]),
+    [
+      ["conversation_turn", "turn_done", ""],
+      ["conversation_lifecycle", "session_end", "user_goodbye"],
+      ["conversation_lifecycle", "memory_candidate", ""],
+      ["idle", "session_end", "idle_timeout"],
+      ["idle", "audio_done", "idle_goodbye_complete"],
+      ["abort", "abort", ""],
+      ["abort_next_turn", "turn_done", ""]
+    ]
+  );
 });

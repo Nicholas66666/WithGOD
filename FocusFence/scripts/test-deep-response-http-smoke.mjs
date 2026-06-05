@@ -434,6 +434,9 @@ export async function runHTTPIdleProbe({
     rejectedStatus: rejected.status,
     rejectedBody,
     eventTypes: events.map((event) => event.type),
+    evidence: {
+      events
+    },
     endReason: events.find((event) => event.type === "session_end")?.reason || "",
     idleGoodbye: {
       enabled: idleGoodbye,

@@ -193,6 +193,65 @@ export function buildLabSummary({
   };
 }
 
+function compactServerEvent(event, source) {
+  if (!event || typeof event !== "object") {
+    return null;
+  }
+  return {
+    source,
+    seq: event.seq,
+    at: event.at,
+    receivedAtMs: event.receivedAtMs,
+    type: event.type,
+    sessionID: event.sessionID,
+    turnID: event.turnID,
+    generationID: event.generationID,
+    segment: event.segment,
+    text: event.text,
+    delta: event.delta,
+    reason: event.reason,
+    timing: event.timing,
+    providerMeta: event.providerMeta,
+    error: event.error,
+    message: event.message,
+    persisted: event.persisted,
+    store: event.store,
+    turnCount: event.turnCount,
+    summary: event.summary
+  };
+}
+
+export function collectLabServerEvents({ conversation = null, idle = null, abort = null } = {}) {
+  const events = [];
+  const pushEvent = (event, source) => {
+    const compact = compactServerEvent(event, source);
+    if (compact) {
+      events.push(compact);
+    }
+  };
+
+  for (const turn of conversation?.turns || []) {
+    for (const event of turn.evidence?.events || []) {
+      pushEvent(event, "conversation_turn");
+    }
+  }
+  pushEvent(conversation?.sessionEnd, "conversation_lifecycle");
+  pushEvent(conversation?.memoryCandidate, "conversation_lifecycle");
+  pushEvent(conversation?.memoryRecalled, "conversation_lifecycle");
+
+  for (const event of idle?.evidence?.events || []) {
+    pushEvent(event, "idle");
+  }
+  for (const event of abort?.evidence?.events || []) {
+    pushEvent(event, "abort");
+  }
+  for (const event of abort?.nextTurn?.evidence?.events || []) {
+    pushEvent(event, "abort_next_turn");
+  }
+
+  return events;
+}
+
 export async function runDeepResponseLabSelfTest(args) {
   const startedAt = new Date().toISOString();
   mkdirSync(args.outDir, { recursive: true });
@@ -253,7 +312,6 @@ export async function runDeepResponseLabSelfTest(args) {
     mouth.scenarios.push({ name: "multi_turn", ok: conversation.turns.length >= 2 && conversation.turns.every((turn) => turn.turnDone) });
     mouth.scenarios.push({ name: "goodbye_end", ok: conversation.sessionEnd?.reason === "user_goodbye" && conversation.lateAudioRejected?.status === 409 });
     server.sessions.push({ sessionID: conversation.sessionID, kind: "conversation", ok: conversation.ok });
-    server.events.push(...conversation.turns.flatMap((turn) => turn.evidence?.events || []));
     server.timing.push(...conversation.turns.map((turn) => ({ turnID: turn.turnID, generationID: turn.generationID, timing: turn.timing })));
 
     for (const turn of conversation.turns) {
@@ -300,6 +358,7 @@ export async function runDeepResponseLabSelfTest(args) {
     ]));
     mouth.scenarios.push({ name: "interrupt_entry", ok: abort.ok && abort.staleAudioChunks === 0 && abort.nextTurn?.ok === true });
     server.sessions.push({ sessionID: abort.sessionID, kind: "abort", ok: abort.ok });
+    server.events.push(...collectLabServerEvents({ conversation, idle, abort }));
     mouth.ok = mouth.scenarios.every((scenario) => scenario.ok);
     ear.ok = ear.audits.length > 0 && ear.audits.every((audit) => audit.ok);
     server.ok = server.sessions.length > 0 && server.sessions.every((session) => session.ok);

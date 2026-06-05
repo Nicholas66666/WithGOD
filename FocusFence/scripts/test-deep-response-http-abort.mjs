@@ -143,6 +143,9 @@ export async function runHTTPAbortProbe(args) {
     observeMs: args.observeMs,
     aborted,
     eventTypes: events.map((event) => event.type),
+    evidence: {
+      events
+    },
     staleAudioChunks: audioChunks.length,
     staleAudioBytes: audioChunks.reduce((sum, chunk) => sum + Number(chunk.audioByteLength || 0), 0)
   };
@@ -232,7 +235,10 @@ export function summarizeNextTurnAfterAbort({
     turnDone,
     audioChunks: audioChunks.length,
     audioBytes: audioChunks.reduce((sum, chunk) => sum + Number(chunk.audioByteLength || 0), 0),
-    eventTypes: events.map((event) => event.type)
+    eventTypes: events.map((event) => event.type),
+    evidence: {
+      events
+    }
   };
 }
 

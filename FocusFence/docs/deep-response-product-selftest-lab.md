@@ -45,6 +45,14 @@ Each run writes a report directory, for example:
 
 `summary.md` is the short human-readable version.
 
+`server-events.json` preserves the source of each archived event in `source`:
+
+- `conversation_turn`: normal and multi-turn transcript, assistant, audio, timing, and `turn_done` events.
+- `conversation_lifecycle`: explicit user-goodbye `session_end` plus memory lifecycle events.
+- `idle`: silent/no-input recovery, idle goodbye audio, idle `session_end`, and memory events.
+- `abort`: interrupt/barge-in abort entry events.
+- `abort_next_turn`: the recovery turn after abort, including transcript, assistant audio, timing, and `turn_done`.
+
 ## Coverage
 
 The lab covers:
@@ -76,3 +84,29 @@ Before changing DeepResponse continuous conversation, barge-in, memory, session 
 6. After the lab passes, still run `npm run test:node` and `npm run deep:watchlab:build:volc` before committing.
 
 Do not use user-operated Watch testing as the phase gate. Real hardware listening remains an extra experience confirmation after automated self-test evidence is already green.
+
+## Latest Product Self-Test Pass
+
+Run date: 2026-06-05.
+
+Report:
+
+```text
+/private/tmp/deep-response-lab-selftest-2026-06-05T05-37-31-389Z
+```
+
+Result:
+
+- `summary.json.overall`: `PASS`
+- `mouth`, `eye`, `ear`, `server`, `judge`: all `PASS`
+- Scenarios covered: `normal_turn`, `multi_turn`, `goodbye_end`, `silent_recovery`, `interrupt_entry`
+- Audio audits: 4/4 PASS; no silent audio or clipping; received/completed bytes matched
+- Timing: HTTP stop-to-first-audio was 197-206ms across the four conversation turns
+- Screenshots checked: `screenshots/running.png` and `screenshots/done.png`
+
+Findings from this pass:
+
+- Product bugs: none found under the current automated product-lab coverage.
+- Blocking lab defects: fixed `server-events.json` evidence coverage so goodbye lifecycle, idle recovery, abort entry, and abort next-turn events are archived instead of only the conversation turn events.
+- Environment issues: none in this run.
+- Accepted follow-ups: OCR/pixel-semantic UI checks, true speaker/human hearing checks, and broader fixture coverage remain outside this product self-test pass.
