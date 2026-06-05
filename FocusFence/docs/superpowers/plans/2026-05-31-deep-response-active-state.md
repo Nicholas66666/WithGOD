@@ -409,3 +409,32 @@ Testing process correction:
 - Previous self-tests over-weighted server/provider/session correctness and under-weighted the literal user journey on Watch.
 - The minimum WatchLab self-test gate must include the full basic loop: continuous on -> first recording starts -> auto silence finishes -> first audio -> turn_done ordering variants -> playback drain ordering variants -> missing playback drain recovery -> next recording starts.
 - Any future continuous-loop change must add or preserve a state-machine test for the complete user journey, not only a local transition or server smoke test.
+
+## Latest Increment: Visible Simulator Fake Mic Timing Audit
+
+Self-test loop:
+
+- Ran the visible Watch Simulator fake-mic loop through the same continuous HTTP path the user operates: continuous on -> fake mic recording -> auto silence -> HTTP session stop -> streamed audio/text -> playback -> next turn -> done.
+
+Bug found:
+
+- The first visible audit showed `llm 0 · tts 0` on the Watch UI even though Fire/Volcengine server events reported cascade timing such as `llm_first_token_ms`, `llm_total_ms`, and `voice_pipeline_total_ms`.
+
+Root cause:
+
+- `DeepResponseTiming` only decoded older segmented timing fields (`llm_first_phrase_ms`, `tts_first_audio_ms`).
+- `DeepResponseDebugView` rendered those old fields directly, so the new cascade pipeline looked like it had no LLM/TTS timing.
+
+Fix:
+
+- `DeepResponseTiming` now decodes cascade LLM fields and exposes `watchSummaryText`.
+- DebugView renders that summary so cascade turns show `asr · llm1 · llm`; older fixture/segmented turns still show `asr · llm · tts`.
+- `scripts/deep-response-watch-ui.test.mjs` now fails if the Watch UI bypasses `watchSummaryText` or stops decoding cascade LLM timing.
+
+Verification:
+
+- `npm run deep:watchlab:sim:fakemic -- --skip-build --turns 2 --out-dir /private/tmp/deep-response-watch-sim-fakemic-audit` reproduced the bug in visible screenshots.
+- Watch build with Fire/Volcengine endpoint succeeded.
+- `node --test scripts/deep-response-watch-ui.test.mjs`: `47/47` passed.
+- `npm run deep:watchlab:sim:fakemic -- --skip-build --turns 2 --out-dir /private/tmp/deep-response-watch-sim-fakemic-afterfix` confirmed visible final state `Sim mic done`, two HTTP turns in one session, and timing display like `asr 3593 · llm1 424 · llm 680`.
+- `npm run test:node`: `262/262` passed.

@@ -5,6 +5,7 @@ import { deepResponseWatchConversationStates } from "./deep-response/lib/watch-c
 
 const debugViewSource = readFileSync("Sources/DeepResponseWatchLab/DeepResponseDebugView.swift", "utf8");
 const realtimeClientSource = readFileSync("Sources/DeepResponseWatchLab/DeepResponseRealtimeClient.swift", "utf8");
+const protocolSource = readFileSync("Sources/DeepResponseWatchLab/DeepResponseProtocol.swift", "utf8");
 const audioPlayerSource = readFileSync("Sources/DeepResponseWatchLab/DeepResponseAudioPlayer.swift", "utf8");
 const recorderSource = readFileSync("Sources/DeepResponseWatchLab/DeepResponseMicrophoneRecorder.swift", "utf8");
 
@@ -12,6 +13,17 @@ test("DeepResponse Watch debug UI presents assistant reply as one god field", ()
   assert.match(debugViewSource, /Text\("god: \\\(/);
   assert.doesNotMatch(debugViewSource, /Text\("first: /);
   assert.doesNotMatch(debugViewSource, /Text\("more: /);
+});
+
+test("DeepResponse Watch timing summary supports cascade LLM metrics", () => {
+  assert.match(protocolSource, /let llmFirstTokenMs: Int\?/);
+  assert.match(protocolSource, /let llmTotalMs: Int\?/);
+  assert.match(protocolSource, /case llmFirstTokenMs = "llm_first_token_ms"/);
+  assert.match(protocolSource, /case llmTotalMs = "llm_total_ms"/);
+  assert.match(protocolSource, /var watchSummaryText: String/);
+  assert.match(protocolSource, /llm1 \\\(llmFirstTokenMs \?\? 0\)/);
+  assert.match(debugViewSource, /Text\(timing\.watchSummaryText\)/);
+  assert.doesNotMatch(debugViewSource, /llm \\\(timing\.llmFirstPhraseMs \?\? 0\) · tts/);
 });
 
 test("DeepResponse Watch HTTP session requests cascade pipeline mode", () => {

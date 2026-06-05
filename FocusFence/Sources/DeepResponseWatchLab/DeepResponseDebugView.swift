@@ -103,7 +103,7 @@ struct DeepResponseDebugView: View {
                         .foregroundStyle(.secondary)
                 }
                 if let timing = client.lastTurnTiming {
-                    Text("asr \(timing.transcriptFinalMs ?? 0) · llm \(timing.llmFirstPhraseMs ?? 0) · tts \(timing.ttsFirstAudioMs ?? timing.firstTTSFirstAudioMs ?? 0)")
+                    Text(timing.watchSummaryText)
                         .font(.caption2.monospacedDigit())
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
