@@ -56,6 +56,8 @@ DeepResponse remains in the independent Lab target.
 
 Latest pushed commits:
 
+- `458d41a` Expose DeepResponse TTS fallback in debug config.
+- `841cbfa` Recover DeepResponse turns after TTS provider errors.
 - `1deeb08` Add DeepResponse playback watchdog.
 - `b140137` Wait for DeepResponse turn done before auto-listen.
 - `4fe9aee` Start DeepResponse recording when continuous turns on.
@@ -99,7 +101,7 @@ Latest result:
 - Node self-tests: `238/238` passed.
 - Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply, lookup-style-comfort, harsh repeated-comfort, mechanical tired/fatigue, incomplete-utterance, `是还想听`, formulaic scripture lead-in, awkward spoken-opening, and dangling `啦。` gates enabled.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
-- Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
+- Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`, `ttsHTTPFallback: "1"`.
 - Fire/Volcengine partial-ASR LLM start: `llm_started_from_partial: 1` on both standard smoke turns.
 - Fire/Volcengine smoke stop-to-first-audio: `210ms`, `181ms`.
 - Fire/Volcengine repeated reply failures: `[]`.
@@ -112,6 +114,7 @@ Latest result:
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
 - Latest target-text correction is canonical: Watch/client transport is HTTP-only and completely excludes WebSocket work. Do not plan WebSocket spikes, fallback, benchmarks, comparisons, feasibility checks, or mainline return paths. Server-internal Doubao provider WebSocket remains allowed only as provider plumbing.
 - Latest validation policy is canonical: development proceeds by automated self-tests only. Do not schedule, request, or depend on user-operated Watch testing for phase progression, acceptance, or normal feedback loops.
+- Latest provider-error recovery gate: real Watch feedback exposed `Volc_Server_Error 45000081`, and remote debug events showed Doubao TTS WebSocket failed with `Timeout waiting next packet`. Root cause was server-side TTS provider streaming failure after text had already been emitted; the Watch then waited for a server turn completion that never arrived and later surfaced HTTP `-1001`. `DEEP_RESPONSE_TTS_HTTP_FALLBACK` now defaults to `1`, `DoubaoTTSProvider` falls back to HTTP TTS when WebSocket streaming fails, and HTTP session streamed pipeline errors now still emit `error`, `audio_done` with `reason: provider_error`, `timing`, and `turn_done` instead of leaving the Watch poller to time out. Focused regression checks passed, `npm run test:node` passed with Node `256/256`, Fire/Volcengine `/debug/config` reports `ttsHTTPFallback: "1"`, and `npm run deep:volc:smoke:full` passed after direct ECS sync.
 - Latest remote cascade phrase-to-audio gate: `scripts/test-deep-response-http-conversation.mjs` now supports `--max-first-audio-after-first-phrase-ms`, collects `firstAudioAfterFirstPhraseFailures`, and the standard `deep:volc:conversation:full` gate runs with a `1000ms` threshold. This verifies that the Fire/Volcengine HTTP cascade does not regress into delayed TTS/audio after the first speakable phrase is emitted. RED focused gate first failed because the package command lacked the new flag; focused checks passed `3/3`, `npm run test:node` passed with Node `248/248`, and `npm run deep:volc:conversation:full` passed with `firstAudioAfterFirstPhraseFailures: []` and observed phrase-to-audio delays around `100ms` to `149ms`. No user-operated Watch test was required.
 - Latest WatchLab turn-done session-ended goodbye-drain state-machine gate: if `turn_done` carries `sessionEnded` while local playback is still active, the scriptable continuous-mode model now enters `ending`, emits `wait_for_playback_drain`, and only finalizes on `playback_drained`. This preserves queued goodbye audio and keeps the loop from auto-listening after closure. RED focused test first failed because the model jumped straight to `ended`; focused checks passed `3/3`, Watch state/UI checks passed `70/70`, and `npm run test:node` passed with Node `247/247`. No user-operated Watch test was required.
 - Latest WatchLab turn-done playback-drain state-machine gate: the scriptable continuous-mode model now handles `turn_done` explicitly. If the server turn completes while local playback is active, it clears waiting state, stays in `assistantSpeaking`, and waits for `playback_drained` before auto-listening. If no playback is queued, it immediately starts the next auto-listening recording. RED focused tests first failed because `turn_done` left the model stuck in `assistantThinking`; focused Watch checks passed `69/69`, and `npm run test:node` passed with Node `246/246`. No user-operated Watch test was required.
@@ -172,8 +175,9 @@ Latest result:
 
 Latest remote deployment note:
 
-- `npm run deep:volc:deploy` can fail because ECS -> GitHub fetch sometimes hits `GnuTLS recv error (-110)`.
+- `npm run deep:volc:deploy` can fail because ECS -> GitHub fetch sometimes hits `GnuTLS recv error (-110)` or GitHub port `443` connection timeouts.
 - When that happens, use direct SSH file sync for changed files, restart `deep-response`, then run the remote source gate and smoke.
+- Latest direct sync deployed the `458d41a` server config visibility change over remote `841cbfa` because ECS could not fetch GitHub. Service restarted active, `/debug/config` returned `ttsHTTPFallback: "1"`, and `npm run deep:volc:smoke:full` passed.
 - Latest remote source gate after cleanup: `node --test scripts/deep-response-integration-gate.test.mjs`: `5/5` passed on ECS.
 - Latest `/health`: `200`, `mode: provider`, `providerConfigured: true`.
 

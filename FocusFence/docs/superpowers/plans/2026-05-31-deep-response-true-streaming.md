@@ -47,6 +47,7 @@
   - Continuous mode initial entry now starts the first Watch recording turn immediately; this path is covered by the state-machine test and a Swift source gate after a real Watch report showed the UI could toggle `Continuous on` without opening the microphone.
   - Continuous mode now waits for authoritative `turn_done` if local playback drains first, preventing early next-turn startup from cancelling the previous poll task and surfacing `-999 cancelled`.
   - Continuous mode now has a bounded playback-drain watchdog after `turn_done`, so a missing Watch audio drain callback cannot leave the UI stuck forever at `Waiting playback`.
+  - Server-side TTS provider failures no longer strand an HTTP session turn. A real Watch run exposed `Volc_Server_Error 45000081`; remote debug events showed Doubao TTS WebSocket timed out waiting for the next packet after text had already streamed. `DEEP_RESPONSE_TTS_HTTP_FALLBACK` now defaults to `1`, Doubao TTS falls back to HTTP synthesis when WebSocket streaming fails, and the streamed HTTP session pipeline still emits `audio_done` / `turn_done` after provider errors so Watch polling does not degrade into `-1001`.
   - Watch installation/launch is sometimes blocked by CoreDevice tunnel instability; do not rely on user-operated Watch testing for normal development progress.
   - Development mode is now completely self-test. Do not ask the user to operate Apple Watch as a planned validation step; local/server/simulator/source/build checks are the phase gates.
 
@@ -88,7 +89,8 @@ Latest remote smoke result:
 
 - health `200`
 - two-turn conversation in one session passed
-- stop-to-first-audio on Fire/Volcengine HTTP cascade: `212ms`, `222ms`
+- stop-to-first-audio on Fire/Volcengine HTTP cascade: latest provider-error-recovery smoke `231ms`, `205ms`
+- `/debug/config` reports `ttsHTTPFallback: "1"`
 - LLM started from usable ASR partial on both standard turns: `llm_started_from_partial: 1`
 - forbidden lookup/harsh/mechanical comfort failures: `[]`
 - repeated adjacent assistant reply failures: `[]`
@@ -115,6 +117,7 @@ Latest full self-test update:
 - Latest WatchLab turn-done playback-drain state-machine update: the scriptable continuous-mode model now handles `turn_done` separately from recording finish. When `turn_done` arrives with queued local playback, it clears waiting state, stays in `assistantSpeaking`, and waits for playback drain before auto-listening; when no playback is queued, it starts the next auto-listening recording immediately. RED focused tests first failed because `turn_done` was ignored and the model stayed in `assistantThinking`; focused Watch checks passed `69/69`, and `npm run test:node` passed with Node `246/246`.
 - Latest WatchLab turn-done session-ended goodbye-drain update: when `turn_done` also indicates session closure while local goodbye audio is still queued/playing, the scriptable state model now enters `ending`, waits for playback drain, then finalizes to `ended`. This closes the remaining mismatch between turn completion, session closure, and local audio drain in the HTTP-only continuous loop. RED focused test first failed because the model jumped straight to `ended`; focused checks passed `3/3`, Watch state/UI checks passed `70/70`, and `npm run test:node` passed with Node `247/247`.
 - Latest remote cascade phrase-to-audio gate: the HTTP conversation probe now has `--max-first-audio-after-first-phrase-ms`, exports `firstAudioAfterFirstPhraseFailures`, and the standard Fire/Volcengine 8-turn conversation gate uses `1000ms`. This asserts that after the first speakable phrase reaches the HTTP event stream, first audio must follow promptly rather than waiting for buffered/full-turn completion. RED focused gate first failed because `deep:volc:conversation:full` lacked the new flag; focused checks passed `3/3`, `npm run test:node` passed with Node `248/248`, and `npm run deep:volc:conversation:full` passed with `firstAudioAfterFirstPhraseFailures: []` and observed phrase-to-audio delays around `100ms` to `149ms`.
+- Latest provider-error recovery update: TTS WebSocket provider error `45000081` is covered by regression tests. `DoubaoTTSProvider` falls back to HTTP TTS on WebSocket stream failure, and `runHTTPSessionStreamedPipeline()` catches stream errors, records/pushes the error, then emits completion events instead of leaving clients waiting. Focused regression checks passed, `npm run test:node` passed with Node `256/256`, and Fire/Volcengine `npm run deep:volc:smoke:full` passed after direct ECS sync.
 - Latest WatchLab S5 update: pressing the mic during `assistantThinking` now follows the same local-first continuous barge-in policy as active speech: abort active generation in the background and immediately start the next recording. Covered by scriptable state-machine and Swift source gates.
 - Latest spoken-quality gate: standard Fire/Volcengine smoke and 8-turn conversation now forbid biblical story analogies including `大卫.*歌利亚`, `摩西.*杖`, `耶路撒冷城墙`, `牧人引领羊群`, `约书亚`, and `以利亚`; `VoicePipeline.streamCascadeTurn()` strips matching analogy tails before assistant text/audio emission.
 
