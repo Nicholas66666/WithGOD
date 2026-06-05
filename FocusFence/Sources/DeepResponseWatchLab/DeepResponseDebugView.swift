@@ -22,6 +22,7 @@ struct DeepResponseDebugView: View {
     @State private var isMonitoringPlaybackBargeIn = false
     @State private var conversationState: DeepResponseConversationState = .listening
     @State private var simulatedMicTurnsRemaining: Int?
+    @State private var recordingWatchdogID = UUID()
 
     var body: some View {
         VStack(spacing: 8) {
@@ -145,6 +146,7 @@ struct DeepResponseDebugView: View {
             client.stopHTTPSessionRuntime()
             stopPlaybackBargeInMonitor()
             if isRecording {
+                recordingWatchdogID = UUID()
                 _ = recorder.stop()
                 isRecording = false
             }
@@ -189,6 +191,7 @@ struct DeepResponseDebugView: View {
         }
         if !isContinuousMode,
            isRecording {
+            recordingWatchdogID = UUID()
             _ = recorder.stop()
             isRecording = false
             isWaitingForResponse = false
@@ -244,6 +247,8 @@ struct DeepResponseDebugView: View {
             conversationState = .idleWaiting
             try await client.startHTTPSessionTurn()
             status = reason
+            let watchdogID = UUID()
+            recordingWatchdogID = watchdogID
             try await recorder.start(
                 configuration: .init(
                     isEndpointingEnabled: isContinuousMode,
@@ -264,9 +269,27 @@ struct DeepResponseDebugView: View {
                 })
             isRecording = true
             conversationState = .userSpeaking
+            startRecordingWatchdog(id: watchdogID)
         } catch {
             status = error.localizedDescription
             conversationState = .listening
+        }
+    }
+
+    private func startRecordingWatchdog(id: UUID) {
+        guard isContinuousMode else {
+            return
+        }
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 8_000_000_000)
+            guard isContinuousMode,
+                  isRecording,
+                  !isWaitingForResponse,
+                  recordingWatchdogID == id,
+                  !client.isHTTPSessionEnded else {
+                return
+            }
+            await finishRecordingTurn(reason: "Auto max")
         }
     }
 
@@ -274,6 +297,7 @@ struct DeepResponseDebugView: View {
         guard isRecording else {
             return
         }
+        recordingWatchdogID = UUID()
         isRecording = false
         status = reason
         conversationState = .idleWaiting
@@ -415,6 +439,7 @@ struct DeepResponseDebugView: View {
         if isRecording {
             _ = recorder.stop()
         }
+        recordingWatchdogID = UUID()
         isRecording = false
         isWaitingForResponse = false
         conversationState = .ending

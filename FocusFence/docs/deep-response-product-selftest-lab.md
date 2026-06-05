@@ -109,7 +109,7 @@ Run date: 2026-06-05.
 Report:
 
 ```text
-/private/tmp/deep-response-lab-selftest-2026-06-05T07-55-55-139Z
+/private/tmp/deep-response-lab-selftest-2026-06-05T08-03-47-570Z
 ```
 
 Result:
@@ -118,7 +118,7 @@ Result:
 - `mouth`, `eye`, `ear`, `server`, `judge`: all `PASS`
 - Scenarios covered: `normal_turn`, `multi_turn`, `goodbye_end`, `silent_recovery`, `interrupt_entry`
 - Audio audits: 4/4 PASS; no silent audio or clipping
-- Audio audit bytes: 241,286-270,262 bytes per conversation turn
+- Audio audit bytes: 232,310-260,518 bytes per conversation turn
 - Screenshots checked: `screenshots/running.png` and `screenshots/done.png`
 
 Findings from this pass:
@@ -132,16 +132,17 @@ Fix in this pass:
 
 - `DeepResponseMicrophoneRecorder.Configuration` now has `maximumSpeechMilliseconds` as a hard endpointing guard.
 - Continuous Watch recording uses a bounded endpointing config: threshold `0.02`, silence `700ms`, and max speech `8,000ms`.
+- `DeepResponseDebugView` also has an independent 8-second UI watchdog for continuous recording, so a real Watch turn can finish even if local VAD never reaches speech-start or silence.
 - Playback barge-in monitoring is also bounded at `1,500ms` and still does not upload speaker-monitor audio.
 
 Evidence:
 
-- Focused Watch UI/VAD tests: 53/53 PASS.
-- `npm run test:node`: 281/281 PASS.
+- Focused Watch UI tests: 51/51 PASS.
+- `npm run test:node`: 282/282 PASS.
 - `npm run deep:watchlab:build:volc`: PASS.
 - `npm run deep:lab:selftest`: PASS.
 - Screenshot `running.png` showed the state advance to `Auto silence` instead of remaining stuck in `Auto listening`.
-- Timing max `http_stop_to_first_audio_ms`: `251`.
+- Timing max `http_stop_to_first_audio_ms`: `240`.
 - Server evidence included 4 conversation `turn_done` events, user-goodbye `session_end`, idle-timeout `session_end`, and abort entry/recovery events.
 
 ## Latest 10-Turn Watch Simulator Experience Pass

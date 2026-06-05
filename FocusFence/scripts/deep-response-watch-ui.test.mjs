@@ -111,6 +111,15 @@ test("DeepResponse Watch continuous mode auto-finishes a turn on recorder silenc
   assert.match(debugViewSource, /await finishRecordingTurn\(reason: "Auto silence"\)/);
 });
 
+test("DeepResponse Watch continuous recording has a UI watchdog independent of VAD", () => {
+  assert.match(debugViewSource, /@State private var recordingWatchdogID = UUID\(\)/);
+  assert.match(debugViewSource, /let watchdogID = UUID\(\)[\s\S]*?recordingWatchdogID = watchdogID[\s\S]*?startRecordingWatchdog\(id: watchdogID\)/);
+  assert.match(debugViewSource, /private func startRecordingWatchdog\(id: UUID\)/);
+  assert.match(debugViewSource, /Task \{ @MainActor in[\s\S]*?Task\.sleep\(nanoseconds: 8_000_000_000\)/);
+  assert.match(debugViewSource, /recordingWatchdogID == id[\s\S]*?await finishRecordingTurn\(reason: "Auto max"\)/);
+  assert.match(debugViewSource, /private func finishRecordingTurn\(reason: String\) async \{[\s\S]*?recordingWatchdogID = UUID\(\)[\s\S]*?isRecording = false/);
+});
+
 test("DeepResponse Watch monitors playback for barge-in without uploading speaker output", () => {
   assert.match(debugViewSource, /@State private var isMonitoringPlaybackBargeIn = false/);
   assert.match(debugViewSource, /startPlaybackBargeInMonitor\(\)/);
