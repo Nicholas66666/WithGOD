@@ -2302,6 +2302,27 @@ Latest remote memory-opening-stem conversation gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This is an S6 remote self-test coverage update; Watch transport remains HTTP-only, WebSocket is fully out of scope, and no user-operated Watch test was required.
 
+Latest canonical target correction and self-test gate:
+- Watch/client transport is HTTP-only. WebSocket is fully removed from the implementation plan, including spikes, fallbacks, benchmarks, route comparisons, feasibility checks, and future mainline options.
+- User-operated Watch testing is fully outside normal development gates. Phase progression, acceptance, and regression checks must be driven by automated local/server/remote/build self-tests.
+- `DeepResponseDebugView.handleFirstAudioReceived()` now ignores late first-audio callbacks after local recording has stopped, the HTTP session has ended, local state is ending/ended, or the client has an error. This keeps delayed server/audio events from moving an ended WatchLab session back into assistant-speaking state.
+- `VoicePipeline` now keeps enough recent assistant replies in the prompt context for the 8-turn remote conversation gate, preventing repeated full replies from being hidden by a too-short assistant-history window.
+- The HTTP conversation self-test now polls events and audio concurrently and includes `generation_id` when pulling audio, so first-audio timing and audio-before-turn-done assertions measure the current generation rather than harness long-poll delay or previous-turn trailing audio.
+- Verification:
+  - `node --test --test-name-pattern "ignores late first audio" scripts/deep-response-watch-ui.test.mjs`: passed.
+  - `node --test scripts/deep-response-watch-ui.test.mjs scripts/deep-response/lib/watch-continuous-state-machine.test.mjs`: `61/61` passed.
+  - `node --test --test-name-pattern "eight-turn conversation gate|recent assistant reply|previous assistant reply" scripts/deep-response/pipeline/voice-pipeline.test.mjs`: passed.
+  - `node --test scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/test-deep-response-http-conversation.test.mjs`: passed.
+  - `npm run test:node`: `238/238` passed.
+  - `npm run deep:volc:deploy`: remote server updated successfully, health OK.
+  - `npm run deep:volc:conversation:full`: passed with all failure arrays empty, late audio `409 session_ended`, and 8-turn stop-to-first-audio around `199ms` to `285ms`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `210ms`, `181ms`; `llm_started_from_partial: 1` on both turns; abort stale audio chunks/bytes: `0` / `0`; idle memory candidate `persisted: false`, `closureClean: true`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedMemoryLineFailures: []`, `repeatedMemoryOpeningStemFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `273ms`, `215ms`, `285ms`, `199ms`, `203ms`, `209ms`, `206ms`, `202ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This is the current canonical direction for subsequent phases: HTTP-only full streaming, self-test-only validation, no planned user Watch testing.
+
 - Unit and server tests:
   - `npm run test:node`
 
@@ -2336,7 +2357,7 @@ Latest remote memory-opening-stem conversation gate:
 - Watch app build.
 - Fire/Volcengine deploy and `/health` / `/debug/config`.
 - Watch source-level UI/transport checks.
-- Watch simulator autoruns where available.
+- Watch simulator or source-level autoruns where available, only as automated self-tests.
 
 ## What Must Not Require User
 
@@ -2351,7 +2372,7 @@ Latest remote memory-opening-stem conversation gate:
 
 ## User-Operated Watch Testing
 
-Outside this implementation plan. Do not schedule it, request it, or make it a blocker. If the user independently chooses to try a build and reports observations, treat that as extra product feedback, not as the primary validation path.
+Outside this implementation plan. Do not schedule it, request it, mention it as a planned checkpoint, or make it a blocker. If the user independently chooses to try a build and reports observations, treat that as extra product feedback only, not as phase validation or acceptance evidence.
 
 ## Version Management
 
