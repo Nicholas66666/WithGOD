@@ -46,6 +46,7 @@
   - Summary/memory candidate JSONL persistence is implemented, and new HTTP sessions can recall bounded recent JSONL memory into LLM context.
   - Continuous mode initial entry now starts the first Watch recording turn immediately; this path is covered by the state-machine test and a Swift source gate after a real Watch report showed the UI could toggle `Continuous on` without opening the microphone.
   - Continuous mode now waits for authoritative `turn_done` if local playback drains first, preventing early next-turn startup from cancelling the previous poll task and surfacing `-999 cancelled`.
+  - Continuous mode now has a bounded playback-drain watchdog after `turn_done`, so a missing Watch audio drain callback cannot leave the UI stuck forever at `Waiting playback`.
   - Watch installation/launch is sometimes blocked by CoreDevice tunnel instability; do not rely on user-operated Watch testing for normal development progress.
   - Development mode is now completely self-test. Do not ask the user to operate Apple Watch as a planned validation step; local/server/simulator/source/build checks are the phase gates.
 
@@ -2395,6 +2396,20 @@ Latest WatchLab playback-drain-before-turn-done gate:
   - `npm run test:node`: `252/252` passed.
   - Fire/Volcengine WatchLab build succeeded.
   - `DeepLab` was installed and launched on the connected Watch using `devicectl`.
+- This is still HTTP-only Watch transport. No Watch WebSocket or client-facing server WebSocket work was introduced.
+
+Latest WatchLab playback-drain watchdog gate:
+- Fixed the next real-Watch basic-loop failure: after the first reply, the UI could remain green at `Waiting playback` and never re-open the microphone.
+- Root cause: after authoritative `turn_done`, Watch audio playback drain can be missing/delayed or fail to clear `isHTTPSessionPlaybackActive`; the previous tests assumed the callback always arrives.
+- New behavior: when `finishRecordingTurn()` enters `Waiting playback`, `waitForPlaybackDrainAfterTurnDone()` waits for a bounded playback window based on received PCM bytes, clamped to 4-12 seconds. If playback state is still active after the deadline, `finishHTTPSessionPlaybackAfterTimeout()` clears local playback state and the normal drained handler resumes auto-listening.
+- Verification:
+  - RED focused test first failed for missing playback-drain callback recovery and missing Swift watchdog.
+  - Focused test passed after implementation.
+  - `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`: `76/76` passed.
+  - `npm run test:node`: `254/254` passed.
+  - Fire/Volcengine WatchLab build succeeded.
+  - `DeepLab` was installed and launched on the connected Watch using `devicectl`.
+- Testing correction: future Watch continuous-loop self-tests must cover the literal basic user journey end-to-end, including callback ordering and callback-missing paths, not only individual server/provider success or isolated UI transitions.
 - This is still HTTP-only Watch transport. No Watch WebSocket or client-facing server WebSocket work was introduced.
 
 - Unit and server tests:

@@ -56,6 +56,7 @@ DeepResponse remains in the independent Lab target.
 
 Latest pushed commits:
 
+- `1deeb08` Add DeepResponse playback watchdog.
 - `b140137` Wait for DeepResponse turn done before auto-listen.
 - `4fe9aee` Start DeepResponse recording when continuous turns on.
 - `3de76d0` Gate DeepResponse phrase-to-audio cascade latency.
@@ -269,6 +270,7 @@ npm run deep:provider:benchmark -- \
 - Watch continuous-loop state-machine self-test: auto-listen after playback drain, immediate auto-listen without queued playback, barge-in resume, and session-end stop.
 - Watch continuous-mode entry gate: turning Continuous on from idle/listening must immediately start the first recording turn, not merely toggle UI state.
 - Watch early-playback-drain gate: if local playback drains before authoritative `turn_done`, continuous mode must wait and must not start the next recording early.
+- Watch playback-watchdog gate: if authoritative `turn_done` is received but playback drain callback never clears active playback, continuous mode must recover and start the next auto-listening turn.
 - Watch barge-in local-first self-test: continuous-mode `abort_requested` starts recording before server abort ack while preserving stale generation discard.
 - Watch assistant-thinking self-test: continuous mode enters `assistantThinking` while waiting for server response before playback starts.
 - Watch ending-state self-test: continuous mode enters `ending` during server session closure before final `ended`.
@@ -359,3 +361,40 @@ Verification:
   - `npm run test:node`: `252/252` passed.
   - Watch build with Fire/Volcengine endpoint succeeded.
   - Installed and launched `DeepLab` on the connected Watch through `devicectl`.
+
+## Latest Increment: Playback Drain Watchdog
+
+User-observed Watch feedback after the previous race fix:
+
+- The `-999 cancelled` error no longer appeared.
+- After the first reply, UI stayed green at `Waiting playback`.
+- The microphone did not resume for the next sentence.
+
+Root cause:
+
+- The previous fix correctly prevented auto-listening before authoritative `turn_done`.
+- But if Watch playback drain callback is missing, delayed, or fails to clear `isHTTPSessionPlaybackActive`, `finishRecordingTurn()` can remain on the `Waiting playback` path forever.
+- Existing self-tests assumed the playback drain callback always arrives. That assumption is too optimistic for watchOS audio playback.
+
+Fix:
+
+- After `turn_done`, when the UI enters `Waiting playback`, `waitForPlaybackDrainAfterTurnDone()` now starts a bounded watchdog.
+- The watchdog estimates the expected playback window from received PCM bytes, bounded between 4 and 12 seconds.
+- If playback still appears active after the deadline, the client stops local playback state with `finishHTTPSessionPlaybackAfterTimeout()` and runs the same drained handler used by the normal callback.
+
+Verification:
+
+- RED focused test first failed for:
+  - `node --test --test-name-pattern "playback drained callback is missing|bounded playback-drain watchdog" scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`
+- After implementation:
+  - focused test passed.
+  - `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`: `76/76` passed.
+  - `npm run test:node`: `254/254` passed.
+  - Watch build with Fire/Volcengine endpoint succeeded.
+  - Installed and launched `DeepLab` on the connected Watch through `devicectl`.
+
+Testing process correction:
+
+- Previous self-tests over-weighted server/provider/session correctness and under-weighted the literal user journey on Watch.
+- The minimum WatchLab self-test gate must include the full basic loop: continuous on -> first recording starts -> auto silence finishes -> first audio -> turn_done ordering variants -> playback drain ordering variants -> missing playback drain recovery -> next recording starts.
+- Any future continuous-loop change must add or preserve a state-machine test for the complete user journey, not only a local transition or server smoke test.
