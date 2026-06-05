@@ -14,6 +14,7 @@ const defaultState = {
   isRecording: false,
   isWaitingForResponse: false,
   isHTTPSessionEnded: false,
+  canAbortHTTPSessionTurn: false,
   lastError: null,
   conversationState: "listening"
 };
@@ -158,6 +159,7 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
           ...state,
           isRecording: false,
           isWaitingForResponse: false,
+          canAbortHTTPSessionTurn: false,
           isHTTPSessionEnded: true,
           lastError: null,
           conversationState: "ending"
@@ -171,6 +173,7 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
           ...state,
           isRecording: false,
           isWaitingForResponse: false,
+          canAbortHTTPSessionTurn: false,
           isHTTPSessionEnded,
           lastError,
           conversationState: isHTTPSessionEnded ? "ended" : "listening"
@@ -200,6 +203,7 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
         ...state,
         isRecording: true,
         isWaitingForResponse: false,
+        canAbortHTTPSessionTurn: false,
         isHTTPSessionEnded: false,
         lastError: null,
         conversationState: "userSpeaking"
@@ -239,10 +243,11 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
         return {
           state: {
             ...state,
-            isRecording: false,
-            isWaitingForResponse: false,
-            isHTTPSessionEnded: true,
-            conversationState: "ending"
+          isRecording: false,
+          isWaitingForResponse: false,
+          canAbortHTTPSessionTurn: false,
+          isHTTPSessionEnded: true,
+          conversationState: "ending"
           },
           actions
         };
@@ -252,6 +257,7 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
           ...state,
           isRecording: false,
           isWaitingForResponse: false,
+          canAbortHTTPSessionTurn: false,
           isHTTPSessionEnded: true,
           conversationState: "ended"
         },
@@ -264,6 +270,7 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
           ...state,
           isRecording: false,
           isWaitingForResponse: false,
+          canAbortHTTPSessionTurn: false,
           conversationState: "listening"
         },
         actions
@@ -278,6 +285,7 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
           ...state,
           isRecording: false,
           isWaitingForResponse: false,
+          canAbortHTTPSessionTurn: false,
           conversationState: "assistantSpeaking"
         },
         actions
@@ -287,9 +295,10 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
     return {
       state: {
         ...state,
-        isRecording: true,
-        isWaitingForResponse: false,
-        conversationState: "userSpeaking"
+      isRecording: true,
+      isWaitingForResponse: false,
+      canAbortHTTPSessionTurn: false,
+      conversationState: "userSpeaking"
       },
       actions
     };
@@ -321,6 +330,10 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
       };
     }
     if (!state.isContinuousMode || state.isRecording || state.isWaitingForResponse || state.lastError) {
+      return { state, actions };
+    }
+    if (state.canAbortHTTPSessionTurn) {
+      actions.push("wait_for_turn_done");
       return { state, actions };
     }
     actions.push("start_recording:auto_listening");

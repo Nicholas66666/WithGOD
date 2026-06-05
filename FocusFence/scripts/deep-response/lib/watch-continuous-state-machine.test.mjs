@@ -95,6 +95,32 @@ test("continuous loop waits for playback drain when turn completes with queued a
   assert.deepEqual(afterDrain.actions, ["start_recording:auto_listening"]);
 });
 
+test("playback drain before authoritative turn done does not start the next recording", () => {
+  const afterDrain = applyDeepResponseWatchEvent({
+    isContinuousMode: true,
+    isRecording: false,
+    isWaitingForResponse: false,
+    isHTTPSessionEnded: false,
+    lastError: null,
+    canAbortHTTPSessionTurn: true,
+    conversationState: "assistantSpeaking"
+  }, { type: "playback_drained" });
+
+  assert.equal(afterDrain.state.isRecording, false);
+  assert.equal(afterDrain.state.conversationState, "assistantSpeaking");
+  assert.deepEqual(afterDrain.actions, ["wait_for_turn_done"]);
+
+  const afterTurnDone = applyDeepResponseWatchEvent(afterDrain.state, {
+    type: "recording_finished",
+    playbackActive: false,
+    sessionEnded: false
+  });
+
+  assert.equal(afterTurnDone.state.isRecording, true);
+  assert.equal(afterTurnDone.state.conversationState, "userSpeaking");
+  assert.deepEqual(afterTurnDone.actions, ["start_recording:auto_listening"]);
+});
+
 test("continuous loop restarts recording when turn completes without queued audio", () => {
   const afterTurnDone = applyDeepResponseWatchEvent({
     isContinuousMode: true,

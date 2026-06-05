@@ -307,7 +307,11 @@ struct DeepResponseDebugView: View {
             conversationState = .listening
             return
         }
+        if client.canAbortHTTPSessionTurn {
+            return
+        }
         guard isContinuousMode,
+              !client.canAbortHTTPSessionTurn,
               !isRecording,
               !isWaitingForResponse,
               client.lastError == nil,

@@ -256,6 +256,12 @@ test("DeepResponse Watch playback drained returns non-continuous speaking to lis
   assert.match(drainedFunction, /if !isContinuousMode,[\s\S]*?conversationState == \.assistantSpeaking \{[\s\S]*?conversationState = \.listening[\s\S]*?return/);
 });
 
+test("DeepResponse Watch playback drained waits for authoritative turn completion", () => {
+  const drainedFunction = debugViewSource.match(/private func handlePlaybackDrained\(\) \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(drainedFunction, /if client\.canAbortHTTPSessionTurn \{[\s\S]*?return/);
+  assert.match(drainedFunction, /guard isContinuousMode,[\s\S]*?!client\.canAbortHTTPSessionTurn,[\s\S]*?!isRecording,[\s\S]*?!isWaitingForResponse/);
+});
+
 test("DeepResponse Watch simulator autoruns a continuous HTTP fixture loop", () => {
   assert.match(debugViewSource, /DEEP_RESPONSE_AUTORUN_CONTINUOUS_FIXTURE/);
   assert.match(debugViewSource, /runContinuousFixtureLoop\(turns: 3\)/);
