@@ -2333,6 +2333,17 @@ Latest WatchLab late first-audio state-machine gate:
   - `npm run test:node`: `240/240` passed.
 - This is a WatchLab state-model self-test update only; no server deploy, WebSocket work, or user-operated Watch test was required.
 
+Latest WatchLab simulator continuous-fixture playback-drain gate:
+- Strengthened the simulator autorun fixture loop used for hands-free self-testing. `runContinuousFixtureLoop(turns:)` now waits for local playback to drain between turns instead of sleeping a fixed `100ms` and then marking the UI as listening.
+- This prevents the automated fixture from masking a class of bugs where the next listening turn begins while previous assistant audio is still active.
+- Verification:
+  - RED `node --test --test-name-pattern "continuous fixture waits" scripts/deep-response-watch-ui.test.mjs` first failed because the fixture loop still used `Task.sleep(nanoseconds: 100_000_000)`.
+  - Focused command passed after implementation: `node --test --test-name-pattern "continuous fixture waits" scripts/deep-response-watch-ui.test.mjs`.
+  - `node --test scripts/deep-response-watch-ui.test.mjs scripts/deep-response/lib/watch-continuous-state-machine.test.mjs`: `64/64` passed.
+  - `npm run test:node`: `241/241` passed.
+  - `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
+- This is a WatchLab simulator/source/build self-test update only; no server deploy, WebSocket work, or user-operated Watch test was required.
+
 - Unit and server tests:
   - `npm run test:node`
 
