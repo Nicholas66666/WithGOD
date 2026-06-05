@@ -79,20 +79,22 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `217/217` passed.
+- Node self-tests: `219/219` passed.
 - Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply, lookup-style-comfort, harsh repeated-comfort, mechanical tired/fatigue, incomplete-utterance, `是还想听`, formulaic scripture lead-in, awkward spoken-opening, and dangling `啦。` gates enabled.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
 - Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
 - Fire/Volcengine partial-ASR LLM start: `llm_started_from_partial: 1` on both standard smoke turns.
-- Fire/Volcengine smoke stop-to-first-audio: `247ms`, `235ms`.
+- Fire/Volcengine smoke stop-to-first-audio: `227ms`, `231ms`.
 - Fire/Volcengine repeated reply failures: `[]`.
 - Fire/Volcengine forbidden lookup/harsh/mechanical comfort failures: `[]`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`, `summary: ""`, `closureClean: true`.
 - Fire/Volcengine 8-turn continuous conversation gate now uses realtime upload pacing (`--upload-sleep-ms 1000`) and `--max-stop-to-first-audio-ms 1000`.
 - Fire/Volcengine 8-turn continuous conversation gate: passed with `session_end` reason `user_goodbye`, `memoryRecalled.count: 3`, `memory_candidate.persisted: true`, `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, and late audio `409 session_ended`.
-- Fire/Volcengine 8-turn stop-to-first-audio: `225ms`, `208ms`, `232ms`, `220ms`, `228ms`, `223ms`, `225ms`, `217ms`.
+- Fire/Volcengine 8-turn stop-to-first-audio: `209ms`, `204ms`, `217ms`, `197ms`, `211ms`, `205ms`, `212ms`, `198ms`.
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
+- Latest target-text correction: Watch-side WebSocket is completely out of scope. DeepResponse Watch/server transport remains HTTP-only, and phase progression uses self-tests rather than user-operated Watch testing.
+- Latest WatchLab continuous-off playback gate: turning continuous mode off while assistant audio is playing now stops local playback, clears waiting state, and returns to `listening`. The scriptable state machine emits `local_stop_playback`, Swift source gates cover `toggleContinuousMode()`, and full `npm run deep:selftest:full` passed with Node `219/219`, Fire/Volcengine smoke `227ms` / `231ms`, 8-turn stop-to-first-audio `209ms`, `204ms`, `217ms`, `197ms`, `211ms`, `205ms`, `212ms`, `198ms`, and WatchLab `BUILD SUCCEEDED`. No user-operated Watch test was required.
 - Latest WatchLab barge-in self-test update: continuous-mode abort now captures the old `turn_id` / `generation_id`, stops playback locally, starts barge-in recording before waiting for the `/abort` server ack, and posts the abort in the background. Full `npm run deep:selftest:full` passed after this change; no user-operated Watch test was required.
 - Latest WatchLab late-abort/session-end gate: continuous-mode state machine now keeps the session ended if a delayed `/abort` ack arrives after `session_end`; it must not start another `barge_in` recording after the server has closed the session. `DeepResponseDebugView.abortCurrentTurn()` now checks `client.isHTTPSessionEnded` again after awaiting the background abort task in the continuous barge-in branch and calls `markSessionEnded()` if closure arrived during the new recording start. Source and state-machine gates cover this out-of-order event path; no user-operated Watch test was required.
 - Latest WatchLab active-recorder session-end gate: if `session_end` arrives while continuous mode has already restarted local recording, the scriptable state machine now emits `stop_recording` before `stop_auto_listen` / `finalize_session_end`, and `DeepResponseDebugView.markSessionEnded()` stops `recorder` before clearing `isRecording`. This prevents hands-free closure from leaving the mic/audio session active after server goodbye or idle end. Source and state-machine gates cover this lifecycle edge; no user-operated Watch test was required.

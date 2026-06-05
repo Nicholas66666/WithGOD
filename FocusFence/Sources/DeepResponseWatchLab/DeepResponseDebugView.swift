@@ -185,6 +185,12 @@ struct DeepResponseDebugView: View {
             isWaitingForResponse = false
             conversationState = .listening
         }
+        if !isContinuousMode,
+           (conversationState == .assistantSpeaking || client.isHTTPSessionPlaybackActive) {
+            client.stopHTTPSessionPlaybackForBargeIn()
+            isWaitingForResponse = false
+            conversationState = .listening
+        }
     }
 
     private func toggleMicrophoneTurn() async {
