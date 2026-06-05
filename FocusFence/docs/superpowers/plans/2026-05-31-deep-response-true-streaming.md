@@ -2256,6 +2256,20 @@ Latest S6 memory candidate line-dedupe gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This is an S6 memory-quality self-test update; Watch transport remains HTTP-only, WebSocket is fully out of scope, and no user-operated Watch test was required.
 
+Latest remote repeated-memory-line conversation gate:
+- The standard Fire/Volcengine 8-turn conversation script now has `--forbid-repeated-memory-lines`. It collects duplicate normalized lines from the final `memory_candidate.summary` and fails the remote probe if any memory line appears more than once.
+- `deep:volc:conversation:full` now includes this flag, making memory line dedupe part of the normal full self-test rather than only a server unit test.
+- Verification:
+  - RED `node --test --test-name-pattern "session-end validation options|RepeatedMemoryLine|repeated memory summary lines|continuous conversation gate" scripts/test-deep-response-http-conversation.test.mjs scripts/package-scripts.test.mjs` first failed because the collector/export and package flag were missing.
+  - Same focused command passed after implementation: `3/3`.
+  - `npm run test:node`: `233/233` passed.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `230ms`, `212ms`; idle memory candidate `persisted: false`, `store: jsonl`, `summary: ""`, `closureClean: true`; `llm_started_from_partial: 1` on both turns.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedMemoryLineFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `249ms`, `241ms`, `243ms`, `254ms`, `237ms`, `243ms`, `252ms`, `235ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This is an S6 remote self-test coverage update; Watch transport remains HTTP-only, WebSocket is fully out of scope, and no user-operated Watch test was required.
+
 - Unit and server tests:
   - `npm run test:node`
 

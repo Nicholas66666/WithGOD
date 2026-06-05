@@ -5,6 +5,7 @@ import {
   collectSessionLifecycleEvents,
   collectForbiddenConversationTextFailures,
   collectRepeatedOpeningStemFailures,
+  collectRepeatedMemoryLineFailures,
   collectRepeatedConversationReplyFailures,
   collectLongConversationReplyFailures,
   collectShortConversationReplyFailures,
@@ -38,6 +39,7 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
     "--expect-memory-recalled",
     "--expect-llm-started-from-partial",
     "--expect-audio-before-turn-done",
+    "--forbid-repeated-memory-lines",
     "--forbid-identical-consecutive-replies",
     "--max-opening-stem-repeats", "2",
     "--max-assistant-reply-chars", "48",
@@ -55,6 +57,7 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
   assert.equal(args.expectMemoryRecalled, true);
   assert.equal(args.expectLLMStartedFromPartial, true);
   assert.equal(args.expectAudioBeforeTurnDone, true);
+  assert.equal(args.forbidRepeatedMemoryLines, true);
   assert.equal(args.forbidIdenticalConsecutiveReplies, true);
   assert.equal(args.maxOpeningStemRepeats, 2);
   assert.equal(args.maxAssistantReplyChars, 48);
@@ -283,6 +286,24 @@ test("collectForbiddenConversationTextFailures flags turn text and memory summar
       turnID: "",
       forbiddenPattern: "你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)",
       text: "User: 今天我累\nAI: 你还是想听安慰的话呀。\nAI: 你还在喊累呀。\nAI: 你又觉得累了。\nAI: 你又累了。"
+    }
+  ]);
+});
+
+test("collectRepeatedMemoryLineFailures flags repeated memory summary lines", () => {
+  const failures = collectRepeatedMemoryLineFailures({
+    summary: [
+      "User: 今天我有点累，想听一句安慰的话。",
+      "AI: 我陪你慢下来。",
+      "User: 今天我有点累，想听一句安慰的话。",
+      "AI: 我会记得你最近容易累。"
+    ].join("\n")
+  });
+
+  assert.deepEqual(failures, [
+    {
+      line: "User: 今天我有点累，想听一句安慰的话。",
+      count: 2
     }
   ]);
 });

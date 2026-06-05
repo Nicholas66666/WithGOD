@@ -24,6 +24,7 @@ export function parseHTTPConversationArgs(argv) {
     expectMemoryRecalled: false,
     expectLLMStartedFromPartial: false,
     expectAudioBeforeTurnDone: false,
+    forbidRepeatedMemoryLines: false,
     forbidIdenticalConsecutiveReplies: false,
     maxOpeningStemRepeats: 0,
     maxAssistantReplyChars: 0,
@@ -80,6 +81,8 @@ export function parseHTTPConversationArgs(argv) {
       args.expectLLMStartedFromPartial = true;
     } else if (arg === "--expect-audio-before-turn-done") {
       args.expectAudioBeforeTurnDone = true;
+    } else if (arg === "--forbid-repeated-memory-lines") {
+      args.forbidRepeatedMemoryLines = true;
     } else if (arg === "--forbid-identical-consecutive-replies") {
       args.forbidIdenticalConsecutiveReplies = true;
     } else if (arg === "--max-opening-stem-repeats") {
@@ -252,6 +255,12 @@ export async function runHTTPConversationProbe(args) {
   if (forbiddenTextFailures.length > 0) {
     throw new Error(`Forbidden conversation text failures: ${JSON.stringify(forbiddenTextFailures, null, 2)}`);
   }
+  const repeatedMemoryLineFailures = args.forbidRepeatedMemoryLines
+    ? collectRepeatedMemoryLineFailures(memoryCandidate)
+    : [];
+  if (repeatedMemoryLineFailures.length > 0) {
+    throw new Error(`Repeated memory line failures: ${JSON.stringify(repeatedMemoryLineFailures, null, 2)}`);
+  }
   const repeatedOpeningStemFailures = collectRepeatedOpeningStemFailures(turns, {
     maxRepeats: args.maxOpeningStemRepeats
   });
@@ -326,6 +335,7 @@ export async function runHTTPConversationProbe(args) {
     memoryRecalled,
     memoryCandidate,
     forbiddenTextFailures,
+    repeatedMemoryLineFailures,
     repeatedOpeningStemFailures,
     repeatedReplyFailures,
     longReplyFailures,
@@ -449,6 +459,31 @@ export function collectForbiddenConversationTextFailures({
     }
   }
   return failures;
+}
+
+export function collectRepeatedMemoryLineFailures(memoryCandidate = null) {
+  const lines = String(memoryCandidate?.summary || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const counts = new Map();
+  const samples = new Map();
+  for (const line of lines) {
+    const key = line.replace(/\s+/gu, "");
+    if (!key) {
+      continue;
+    }
+    counts.set(key, (counts.get(key) || 0) + 1);
+    if (!samples.has(key)) {
+      samples.set(key, line);
+    }
+  }
+  return [...counts.entries()]
+    .filter(([, count]) => count > 1)
+    .map(([key, count]) => ({
+      line: samples.get(key),
+      count
+    }));
 }
 
 export function collectRepeatedOpeningStemFailures(turns = [], { maxRepeats = 0 } = {}) {
