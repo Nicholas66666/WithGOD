@@ -1271,9 +1271,17 @@ function sanitizeHTTPSessionMemorySummary(summary) {
   return String(summary || "")
     .split(/\r?\n/)
     .map((line) => line.trim())
+    .map((line) => normalizeHTTPSessionMemoryLine(line))
     .filter((line) => line && !isLookupStyleComfortLine(line))
     .filter((line) => !isSessionClosureMemoryLine(line))
     .join("\n")
+    .trim();
+}
+
+function normalizeHTTPSessionMemoryLine(line) {
+  return String(line || "")
+    .replace(/[，,]\s*(?:像|如同)[^。！？!?；;]*(?:大卫|歌利亚|摩西|耶路撒冷城墙|牧人引领羊群|约书亚|以利亚)[^。！？!?；;]*[。！？!?；;]?/gu, "。")
+    .replace(/。{2,}/gu, "。")
     .trim();
 }
 

@@ -1754,6 +1754,70 @@ test("DeepResponse HTTP session sanitizes lookup-style comfort phrases from reca
   }
 });
 
+test("DeepResponse HTTP session sanitizes biblical story analogies from recalled memory", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "deep-response-memory-story-sanitize-"));
+  const memoryPath = join(tempDir, "memory.jsonl");
+  writeFileSync(memoryPath, [
+    JSON.stringify({
+      sessionID: "story-session",
+      summary: "User: 我最近常常很累。\nAI: 我陪你慢下来。主会赐下力量，像给以利亚的那棵树。\nAI: 主会赐下平安，像赐给约书亚的那地。",
+      persisted: true,
+      createdAt: "2026-06-04T04:00:00.000Z"
+    })
+  ].join("\n") + "\n", "utf8");
+
+  const seenContexts = [];
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    env: {
+      DEEP_RESPONSE_MEMORY_JSONL_PATH: memoryPath,
+      DEEP_RESPONSE_MEMORY_RECALL_LIMIT: "3"
+    },
+    createPipeline: () => ({
+      async *streamSegmented({ audioChunks, context }) {
+        for await (const _chunk of audioChunks) {
+          // Drain upload stream before replying.
+        }
+        seenContexts.push(context);
+        yield { type: "transcript_final", transcript: "今天还是很累" };
+        yield {
+          type: "segment",
+          segment: "first",
+          text: "我听见你还是累。",
+          audioChunks: [Buffer.from("memory-story-sanitize-audio")]
+        };
+        yield { type: "timing", timing: {}, providerMeta: {} };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {});
+    assert.equal(created.memoryRecallCount, 1);
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+
+    await postBytes(`${base}/audio?turn_id=turn-memory-story-sanitize&seq=0`, Buffer.from("tired"));
+    await postJSON(`${base}/input-stop`, { turnID: "turn-memory-story-sanitize" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "timing" && event.turnID === "turn-memory-story-sanitize");
+    });
+
+    const contextText = seenContexts[0][0].content;
+    assert.match(contextText, /我最近常常很累/);
+    assert.match(contextText, /主会赐下力量。/);
+    assert.match(contextText, /主会赐下平安。/);
+    assert.doesNotMatch(contextText, /以利亚|约书亚|摩西|大卫|歌利亚|耶路撒冷城墙|牧人引领羊群/u);
+  } finally {
+    await server.close();
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test("DeepResponse server chunks HTTP realtime turn PCM before provider pipeline", async () => {
   const seenChunkSizes = [];
   const server = await startDeepResponseServer({

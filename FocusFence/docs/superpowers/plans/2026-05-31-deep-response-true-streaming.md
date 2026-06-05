@@ -2210,6 +2210,20 @@ Latest WatchLab post-continuous-off playback gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This is a WatchLab playback-state alignment update; no ECS deploy and no user-operated Watch test were required.
 
+Latest S6 recalled-memory story-analogy sanitization gate:
+- Recalled persisted JSONL memory now goes through the same story-analogy cleanup policy before it is injected back into LLM context. Old assistant memory lines that contain analogy tails involving `大卫/歌利亚`, `摩西`, `耶路撒冷城墙`, `牧人引领羊群`, `约书亚`, or `以利亚` are normalized while useful user memory and cleaned comfort content are retained.
+- This closes the gap where current replies were sanitized but older persisted memory could reintroduce story-style phrases into future turns.
+- Verification:
+  - RED `node --test --test-name-pattern "biblical story analogies from recalled memory" scripts/deep-response-server.test.mjs` first failed because recalled context still contained `以利亚` and `约书亚`.
+  - `node --test --test-name-pattern "recalled memory|memory candidate|memory recall|memory persisted|biblical story analogies from recalled memory" scripts/deep-response-server.test.mjs`: `7/7` passed.
+  - `npm run test:node`: `229/229` passed.
+  - `npm run deep:selftest:full`: passed end to end after direct Fire/Volcengine ECS sync.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `232ms`, `222ms`; `llm_started_from_partial: 1` on both turns; abort stale audio chunks/bytes: `0` / `0`; idle memory `closureClean: true`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `208ms`, `227ms`, `195ms`, `204ms`, `244ms`, `226ms`, `203ms`, `195ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This is an S6 memory-quality update; Watch transport remains HTTP-only, WebSocket is fully out of scope, and no user-operated Watch test was required.
+
 - Unit and server tests:
   - `npm run test:node`
 
