@@ -191,6 +191,11 @@ struct DeepResponseDebugView: View {
             isWaitingForResponse = false
             conversationState = .listening
         }
+        if !isContinuousMode,
+           (conversationState == .assistantThinking || isWaitingForResponse) {
+            isWaitingForResponse = false
+            conversationState = .listening
+        }
     }
 
     private func toggleMicrophoneTurn() async {

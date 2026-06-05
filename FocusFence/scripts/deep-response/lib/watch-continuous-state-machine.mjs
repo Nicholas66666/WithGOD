@@ -95,6 +95,18 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
         actions
       };
     }
+    if (!event.enabled && (state.conversationState === "assistantThinking" || state.isWaitingForResponse)) {
+      return {
+        state: {
+          ...state,
+          isContinuousMode: false,
+          isRecording: false,
+          isWaitingForResponse: false,
+          conversationState: state.isHTTPSessionEnded ? "ended" : "listening"
+        },
+        actions
+      };
+    }
     return {
       state: {
         ...state,

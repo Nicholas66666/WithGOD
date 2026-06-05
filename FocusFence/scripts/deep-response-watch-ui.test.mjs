@@ -65,6 +65,11 @@ test("DeepResponse Watch continuous mode off stops assistant playback", () => {
   assert.match(toggleFunction, /if !isContinuousMode,[\s\S]*?\(conversationState == \.assistantSpeaking \|\| client\.isHTTPSessionPlaybackActive\) \{[\s\S]*?client\.stopHTTPSessionPlaybackForBargeIn\(\)[\s\S]*?isWaitingForResponse = false[\s\S]*?conversationState = \.listening/);
 });
 
+test("DeepResponse Watch continuous mode off clears assistant thinking state", () => {
+  const toggleFunction = debugViewSource.match(/private func toggleContinuousMode\(\) async \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(toggleFunction, /if !isContinuousMode,[\s\S]*?\(conversationState == \.assistantThinking \|\| isWaitingForResponse\) \{[\s\S]*?isWaitingForResponse = false[\s\S]*?conversationState = \.listening/);
+});
+
 test("DeepResponse Watch recorder exposes local silence endpointing hooks", () => {
   assert.match(recorderSource, /struct Configuration/);
   assert.match(recorderSource, /isEndpointingEnabled/);
