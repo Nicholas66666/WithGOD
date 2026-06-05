@@ -56,6 +56,8 @@ DeepResponse remains in the independent Lab target.
 
 Latest pushed commits:
 
+- `558350b` Guard Watch state model late first audio.
+- `93da4d5` Record DeepResponse self-test-only target.
 - `2854733` Isolate DeepResponse conversation audio polling.
 - `132ebde` Fix DeepResponse conversation probe polling.
 - `01b1b11` Guard DeepResponse streaming session edges.
@@ -100,6 +102,7 @@ Latest result:
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
 - Latest target-text correction is canonical: Watch/client transport is HTTP-only and completely excludes WebSocket work. Do not plan WebSocket spikes, fallback, benchmarks, comparisons, feasibility checks, or mainline return paths. Server-internal Doubao provider WebSocket remains allowed only as provider plumbing.
 - Latest validation policy is canonical: development proceeds by automated self-tests only. Do not schedule, request, or depend on user-operated Watch testing for phase progression, acceptance, or normal feedback loops.
+- Latest WatchLab late first-audio state-machine gate: the scriptable continuous-mode state model now ignores delayed first-audio callbacks while a new local recording is active or after a local HTTP/session error. RED tests first showed the model incorrectly moved `userSpeaking` / errored `assistantThinking` back into `assistantSpeaking`. Focused Watch state/source checks passed `63/63`, and `npm run test:node` passed with Node `240/240`. No user-operated Watch test was required.
 - Latest WatchLab late first-audio guard: `DeepResponseDebugView.handleFirstAudioReceived()` now ignores late first audio after local recording has stopped, the HTTP session has ended, local state is ending/ended, or the client has an error. This prevents delayed audio callbacks from resurrecting the UI into `assistantSpeaking` after local session closure.
 - Latest prompt memory-context gate: `VoicePipeline` now keeps enough recent assistant replies for the 8-turn repeated-reply gate, so remote self-tests catch repeated full replies across a longer continuous session.
 - Latest conversation probe timing gate: the HTTP conversation self-test now polls event and audio streams concurrently and filters audio pulls by `generation_id`, preventing test-harness long-polling or previous-turn trailing audio from distorting first-audio timing or ordering assertions.

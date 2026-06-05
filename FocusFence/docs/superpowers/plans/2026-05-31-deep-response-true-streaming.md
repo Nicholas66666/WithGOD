@@ -2323,6 +2323,16 @@ Latest canonical target correction and self-test gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This is the current canonical direction for subsequent phases: HTTP-only full streaming, self-test-only validation, no planned user Watch testing.
 
+Latest WatchLab late first-audio state-machine gate:
+- Strengthened the scriptable continuous-mode Watch state model so delayed first-audio callbacks are ignored while a new local recording is active or after a local HTTP/session error.
+- This closes the self-test gap where Swift already guarded `handleFirstAudioReceived()` with `!isRecording` and `client.lastError == nil`, but the state-machine model could still resurrect `userSpeaking` or errored `assistantThinking` into `assistantSpeaking`.
+- Verification:
+  - RED `node --test --test-name-pattern "late first audio" scripts/deep-response/lib/watch-continuous-state-machine.test.mjs` first failed because the model moved both guarded states to `assistantSpeaking`.
+  - Focused command passed after implementation: `node --test --test-name-pattern "late first audio" scripts/deep-response/lib/watch-continuous-state-machine.test.mjs`.
+  - `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`: `63/63` passed.
+  - `npm run test:node`: `240/240` passed.
+- This is a WatchLab state-model self-test update only; no server deploy, WebSocket work, or user-operated Watch test was required.
+
 - Unit and server tests:
   - `npm run test:node`
 
