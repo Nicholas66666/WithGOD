@@ -184,7 +184,7 @@ export async function runHTTPConversationProbe(args) {
             batch,
             receivedAtMs: Math.round(performance.now() - turnStartedAt)
           })),
-        fetchJSON(buildURL(args.endpoint, `${basePath}/audio?cursor=${audioCursor}${buildWaitQuery(args.waitMs)}`))
+        fetchJSON(buildURL(args.endpoint, `${basePath}/audio?cursor=${audioCursor}&generation_id=${encodeURIComponent(generationID)}${buildWaitQuery(args.waitMs)}`))
           .then((batch) => ({
             batch,
             receivedAtMs: Math.round(performance.now() - turnStartedAt)

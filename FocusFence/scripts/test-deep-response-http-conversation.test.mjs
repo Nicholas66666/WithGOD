@@ -24,6 +24,7 @@ test("HTTP conversation probe polls events and audio concurrently", () => {
   assert.match(conversationProbeSource, /Promise\.all\(\[/);
   assert.match(conversationProbeSource, /\/events\?cursor=/);
   assert.match(conversationProbeSource, /\/audio\?cursor=/);
+  assert.match(conversationProbeSource, /generation_id=\$\{encodeURIComponent\(generationID\)\}/);
 });
 
 test("parseHTTPConversationArgs accepts cascade pipeline mode", () => {
