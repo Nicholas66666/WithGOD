@@ -330,6 +330,32 @@ test("session end during assistant playback waits for playback drain before fina
   assert.deepEqual(afterPlaybackDrain.actions, ["finalize_session_end"]);
 });
 
+test("session end waits for playback drain when playback is active before speaking state", () => {
+  const afterSessionEnd = applyDeepResponseWatchEvent({
+    isContinuousMode: true,
+    isRecording: false,
+    isWaitingForResponse: true,
+    isHTTPSessionEnded: false,
+    lastError: null,
+    conversationState: "assistantThinking"
+  }, { type: "session_end", playbackActive: true });
+
+  assert.equal(afterSessionEnd.state.conversationState, "ending");
+  assert.equal(afterSessionEnd.state.isHTTPSessionEnded, true);
+  assert.equal(afterSessionEnd.state.isRecording, false);
+  assert.deepEqual(afterSessionEnd.actions, [
+    "stop_auto_listen",
+    "wait_for_playback_drain"
+  ]);
+
+  const afterPlaybackDrain = applyDeepResponseWatchEvent(afterSessionEnd.state, {
+    type: "playback_drained"
+  });
+
+  assert.equal(afterPlaybackDrain.state.conversationState, "ended");
+  assert.deepEqual(afterPlaybackDrain.actions, ["finalize_session_end"]);
+});
+
 test("session end stops active recorder before ending the loop", () => {
   const afterSessionEnd = applyDeepResponseWatchEvent({
     isContinuousMode: true,

@@ -418,7 +418,7 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
       actions.push("stop_recording");
     }
     actions.push("stop_auto_listen");
-    if (state.conversationState === "assistantSpeaking") {
+    if (state.conversationState === "assistantSpeaking" || event.playbackActive) {
       actions.push("wait_for_playback_drain");
     } else {
       actions.push("finalize_session_end");
