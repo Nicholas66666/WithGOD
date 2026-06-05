@@ -109,7 +109,7 @@ Run date: 2026-06-05.
 Report:
 
 ```text
-/private/tmp/deep-response-lab-selftest-2026-06-05T06-00-03-025Z
+/private/tmp/deep-response-lab-selftest-2026-06-05T06-07-29-861Z
 ```
 
 Result:
@@ -118,7 +118,7 @@ Result:
 - `mouth`, `eye`, `ear`, `server`, `judge`: all `PASS`
 - Scenarios covered: `normal_turn`, `multi_turn`, `goodbye_end`, `silent_recovery`, `interrupt_entry`
 - Audio audits: 4/4 PASS; no silent audio or clipping
-- Timing: HTTP stop-to-first-audio was 188-201ms across the four conversation turns
+- Audio audit bytes: 216,846-286,080 bytes per conversation turn
 - Screenshots checked: `screenshots/running.png` and `screenshots/done.png`
 
 Findings from this pass:
@@ -135,7 +135,7 @@ Run date: 2026-06-05.
 Report:
 
 ```text
-/private/tmp/deep-response-watch-sim-experience-after-opening-fix
+/private/tmp/deep-response-watch-sim-experience-final
 ```
 
 Result:
@@ -144,7 +144,7 @@ Result:
 - Watch turns requested: 10
 - Server turns observed: 10
 - Audio audits: 10/10 PASS
-- Server session: `drs_fe0feabd6db8432db2b237c3aa83d51b`
+- Server session: `drs_67e65a8eb1234423b6d4829f276cfc18`
 - Server events: 164 total; 10 `input_stop`, 10 `transcript_final`, 10 `audio_done`, 10 `timing`, 10 `turn_done`
 - Blocking errors: none found for `-999`, `-1001`, `Volc_Server_Error`, provider errors, empty ASR/god output, silent audio, or timeout-like error events
 - Screenshots checked: `running.png` showed legal `Waiting playback`; `done.png` showed `Sim mic done`
@@ -154,7 +154,7 @@ Product bug found and fixed:
 - Baseline 10-turn Watch fake-mic evidence showed repeated comfort openings in adjacent turns: `先把...` repeated across turns 1-2, and `我陪...` repeated across turns 7-8.
 - The product normalization guard now treats common comfort opening stems such as `我陪`, `先把`, `不用`, `今天`, and `那今` as one-use recent stems and has a larger replacement pool.
 - Focused regression: `VoicePipeline streamCascadeTurn avoids repeating the previous opening stem`.
-- The 10-turn experience rerun passed with 10 distinct openings and no repeated exact opening sentence.
+- The final 10-turn experience rerun passed with 10 distinct openings and no repeated exact opening sentence.
 
 Residual risk:
 

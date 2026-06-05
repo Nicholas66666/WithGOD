@@ -606,20 +606,20 @@ Baseline:
 - Focused tests: PASS.
 - `npm run test:node`: PASS, 278/278.
 - `npm run deep:watchlab:build:volc`: BUILD SUCCEEDED.
-- `npm run deep:lab:selftest`: PASS, report `/private/tmp/deep-response-lab-selftest-2026-06-05T06-00-03-025Z`.
+- `npm run deep:lab:selftest`: PASS, report `/private/tmp/deep-response-lab-selftest-2026-06-05T06-07-29-861Z`.
   - `summary.json.overall`: `PASS`
   - `mouth`, `eye`, `ear`, `server`, `judge`: all PASS
   - scenarios: `normal_turn`, `multi_turn`, `goodbye_end`, `silent_recovery`, `interrupt_entry`
   - server events include `session_end`, `idle`, `abort`, and `abort_next_turn`
   - audio audits: 4/4 PASS
   - screenshots checked: running `Waiting playback`, done `Sim mic done`
-- `npm run deep:watchlab:experience:10`: PASS, report `/private/tmp/deep-response-watch-sim-experience-after-opening-fix`.
+- `npm run deep:watchlab:experience:10`: PASS, report `/private/tmp/deep-response-watch-sim-experience-final`.
   - Watch turns requested: 10
   - Server turns observed: 10
   - Audio audits: 10/10 PASS
   - server events: 164 total; 10 `input_stop`, 10 `transcript_final`, 10 `audio_done`, 10 `timing`, 10 `turn_done`
   - no `-999`, `-1001`, `Volc_Server_Error`, provider error, empty ASR/god output, silent audio, or timeout-like error event
-  - openings no longer repeat consecutively: `那今`, `今天`, `我陪`, `先把`, `不用`, `先别`, `这会`, `让自`, `把肩`, `那咱`
+  - openings no longer repeat consecutively: `那今`, `我陪`, `今天`, `先把`, `不用`, `先别`, `这会`, `累了`, `让自`, `把肩`
   - screenshots checked: running legal `Waiting playback`, done `Sim mic done`
 
 残余风险:
