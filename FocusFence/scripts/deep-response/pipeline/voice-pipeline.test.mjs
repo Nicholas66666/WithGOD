@@ -212,6 +212,59 @@ test("VoicePipeline prompt forbids repeating any recent assistant reply in sessi
   assert.match(prompt, /本轮禁止输出与最近任意一条 assistant 回复相同/);
 });
 
+test("VoicePipeline prompt keeps enough assistant replies for the eight-turn conversation gate", async () => {
+  let prompt = "";
+  const asr = {
+    async transcribe() {
+      return {
+        transcript: "今天我有点累，想听一句安慰的话。",
+        timing: {}
+      };
+    }
+  };
+  const llm = {
+    async generate({ messages }) {
+      prompt = messages.at(-1).content;
+      return {
+        text: "这次我们换一种说法陪你慢下来。",
+        firstPhrase: "这次我们换一种说法陪你慢下来。",
+        timing: {}
+      };
+    }
+  };
+  const tts = {
+    async synthesize({ text }) {
+      return {
+        audioChunks: [Buffer.from(text)],
+        timing: {}
+      };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 1, 2]) });
+  await pipeline.runSegmented({
+    audioChunks: [Buffer.from("voice")],
+    context: [
+      { role: "user", content: "今天我有点累，想听一句安慰的话。" },
+      { role: "assistant", content: "那今天就歇着。主会成为你的力量，使你重新得力。" },
+      { role: "user", content: "今天我有点累，想听一句安慰的话。" },
+      { role: "assistant", content: "先别急着撑。主会扶住你，让你慢慢恢复气力。" },
+      { role: "user", content: "今天我有点累，想听一句安慰的话。" },
+      { role: "assistant", content: "你可以先停一下。主会成为你的避难所，陪你喘口气。" },
+      { role: "user", content: "今天我有点累，想听一句安慰的话。" },
+      { role: "assistant", content: "今天先把肩放松。主看见你的累，也会给你力量。" },
+      { role: "user", content: "今天我有点累，想听一句安慰的话。" },
+      { role: "assistant", content: "不用急着证明什么。主会托住你，让你重新站稳。" }
+    ]
+  });
+
+  assert.match(prompt, /那今天就歇着/);
+  assert.match(prompt, /先别急着撑/);
+  assert.match(prompt, /你可以先停一下/);
+  assert.match(prompt, /今天先把肩放松/);
+  assert.match(prompt, /不用急着证明什么/);
+});
+
 test("VoicePipeline streamSegmented emits one reply segment and no followup segment", async () => {
   const llmCalls = [];
   const asr = {

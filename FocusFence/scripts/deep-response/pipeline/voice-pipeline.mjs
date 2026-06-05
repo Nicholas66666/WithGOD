@@ -718,7 +718,7 @@ function buildFollowupMessages(transcript, firstText, context = []) {
 
 function buildCompleteReplyMessages(transcript, context = []) {
   const previousAssistantReply = getPreviousAssistantReply(context);
-  const recentAssistantReplies = getRecentAssistantReplies(context, { limit: 4 });
+  const recentAssistantReplies = getRecentAssistantReplies(context, { limit: 8 });
   return [
     { role: "system", content: scriptureCompanionSystemPrompt() },
     ...context,

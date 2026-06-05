@@ -234,6 +234,13 @@ test("DeepResponse Watch enters assistantSpeaking on first streamed audio", () =
   assert.match(firstAudioFunction, /conversationState = \.assistantSpeaking/);
 });
 
+test("DeepResponse Watch ignores late first audio after local session ending", () => {
+  const firstAudioFunction = debugViewSource.match(/private func handleFirstAudioReceived\(\) \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(firstAudioFunction, /conversationState != \.ending/);
+  assert.match(firstAudioFunction, /conversationState != \.ended/);
+  assert.match(firstAudioFunction, /conversationState = \.assistantSpeaking/);
+});
+
 test("DeepResponse Watch mic button remains tappable for assistant-thinking barge-in", () => {
   assert.doesNotMatch(debugViewSource, /\.disabled\(isWaitingForResponse\)/);
   assert.match(debugViewSource, /conversationState == \.assistantThinking[\s\S]*?await abortCurrentTurn\(\)/);

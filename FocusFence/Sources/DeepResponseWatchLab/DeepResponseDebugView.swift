@@ -315,6 +315,8 @@ struct DeepResponseDebugView: View {
     private func handleFirstAudioReceived() {
         guard !isRecording,
               !client.isHTTPSessionEnded,
+              conversationState != .ending,
+              conversationState != .ended,
               client.lastError == nil else {
             return
         }

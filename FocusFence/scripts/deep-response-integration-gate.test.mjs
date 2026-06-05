@@ -71,7 +71,7 @@ test("DeepResponse active-state handoff matches current HTTP-only self-test poli
   assert.match(activeState, /Watch 端 transport 固定使用 HTTP/u);
   assert.match(activeState, /完全不再考虑 Watch WebSocket/u);
   assert.match(activeState, /完全采用自测试模式/u);
-  assert.match(activeState, /用户人工 Watch 真机测试不作为阶段计划、推进条件或验收门槛/u);
+  assert.match(activeState, /不要安排、请求或依赖用户人工 Watch 真机测试作为阶段计划、推进条件、验收门槛或常规反馈循环/u);
   assert.match(activeState, /DeepResponseWatchLab/u);
   assert.match(activeState, /Quick Response/u);
   assert.doesNotMatch(activeState, /WebSocket Spike Rules|feasibility spike|只允许做隔离 feasibility spike/u);
