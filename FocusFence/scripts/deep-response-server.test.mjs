@@ -1425,6 +1425,59 @@ test("DeepResponse HTTP session can persist memory candidate to JSONL", async ()
   }
 });
 
+test("DeepResponse HTTP session does not persist empty memory summaries to JSONL", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "deep-response-empty-memory-"));
+  const memoryPath = join(tempDir, "memory.jsonl");
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    env: {
+      DEEP_RESPONSE_MEMORY_JSONL_PATH: memoryPath
+    },
+    createPipeline: () => ({
+      async *streamSegmented({ audioChunks }) {
+        for await (const _chunk of audioChunks) {
+          // Drain upload stream before replying.
+        }
+        yield { type: "transcript_final", transcript: "拜拜" };
+        yield {
+          type: "segment",
+          segment: "first",
+          text: "好的，拜拜。",
+          audioChunks: [Buffer.from("goodbye-audio")]
+        };
+        yield { type: "timing", timing: {}, providerMeta: {} };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {});
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+
+    await postBytes(`${base}/audio?turn_id=turn-empty-memory&seq=0`, Buffer.from("bye"));
+    await postJSON(`${base}/input-stop`, { turnID: "turn-empty-memory" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "memory_candidate");
+    });
+
+    const events = await fetchJSON(`${base}/events?cursor=0`);
+    const memory = events.events.find((event) => event.type === "memory_candidate");
+    assert.equal(memory.summary, "");
+    assert.equal(memory.persisted, false);
+    assert.equal(memory.store, "jsonl");
+    assert.equal(memory.path, memoryPath);
+    assert.throws(() => readFileSync(memoryPath, "utf8"), /ENOENT/);
+  } finally {
+    await server.close();
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test("DeepResponse HTTP session excludes goodbye-only lines from memory candidate", async () => {
   const server = await startDeepResponseServer({
     port: 0,

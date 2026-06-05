@@ -902,6 +902,45 @@ test("VoicePipeline streamCascadeTurn removes dangling modal particles after nor
   assert.deepEqual(ttsTexts, ["我听见你真的累了。", "“主必赐你平安。”"]);
 });
 
+test("VoicePipeline streamCascadeTurn removes repeated modal typo before speech", async () => {
+  const spokenTexts = [];
+  const asr = {
+    async *transcribeStream() {
+      yield { type: "transcript_final", transcript: "今天我有点累，想听一句安慰的话。" };
+    }
+  };
+  const llm = {
+    async *streamTokens() {
+      yield { type: "delta", delta: "不用硬撑着。主会赐下吗吗安息，让你恢复精力。" };
+      yield { type: "done", timing: { llm_total_ms: 700 } };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      spokenTexts.push(text);
+      yield { type: "audio_chunk", audioChunk: Buffer.from(text), sampleRate: 24000 };
+      yield { type: "done", timing: { tts_first_audio_ms: 10 } };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 1, 2, 3]) });
+  const events = [];
+  for await (const event of pipeline.streamCascadeTurn({
+    audioChunks: [Buffer.from("voice")],
+    maxSpokenReplyChars: 48
+  })) {
+    events.push(event);
+  }
+
+  const text = events
+    .filter((event) => event.type === "assistant_text_delta")
+    .map((event) => event.delta)
+    .join("");
+  assert.equal(text, "不用硬撑着。主会赐下安息，让你恢复精力。");
+  assert.doesNotMatch(text, /吗吗/u);
+  assert.deepEqual(spokenTexts, ["不用硬撑着。", "主会赐下安息，让你恢复精力。"]);
+});
+
 test("VoicePipeline streamCascadeTurn removes dangling la particle after normalized tired opening", async () => {
   const spokenTexts = [];
   const asr = {

@@ -27,7 +27,7 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
     "--expect-abort-next-turn",
     "--expect-memory-recalled",
     "--expect-memory-persisted",
-    "--expect-idle-memory-persisted",
+    "--expect-idle-memory-candidate",
     "--expect-llm-started-from-partial",
     "--expect-ark-model", "doubao-seed-character-251128",
     "--expect-ark-fallback-model", "",
@@ -47,7 +47,8 @@ test("parseHTTPSmokeArgs accepts cascade pipeline mode", () => {
   assert.equal(args.expectAbortNextTurn, true);
   assert.equal(args.expectMemoryRecalled, true);
   assert.equal(args.expectMemoryPersisted, true);
-  assert.equal(args.expectIdleMemoryPersisted, true);
+  assert.equal(args.expectIdleMemoryCandidate, true);
+  assert.equal(args.expectIdleMemoryPersisted, false);
   assert.equal(args.expectLLMStartedFromPartial, true);
   assert.equal(args.expectArkModel, "doubao-seed-character-251128");
   assert.equal(args.expectArkFallbackModel, "");
@@ -232,19 +233,19 @@ test("runHTTPIdleProbe can require gentle idle goodbye audio before session end"
       idleObserveMs: 1_000,
       pollMs: 25,
       idleGoodbye: true,
-      expectMemoryPersisted: true
+      expectMemoryCandidate: true
     });
 
     assert.equal(summary.ok, true);
     assert.equal(summary.endReason, "idle_timeout");
     assert.equal(summary.idleGoodbye.text.includes("拜拜"), true);
     assert.equal(summary.idleGoodbye.audioChunks, 1);
-    assert.equal(summary.memoryCandidate.persisted, true);
+    assert.equal(summary.memoryCandidate.persisted, false);
     assert.equal(summary.memoryCandidate.store, "jsonl");
     assert.equal(summary.memoryCandidate.reason, "idle_timeout");
     assert.equal(typeof summary.memoryCandidate.summary, "string");
     assert.doesNotMatch(summary.memoryCandidate.summary, /我先安静到这里|愿你平安|拜拜/u);
-    assert.equal(existsSync(memoryPath), true);
+    assert.equal(existsSync(memoryPath), false);
   } finally {
     await server.close();
   }

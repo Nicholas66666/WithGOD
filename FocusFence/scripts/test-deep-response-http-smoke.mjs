@@ -31,6 +31,7 @@ export function parseHTTPSmokeArgs(argv) {
     expectAbortNextTurn: false,
     expectMemoryRecalled: false,
     expectMemoryPersisted: false,
+    expectIdleMemoryCandidate: false,
     expectIdleMemoryPersisted: false,
     expectLLMStartedFromPartial: false,
     expectArkModel: "",
@@ -92,6 +93,8 @@ export function parseHTTPSmokeArgs(argv) {
       args.expectMemoryRecalled = true;
     } else if (arg === "--expect-memory-persisted") {
       args.expectMemoryPersisted = true;
+    } else if (arg === "--expect-idle-memory-candidate") {
+      args.expectIdleMemoryCandidate = true;
     } else if (arg === "--expect-idle-memory-persisted") {
       args.expectIdleMemoryPersisted = true;
     } else if (arg === "--expect-llm-started-from-partial") {
@@ -170,6 +173,7 @@ export async function runHTTPSmokeProbe(args) {
     idleObserveMs: args.idleObserveMs,
     pollMs: args.pollMs,
     idleGoodbye: args.idleGoodbye,
+    expectMemoryCandidate: args.expectIdleMemoryCandidate || args.expectIdleMemoryPersisted,
     expectMemoryPersisted: args.expectIdleMemoryPersisted
   }), {
     attempts: args.retries + 1,
@@ -366,6 +370,7 @@ export async function runHTTPIdleProbe({
   idleObserveMs = 2_000,
   pollMs = 50,
   idleGoodbye = false,
+  expectMemoryCandidate = false,
   expectMemoryPersisted = false
 }) {
   const created = await postJSON(buildURL(endpoint, "/deep-response/sessions"), {
@@ -390,6 +395,7 @@ export async function runHTTPIdleProbe({
     audioChunks.push(...audioBatch.chunks);
     if (
       events.some((event) => event.type === "session_end" && event.reason === "idle_timeout")
+      && (!expectMemoryCandidate || memoryCandidate)
       && (!expectMemoryPersisted || memoryCandidate?.persisted === true)
     ) {
       break;
@@ -417,7 +423,9 @@ export async function runHTTPIdleProbe({
   const sawIdleGoodbyeDone = events.some((event) => event.type === "audio_done" && event.reason === "idle_goodbye_complete");
   const idleGoodbyeOK = !idleGoodbye || (idleGoodbyeText.length > 0 && sawIdleGoodbyeDone && audioChunks.length > 0);
   const memoryClosureClean = !memoryCandidate || !hasClosureMemoryText(memoryCandidate.summary);
-  const memoryOK = !expectMemoryPersisted || (memoryCandidate?.persisted === true && memoryClosureClean);
+  const memoryCandidateOK = !expectMemoryCandidate || Boolean(memoryCandidate);
+  const memoryPersistedOK = !expectMemoryPersisted || memoryCandidate?.persisted === true;
+  const memoryOK = memoryCandidateOK && memoryPersistedOK && memoryClosureClean;
   return {
     ok: sawIdleEnd && rejected.status === 409 && rejectedBody?.error === "session_ended" && idleGoodbyeOK && memoryOK,
     sessionID: created.sessionID,
@@ -443,8 +451,9 @@ export async function runHTTPIdleProbe({
       closureClean: memoryClosureClean
     } : null,
     expectations: {
+      memoryCandidate: expectMemoryCandidate,
       memoryPersisted: expectMemoryPersisted,
-      memoryClosureClean: idleGoodbye && expectMemoryPersisted
+      memoryClosureClean: idleGoodbye && (expectMemoryCandidate || expectMemoryPersisted)
     }
   };
 }
@@ -547,6 +556,7 @@ Options:
   --expect-abort-next-turn         Require abort probe to complete another turn in the same session.
   --expect-memory-recalled         Require conversation probe to recall persisted memory into context.
   --expect-memory-persisted        Require conversation probe to persist a memory candidate after /end.
+  --expect-idle-memory-candidate   Require idle timeout probe to emit a clean memory candidate.
   --expect-idle-memory-persisted   Require idle timeout probe to persist a memory candidate.
   --expect-llm-started-from-partial
                                    Require every conversation turn to start LLM from usable ASR partial.

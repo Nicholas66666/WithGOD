@@ -2224,6 +2224,23 @@ Latest S6 recalled-memory story-analogy sanitization gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This is an S6 memory-quality update; Watch transport remains HTTP-only, WebSocket is fully out of scope, and no user-operated Watch test was required.
 
+Latest S6 empty-memory persistence and repeated-modal typo gates:
+- Empty HTTP session memory summaries are now diagnostic-only. `persistHTTPSessionMemoryCandidate()` returns `persisted: false` with `store: "jsonl"` / `path` when the cleaned summary is empty, so idle-goodbye or goodbye-only sessions do not append empty rows to the JSONL memory store.
+- The standard Fire/Volcengine smoke gate now uses `--expect-idle-memory-candidate` for idle timeout memory diagnostics instead of requiring `--expect-idle-memory-persisted`. This preserves closure-clean validation while avoiding empty long-term memory writes.
+- A remote full self-test exposed the spoken typo `吗吗` in assistant text. `VoicePipeline.streamCascadeTurn()` now removes repeated `吗` typo sequences before text/audio emission, and the standard Fire/Volcengine smoke and 8-turn gates now forbid `吗吗`.
+- Verification:
+  - RED `node --test --test-name-pattern "does not persist empty memory summaries" scripts/deep-response-server.test.mjs` first failed because empty summaries were persisted as JSONL.
+  - RED `node --test --test-name-pattern "repeated modal typo" scripts/deep-response/pipeline/voice-pipeline.test.mjs` first failed because `主会赐下吗吗安息` reached assistant text/TTS unchanged.
+  - `node --test --test-name-pattern "memory candidate|persist memory|empty memory|recalled memory|memory summaries|memory recall" scripts/deep-response-server.test.mjs`: `8/8` passed.
+  - `node --test --test-name-pattern "repeated modal typo|full smoke gate|conversation gate" scripts/deep-response/pipeline/voice-pipeline.test.mjs scripts/package-scripts.test.mjs`: `3/3` passed.
+  - `npm run test:node`: `231/231` passed.
+  - `npm run deep:selftest:full`: passed end to end after direct Fire/Volcengine ECS sync.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `293ms`, `179ms`; idle memory candidate `persisted: false`, `store: jsonl`, `summary: ""`, `closureClean: true`; `llm_started_from_partial: 1` on both turns; abort stale audio chunks/bytes: `0` / `0`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `258ms`, `239ms`, `279ms`, `260ms`, `331ms`, `250ms`, `272ms`, `248ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This is an S6 memory/quality self-test update; Watch transport remains HTTP-only, WebSocket is fully out of scope, and no user-operated Watch test was required.
+
 - Unit and server tests:
   - `npm run test:node`
 

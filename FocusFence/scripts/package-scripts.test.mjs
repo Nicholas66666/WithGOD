@@ -15,7 +15,8 @@ test("package exposes standard Fire Volcengine DeepResponse full smoke gate", ()
   assert.match(command, /--idle-goodbye/);
   assert.match(command, /--expect-memory-recalled/);
   assert.match(command, /--expect-memory-persisted/);
-  assert.match(command, /--expect-idle-memory-persisted/);
+  assert.match(command, /--expect-idle-memory-candidate/);
+  assert.doesNotMatch(command, /--expect-idle-memory-persisted/);
   assert.match(command, /--expect-abort-next-turn/);
   assert.match(command, /--expect-llm-started-from-partial/);
   assert.match(command, /--expect-ark-model doubao-seed-character-251128/);
@@ -27,6 +28,7 @@ test("package exposes standard Fire Volcengine DeepResponse full smoke gate", ()
   assert.match(command, /给你\(找\|读\)一句/);
   assert.match(command, /你又\(\?:觉得\|感到\)\(\?:累\|疲惫\)/);
   assert.match(command, /啦。/);
+  assert.match(command, /吗吗/);
   assert.match(command, /--forbid-text-pattern '从哪卷书\|哪卷书\.\*开始\|哪句经文\.\*开始'/);
   assert.match(command, /--forbid-text-pattern '从哪里开始\|想从哪里开始'/);
   assert.match(command, /--forbid-text-pattern '《\[\^》\]\+》\(\?:里\)\?说\|经上说\|圣经说\|主说\|神说\|耶稣说'/);

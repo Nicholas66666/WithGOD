@@ -1211,6 +1211,13 @@ async function persistHTTPSessionMemoryCandidate(session, candidate) {
   if (!jsonlPath) {
     return { persisted: false };
   }
+  if (!String(candidate?.summary || "").trim()) {
+    return {
+      persisted: false,
+      store: "jsonl",
+      path: jsonlPath
+    };
+  }
   try {
     const persistedCandidate = {
       ...candidate,
