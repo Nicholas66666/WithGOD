@@ -2355,6 +2355,16 @@ Latest WatchLab simulator fixture bounded-drain gate:
   - `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
 - This is a WatchLab simulator/source/build self-test hardening update only; no server deploy, WebSocket work, or user-operated Watch test was required.
 
+Latest WatchLab session-end playback-active state-machine gate:
+- Strengthened the scriptable Watch continuous-mode state model for an ordering edge that can happen around first audio/session closure.
+- If `session_end` arrives while local playback is already active but the visible state is still `assistantThinking`, the model now waits for playback drain instead of finalizing immediately. This matches Swift's `markSessionEnded()` behavior, which checks `client.isHTTPSessionPlaybackActive` directly.
+- Verification:
+  - RED `node --test --test-name-pattern "playback is active before speaking" scripts/deep-response/lib/watch-continuous-state-machine.test.mjs` first failed because the model emitted `finalize_session_end`.
+  - Focused command passed after implementation: `node --test --test-name-pattern "session end waits for playback drain|session end during assistant playback" scripts/deep-response/lib/watch-continuous-state-machine.test.mjs`.
+  - `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`: `66/66` passed.
+  - `npm run test:node`: `243/243` passed.
+- This is a WatchLab state-model self-test update only; no server deploy, WebSocket work, or user-operated Watch test was required.
+
 - Unit and server tests:
   - `npm run test:node`
 
