@@ -79,20 +79,23 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `223/223` passed.
+- Node self-tests: `226/226` passed.
 - Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply, lookup-style-comfort, harsh repeated-comfort, mechanical tired/fatigue, incomplete-utterance, `是还想听`, formulaic scripture lead-in, awkward spoken-opening, and dangling `啦。` gates enabled.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
 - Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
 - Fire/Volcengine partial-ASR LLM start: `llm_started_from_partial: 1` on both standard smoke turns.
-- Fire/Volcengine smoke stop-to-first-audio: `219ms`, `204ms`.
+- Fire/Volcengine smoke stop-to-first-audio: `219ms`, `215ms`.
 - Fire/Volcengine repeated reply failures: `[]`.
 - Fire/Volcengine forbidden lookup/harsh/mechanical comfort failures: `[]`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`, `summary: ""`, `closureClean: true`.
 - Fire/Volcengine 8-turn continuous conversation gate now uses realtime upload pacing (`--upload-sleep-ms 1000`) and `--max-stop-to-first-audio-ms 1000`.
 - Fire/Volcengine 8-turn continuous conversation gate: passed with `session_end` reason `user_goodbye`, `memoryRecalled.count: 3`, `memory_candidate.persisted: true`, `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, and late audio `409 session_ended`.
-- Fire/Volcengine 8-turn stop-to-first-audio: `208ms`, `211ms`, `218ms`, `231ms`, `231ms`, `209ms`, `219ms`, `213ms`.
+- Fire/Volcengine 8-turn stop-to-first-audio: `214ms`, `229ms`, `234ms`, `227ms`, `347ms`, `311ms`, `326ms`, `257ms`.
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
+- Latest target-text correction confirmed: Watch WebSocket is fully out of scope, not a spike/fallback/benchmark path. Development and phase progression use automated local/server/remote/build checks only; user-operated Watch testing is not a required gate.
+- Latest WatchLab assistant-thinking barge-in gate: pressing the mic while the Watch is in `assistantThinking` now aborts the active generation and starts barge-in recording in continuous mode. The scriptable state machine and Swift source gate cover this, and full `npm run deep:selftest:full` passed. No user-operated Watch test was required.
+- Latest biblical-story analogy quality gate: `VoicePipeline.streamCascadeTurn()` removes story-style analogies before assistant text/audio emission, and the standard Fire/Volcengine smoke plus 8-turn gates now forbid `大卫.*歌利亚`, `摩西.*杖`, `耶路撒冷城墙`, `牧人引领羊群`, `约书亚`, and `以利亚`. Full `npm run deep:selftest:full` passed after direct ECS sync. No user-operated Watch test was required.
 - Latest WatchLab post-continuous-off playback gate: if continuous mode is turned off while the current HTTP response is still in flight, the first streamed audio still moves the local UI into `assistantSpeaking`, and playback drain returns non-continuous state to `listening` instead of restarting auto-listen. This keeps the debug UI aligned with actual playback while stopping only the hands-free loop. Full `npm run deep:selftest:full` passed with Node `223/223`, Fire/Volcengine smoke `219ms` / `204ms`, 8-turn stop-to-first-audio `208ms`, `211ms`, `218ms`, `231ms`, `231ms`, `209ms`, `219ms`, `213ms`, and WatchLab `BUILD SUCCEEDED`. No user-operated Watch test was required.
 - Latest WatchLab continuous-off thinking gate: turning continuous mode off while the Watch is in `assistantThinking` / waiting-for-response now clears waiting state and returns the local debug UI to `listening`, without aborting the in-flight HTTP turn or stopping future audio. The RED tests first showed the state machine stuck in `assistantThinking` and Swift had no toggle branch; full `npm run deep:selftest:full` passed with Node `221/221`, Fire/Volcengine smoke `211ms` / `208ms`, 8-turn stop-to-first-audio `233ms`, `231ms`, `224ms`, `238ms`, `244ms`, `217ms`, `226ms`, `223ms`, and WatchLab `BUILD SUCCEEDED`. No user-operated Watch test was required.
 - Latest target-text correction: Watch-side WebSocket is completely out of scope. DeepResponse Watch/server transport remains HTTP-only, and phase progression uses self-tests rather than user-operated Watch testing.

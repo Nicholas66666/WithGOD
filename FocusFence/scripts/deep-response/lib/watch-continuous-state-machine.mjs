@@ -338,6 +338,33 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
   }
 
   if (event.type === "mic_pressed") {
+    if (state.conversationState === "assistantThinking" && !state.isHTTPSessionEnded && !state.lastError) {
+      const canAbort = event.canAbort !== false;
+      if (canAbort) {
+        actions.push("post_abort:background");
+      }
+      if (state.isContinuousMode) {
+        actions.push("start_recording:barge_in");
+        return {
+          state: {
+            ...state,
+            isRecording: true,
+            isWaitingForResponse: false,
+            conversationState: "userSpeaking"
+          },
+          actions
+        };
+      }
+      return {
+        state: {
+          ...state,
+          isRecording: false,
+          isWaitingForResponse: false,
+          conversationState: "listening"
+        },
+        actions
+      };
+    }
     if (state.conversationState === "assistantSpeaking" && !state.isHTTPSessionEnded && !state.lastError) {
       const canAbort = event.canAbort !== false;
       actions.push("local_stop_playback");

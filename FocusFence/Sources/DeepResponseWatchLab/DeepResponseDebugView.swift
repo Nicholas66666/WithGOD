@@ -205,7 +205,7 @@ struct DeepResponseDebugView: View {
         }
 
         if client.canAbortHTTPSessionTurn,
-           (conversationState == .assistantSpeaking || client.isHTTPSessionPlaybackActive) {
+           (conversationState == .assistantThinking || conversationState == .assistantSpeaking || client.isHTTPSessionPlaybackActive) {
             await abortCurrentTurn()
             return
         }

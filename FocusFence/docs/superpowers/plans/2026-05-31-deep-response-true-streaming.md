@@ -12,6 +12,8 @@
 
 **2026-06-05 correction:** Watch WebSocket is completely out of scope for the current target text. Do not spend implementation time on Watch WebSocket feasibility, fallback, spike, benchmark, comparison, or validation work. The Watch-side transport goal is HTTP only. Development proceeds in completely self-test mode; user-operated Watch testing is not part of the implementation plan, phase gate, or required validation loop.
 
+**2026-06-05 latest target-text correction:** Treat the previous line as absolute: no Watch WebSocket work at all. Also treat self-testing as the default and required development mode. Phase progression must be decided by automated local Node tests, source gates, provider fixtures, Fire/Volcengine remote smoke/conversation gates, simulator/source checks where available, and watchOS builds, not by asking the user to operate a Watch.
+
 ---
 
 ## Current Baseline
@@ -103,7 +105,9 @@ Latest full self-test update:
 - Added conversation-level `--forbid-text-pattern` support so long continuous probes reject lookup-style, harsh repeated-comfort, and mechanical tired/fatigue replies in turn text and memory summaries, not only in the 2-turn smoke.
 - Added memory recall sanitization for lookup-style, harsh repeated-comfort, and mechanical tired/fatigue phrases before persisted summaries enter LLM context.
 - Added VoicePipeline output normalization so lookup-style, harsh repeated-comfort, and mechanical tired/fatigue openings are corrected before `assistant_text_delta`, `assistant_phrase`, and TTS audio.
-- Latest `npm run deep:selftest:full`: passed; Node `205/205`, nested Fire/Volcengine smoke stop-to-first-audio `216ms` / `231ms`, 8-turn continuous gate `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
+- Latest `npm run deep:selftest:full`: passed; Node `226/226`, nested Fire/Volcengine smoke stop-to-first-audio `219ms` / `215ms`, 8-turn continuous stop-to-first-audio `214ms`, `229ms`, `234ms`, `227ms`, `347ms`, `311ms`, `326ms`, `257ms`, `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, and DeepResponseWatchLab `BUILD SUCCEEDED`.
+- Latest WatchLab S5 update: pressing the mic during `assistantThinking` now follows the same local-first continuous barge-in policy as active speech: abort active generation in the background and immediately start the next recording. Covered by scriptable state-machine and Swift source gates.
+- Latest spoken-quality gate: standard Fire/Volcengine smoke and 8-turn conversation now forbid biblical story analogies including `大卫.*歌利亚`, `摩西.*杖`, `耶路撒冷城墙`, `牧人引领羊群`, `约书亚`, and `以利亚`; `VoicePipeline.streamCascadeTurn()` strips matching analogy tails before assistant text/audio emission.
 
 ## Next Target: Full Streaming Pipeline
 

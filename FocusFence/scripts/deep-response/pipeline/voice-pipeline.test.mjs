@@ -1064,6 +1064,62 @@ test("VoicePipeline streamCascadeTurn removes generic scripture lead-in before s
   assert.deepEqual(ttsTexts, ["那咱缓缓。", "“我的帮助从造天地的耶和华而来。”"]);
 });
 
+test("VoicePipeline streamCascadeTurn removes biblical story analogies before speech", async () => {
+  const ttsTexts = [];
+  const asr = {
+    async *transcribeStream() {
+      yield { type: "transcript_final", transcript: "今天我很累，想听一句安慰。", timing: { transcript_final_ms: 1000 } };
+    }
+  };
+  const llm = {
+    async *streamTokens() {
+      yield { type: "delta", delta: "那今天就松快些。主会赐给你力量，像大卫面对歌利亚时那样。" };
+      yield { type: "delta", delta: "不用硬撑着。主会赐下能力，像给摩西的杖那样。" };
+      yield { type: "delta", delta: "先把这口气放下。主会赐下歇息的地方，像给以利亚的那棵树。" };
+      yield { type: "delta", delta: "那咱就歇会儿。主会赐下平安，像赐给约书亚的那地。" };
+      yield { type: "done", timing: { llm_first_token_ms: 100, llm_total_ms: 200 } };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      ttsTexts.push(text);
+      yield { type: "audio_chunk", audioChunk: Buffer.from(`${text}:audio`), sampleRate: 24000 };
+      yield { type: "done", timing: { tts_first_audio_ms: 80 }, connectID: "tts-biblical-analogy" };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20, 30]) });
+  const events = [];
+  for await (const event of pipeline.streamCascadeTurn({
+    audioChunks: [Buffer.from("voice")],
+    turnID: "turn-1",
+    generationID: "gen-1",
+    maxSpokenReplyChars: 160
+  })) {
+    events.push(event);
+  }
+
+  const text = events
+    .filter((event) => event.type === "assistant_text_delta")
+    .map((event) => event.delta)
+    .join("");
+  assert.equal(
+    text,
+    "那今天就松快些。主会赐给你力量。不用硬撑着。主会赐下能力。先把这口气放下。主会赐下歇息的地方。那咱就歇会儿。主会赐下平安。"
+  );
+  assert.doesNotMatch(text, /大卫|歌利亚|摩西|耶路撒冷城墙|牧人引领羊群|以利亚|约书亚/u);
+  assert.deepEqual(ttsTexts, [
+    "那今天就松快些。",
+    "主会赐给你力量。",
+    "不用硬撑着。",
+    "主会赐下能力。",
+    "先把这口气放下。",
+    "主会赐下歇息的地方。",
+    "那咱就歇会儿。",
+    "主会赐下平安。"
+  ]);
+});
+
 test("VoicePipeline streamCascadeTurn keeps reading LLM while first phrase TTS is active", async () => {
   let releaseFirstTTSDone;
   const firstTTSDoneGate = new Promise((resolve) => {

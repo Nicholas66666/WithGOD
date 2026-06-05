@@ -199,6 +199,24 @@ test("mic press during assistant speaking performs local-first barge-in", () => 
   ]);
 });
 
+test("mic press during assistant thinking aborts generation and starts barge-in", () => {
+  const result = simulateDeepResponseWatchEvents([
+    { type: "toggle_continuous", enabled: true },
+    { type: "recording_started" },
+    { type: "recording_finished", playbackActive: true },
+    { type: "mic_pressed" }
+  ]);
+
+  assert.equal(result.state.conversationState, "userSpeaking");
+  assert.equal(result.state.isRecording, true);
+  assert.equal(result.state.isWaitingForResponse, false);
+  assert.deepEqual(result.actions, [
+    "wait_for_playback",
+    "post_abort:background",
+    "start_recording:barge_in"
+  ]);
+});
+
 test("mic press during post-turn playback stops local audio without server abort", () => {
   const result = simulateDeepResponseWatchEvents([
     { type: "toggle_continuous", enabled: true },

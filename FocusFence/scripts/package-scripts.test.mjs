@@ -23,6 +23,7 @@ test("package exposes standard Fire Volcengine DeepResponse full smoke gate", ()
   assert.match(command, /--forbid-identical-consecutive-replies/);
   assert.match(command, /--forbid-text-pattern '大卫\.\*歌利亚'/);
   assert.match(command, /--forbid-text-pattern '你知道\.\*为什么'/);
+  assert.match(command, /--forbid-text-pattern '摩西\.\*杖\|耶路撒冷城墙\|牧人引领羊群\|约书亚\|以利亚'/);
   assert.match(command, /给你\(找\|读\)一句/);
   assert.match(command, /你又\(\?:觉得\|感到\)\(\?:累\|疲惫\)/);
   assert.match(command, /啦。/);
@@ -65,6 +66,9 @@ test("package exposes standard Fire Volcengine DeepResponse continuous conversat
   assert.match(command, /--max-assistant-reply-chars 48/);
   assert.match(command, /--min-assistant-reply-chars 8/);
   assert.match(command, /--max-stop-to-first-audio-ms 1000/);
+  assert.match(command, /--forbid-text-pattern '大卫\.\*歌利亚'/);
+  assert.match(command, /--forbid-text-pattern '你知道\.\*为什么'/);
+  assert.match(command, /--forbid-text-pattern '摩西\.\*杖\|耶路撒冷城墙\|牧人引领羊群\|约书亚\|以利亚'/);
   assert.match(command, /给你\(找\|读\)一句/);
   assert.match(command, /你又\(\?:觉得\|感到\)\(\?:累\|疲惫\)/);
   assert.match(command, /啦。/);

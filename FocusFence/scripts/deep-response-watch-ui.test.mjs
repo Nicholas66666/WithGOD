@@ -281,8 +281,13 @@ test("DeepResponse Watch continuous barge-in starts recording before abort ack",
 
 test("DeepResponse Watch mic press during assistant speech triggers local-first barge-in", () => {
   const toggleFunction = debugViewSource.match(/private func toggleMicrophoneTurn\(\) async \{[\s\S]*?\n    \}/)?.[0] || "";
-  assert.match(toggleFunction, /if client\.canAbortHTTPSessionTurn,[\s\S]*?\(conversationState == \.assistantSpeaking \|\| client\.isHTTPSessionPlaybackActive\) \{[\s\S]*?await abortCurrentTurn\(\)[\s\S]*?return/);
+  assert.match(toggleFunction, /if client\.canAbortHTTPSessionTurn,[\s\S]*?conversationState == \.assistantSpeaking[\s\S]*?client\.isHTTPSessionPlaybackActive[\s\S]*?await abortCurrentTurn\(\)[\s\S]*?return/);
   assert.doesNotMatch(toggleFunction, /await startRecordingTurn\(reason: "Recording"\)[\s\S]*?if client\.canAbortHTTPSessionTurn/);
+});
+
+test("DeepResponse Watch mic press during assistant thinking aborts generation", () => {
+  const toggleFunction = debugViewSource.match(/private func toggleMicrophoneTurn\(\) async \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(toggleFunction, /if client\.canAbortHTTPSessionTurn,[\s\S]*?\(conversationState == \.assistantThinking \|\| conversationState == \.assistantSpeaking \|\| client\.isHTTPSessionPlaybackActive\) \{[\s\S]*?await abortCurrentTurn\(\)[\s\S]*?return/);
 });
 
 test("DeepResponse Watch mic press during post-turn playback stops local audio", () => {
