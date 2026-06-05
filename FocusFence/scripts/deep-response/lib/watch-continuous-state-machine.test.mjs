@@ -48,6 +48,37 @@ test("continuous loop enters assistantSpeaking when first audio arrives", () => 
   assert.deepEqual(result.actions, ["wait_for_playback"]);
 });
 
+test("late first audio is ignored while a new local recording is active", () => {
+  const afterFirstAudio = applyDeepResponseWatchEvent({
+    isContinuousMode: false,
+    isRecording: true,
+    isWaitingForResponse: false,
+    isHTTPSessionEnded: false,
+    lastError: null,
+    conversationState: "userSpeaking"
+  }, { type: "first_audio_received" });
+
+  assert.equal(afterFirstAudio.state.conversationState, "userSpeaking");
+  assert.equal(afterFirstAudio.state.isRecording, true);
+  assert.deepEqual(afterFirstAudio.actions, []);
+});
+
+test("late first audio is ignored after a local HTTP session error", () => {
+  const afterFirstAudio = applyDeepResponseWatchEvent({
+    isContinuousMode: false,
+    isRecording: false,
+    isWaitingForResponse: true,
+    isHTTPSessionEnded: false,
+    lastError: "HTTP session failed",
+    conversationState: "assistantThinking"
+  }, { type: "first_audio_received" });
+
+  assert.equal(afterFirstAudio.state.conversationState, "assistantThinking");
+  assert.equal(afterFirstAudio.state.isWaitingForResponse, true);
+  assert.equal(afterFirstAudio.state.lastError, "HTTP session failed");
+  assert.deepEqual(afterFirstAudio.actions, []);
+});
+
 test("continuous loop restarts immediately when a turn has no queued playback", () => {
   const result = simulateDeepResponseWatchEvents([
     { type: "toggle_continuous", enabled: true },

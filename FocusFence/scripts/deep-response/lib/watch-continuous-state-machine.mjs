@@ -246,6 +246,9 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
   }
 
   if (event.type === "first_audio_received") {
+    if (state.isRecording || state.lastError) {
+      return { state, actions };
+    }
     if (state.isHTTPSessionEnded) {
       return {
         state: {
