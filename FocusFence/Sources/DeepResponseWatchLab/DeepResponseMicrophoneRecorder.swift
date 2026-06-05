@@ -16,11 +16,13 @@ final class DeepResponseMicrophoneRecorder {
     private var chunks: [Data] = []
     private var onChunk: ((Data) -> Void)?
     private var onSilence: (() -> Void)?
+    private var onVoiceStart: (() -> Void)?
     private var configuration = Configuration()
     private var recordingStartedAt: Date?
     private var speechStartedAt: Date?
     private var lastVoiceAt: Date?
     private var didEmitSilence = false
+    private var didEmitVoiceStart = false
     private var isRunning = false
     #if targetEnvironment(simulator)
     private var simulatedMicTask: Task<Void, Never>?
@@ -29,7 +31,8 @@ final class DeepResponseMicrophoneRecorder {
     func start(
         configuration: Configuration = .init(),
         onChunk: ((Data) -> Void)? = nil,
-        onSilence: (() -> Void)? = nil
+        onSilence: (() -> Void)? = nil,
+        onVoiceStart: (() -> Void)? = nil
     ) async throws {
         guard !isRunning else {
             return
@@ -45,7 +48,7 @@ final class DeepResponseMicrophoneRecorder {
         try await requestRecordPermission()
 
         let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.playAndRecord, mode: .spokenAudio)
+        try session.setCategory(.playAndRecord, mode: .voiceChat, options: [])
         try session.setActive(true)
 
         let input = engine.inputNode
@@ -66,11 +69,13 @@ final class DeepResponseMicrophoneRecorder {
             chunks = []
             self.onChunk = onChunk
             self.onSilence = onSilence
+            self.onVoiceStart = onVoiceStart
             self.configuration = configuration
             recordingStartedAt = Date()
             speechStartedAt = nil
             lastVoiceAt = nil
             didEmitSilence = false
+            didEmitVoiceStart = false
         }
         self.converter = converter
         self.targetFormat = targetFormat
@@ -102,10 +107,12 @@ final class DeepResponseMicrophoneRecorder {
         queue.sync {
             onChunk = nil
             onSilence = nil
+            onVoiceStart = nil
             recordingStartedAt = nil
             speechStartedAt = nil
             lastVoiceAt = nil
             didEmitSilence = false
+            didEmitVoiceStart = false
         }
         try? AVAudioSession.sharedInstance().setActive(false, options: [])
 
@@ -128,11 +135,13 @@ final class DeepResponseMicrophoneRecorder {
             chunks = []
             self.onChunk = onChunk
             self.onSilence = onSilence
+            self.onVoiceStart = nil
             self.configuration = configuration
             recordingStartedAt = Date()
             speechStartedAt = Date()
             lastVoiceAt = Date()
             didEmitSilence = false
+            didEmitVoiceStart = false
         }
         isRunning = true
         simulatedMicTask = Task { [weak self] in
@@ -244,6 +253,12 @@ final class DeepResponseMicrophoneRecorder {
                 speechStartedAt = now
             }
             lastVoiceAt = now
+            if let speechStartedAt,
+               !didEmitVoiceStart,
+               now.timeIntervalSince(speechStartedAt) * 1_000 >= Double(configuration.minimumSpeechMilliseconds) {
+                didEmitVoiceStart = true
+                onVoiceStart?()
+            }
             return
         }
 

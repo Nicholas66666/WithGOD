@@ -19,6 +19,7 @@ struct DeepResponseDebugView: View {
     @State private var didRunAutorunFixture = false
     @State private var isWaitingForResponse = false
     @State private var isContinuousMode = false
+    @State private var isMonitoringPlaybackBargeIn = false
     @State private var conversationState: DeepResponseConversationState = .listening
     @State private var simulatedMicTurnsRemaining: Int?
 
@@ -142,6 +143,7 @@ struct DeepResponseDebugView: View {
             client.onHTTPSessionPlaybackDrained = nil
             _ = client.beginEndHTTPSessionRuntime(reason: "watch_teardown")
             client.stopHTTPSessionRuntime()
+            stopPlaybackBargeInMonitor()
             if isRecording {
                 _ = recorder.stop()
                 isRecording = false
@@ -192,6 +194,9 @@ struct DeepResponseDebugView: View {
             isWaitingForResponse = false
             conversationState = .listening
         }
+        if !isContinuousMode {
+            stopPlaybackBargeInMonitor()
+        }
         if !isContinuousMode,
            (conversationState == .assistantSpeaking || client.isHTTPSessionPlaybackActive) {
             client.stopHTTPSessionPlaybackForBargeIn()
@@ -233,6 +238,7 @@ struct DeepResponseDebugView: View {
             }
             return
         }
+        stopPlaybackBargeInMonitor()
         do {
             status = "Starting session"
             conversationState = .idleWaiting
@@ -327,6 +333,7 @@ struct DeepResponseDebugView: View {
     }
 
     private func handlePlaybackDrained() {
+        stopPlaybackBargeInMonitor()
         if client.isHTTPSessionEnded {
             markSessionEnded()
             return
@@ -365,10 +372,16 @@ struct DeepResponseDebugView: View {
         }
         isWaitingForResponse = false
         conversationState = .assistantSpeaking
+        if isContinuousMode {
+            startPlaybackBargeInMonitor()
+        }
     }
 
-    private func abortCurrentTurn() async {
+    private func abortCurrentTurn(fromPlaybackMonitor: Bool = false) async {
         let shouldResumeListening = isContinuousMode
+        if fromPlaybackMonitor {
+            stopPlaybackBargeInMonitor()
+        }
         isWaitingForResponse = false
         conversationState = .bargeIn
         let abortTask = client.beginAbortHTTPSessionTurn()
@@ -392,6 +405,7 @@ struct DeepResponseDebugView: View {
     }
 
     private func markSessionEnded() {
+        stopPlaybackBargeInMonitor()
         if isRecording {
             _ = recorder.stop()
         }
@@ -402,6 +416,58 @@ struct DeepResponseDebugView: View {
             return
         }
         conversationState = .ended
+    }
+
+    private func startPlaybackBargeInMonitor() {
+        #if targetEnvironment(simulator)
+        return
+        #else
+        guard isContinuousMode,
+              !isRecording,
+              !isMonitoringPlaybackBargeIn,
+              client.isHTTPSessionPlaybackActive,
+              !client.isHTTPSessionEnded,
+              client.lastError == nil else {
+            return
+        }
+        isMonitoringPlaybackBargeIn = true
+        Task {
+            do {
+                try await recorder.start(
+                    configuration: .init(
+                        isEndpointingEnabled: true,
+                        voiceActivityThreshold: 0.035,
+                        minimumSpeechMilliseconds: 180,
+                        endSilenceMilliseconds: 180
+                    ),
+                    onChunk: nil,
+                    onSilence: nil,
+                    onVoiceStart: {
+                        Task { @MainActor in
+                            guard isMonitoringPlaybackBargeIn,
+                                  client.isHTTPSessionPlaybackActive,
+                                  client.lastError == nil,
+                                  !client.isHTTPSessionEnded else {
+                                return
+                            }
+                            await abortCurrentTurn(fromPlaybackMonitor: true)
+                        }
+                    }
+                )
+            } catch {
+                isMonitoringPlaybackBargeIn = false
+                status = error.localizedDescription
+            }
+        }
+        #endif
+    }
+
+    private func stopPlaybackBargeInMonitor() {
+        guard isMonitoringPlaybackBargeIn else {
+            return
+        }
+        _ = recorder.stop()
+        isMonitoringPlaybackBargeIn = false
     }
 
     private func runAutorunFixtureIfRequested() async {

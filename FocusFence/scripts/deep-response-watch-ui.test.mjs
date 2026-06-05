@@ -50,6 +50,13 @@ test("DeepResponse Watch audio player detaches stopped nodes before reprepare", 
   assert.match(audioPlayerSource, /engine\.detach\(player\)/);
 });
 
+test("DeepResponse Watch playback keeps the shared audio session record-capable", () => {
+  assert.match(audioPlayerSource, /setCategory\(\.playAndRecord,\s*mode: \.voiceChat/);
+  assert.doesNotMatch(audioPlayerSource, /setCategory\(\.playback/);
+  assert.match(recorderSource, /setCategory\(\.playAndRecord,\s*mode: \.voiceChat/);
+  assert.doesNotMatch(recorderSource, /setCategory\(\.playAndRecord,\s*mode: \.spokenAudio/);
+});
+
 test("DeepResponse Watch client exposes HTTP playback-drained callback", () => {
   assert.match(realtimeClientSource, /var onHTTPSessionPlaybackDrained: \(\(\) -> Void\)\?/);
   assert.match(realtimeClientSource, /player\.onPlaybackDrained = \{ \[weak self\] in/);
@@ -101,6 +108,24 @@ test("DeepResponse Watch continuous mode auto-finishes a turn on recorder silenc
   assert.match(debugViewSource, /onSilence: \{/);
   assert.match(debugViewSource, /await finishRecordingTurn\(reason: "Auto silence"\)/);
 });
+
+test("DeepResponse Watch monitors playback for barge-in without uploading speaker output", () => {
+  assert.match(debugViewSource, /@State private var isMonitoringPlaybackBargeIn = false/);
+  assert.match(debugViewSource, /startPlaybackBargeInMonitor\(\)/);
+  assert.match(debugViewSource, /#if targetEnvironment\(simulator\)[\s\S]*?return[\s\S]*?#else[\s\S]*?guard isContinuousMode/);
+  assert.match(debugViewSource, /configuration: \.init\([\s\S]*?isEndpointingEnabled: true,[\s\S]*?voiceActivityThreshold: 0\.035,[\s\S]*?minimumSpeechMilliseconds: 180,[\s\S]*?endSilenceMilliseconds: 180/);
+  assert.match(debugViewSource, /onChunk: nil/);
+  assert.match(debugViewSource, /await abortCurrentTurn\(fromPlaybackMonitor: true\)/);
+  assert.doesNotMatch(debugViewSource, /startPlaybackBargeInMonitor[\s\S]*?client\.enqueueHTTPSessionAudio/);
+});
+
+test("DeepResponse Watch playback monitor is stopped when playback drains or session ends", () => {
+  assert.match(debugViewSource, /private func stopPlaybackBargeInMonitor\(\)/);
+  assert.match(debugViewSource, /handlePlaybackDrained\(\)[\s\S]*?stopPlaybackBargeInMonitor\(\)/);
+  assert.match(debugViewSource, /markSessionEnded\(\)[\s\S]*?stopPlaybackBargeInMonitor\(\)/);
+  assert.match(debugViewSource, /toggleContinuousMode\(\) async[\s\S]*?stopPlaybackBargeInMonitor\(\)/);
+});
+
 
 test("DeepResponse Watch continuous mode resumes after an empty recording", () => {
   const emptyRecordingStart = debugViewSource.indexOf("guard !audio.isEmpty || client.uploadedAudioChunks > 0 else {");
@@ -351,14 +376,14 @@ test("DeepResponse Watch abort records local-first and stale-audio timing traces
 });
 
 test("DeepResponse Watch continuous abort resumes recording as barge-in", () => {
-  const abortFunction = debugViewSource.match(/private func abortCurrentTurn\(\) async \{[\s\S]*?\n    \}/)?.[0] || "";
+  const abortFunction = debugViewSource.match(/private func abortCurrentTurn\([^)]*\) async \{[\s\S]*?\n    \}/)?.[0] || "";
   assert.match(debugViewSource, /let shouldResumeListening = isContinuousMode/);
   assert.doesNotMatch(abortFunction, /isContinuousMode = false/);
   assert.match(debugViewSource, /let abortTask = client\.beginAbortHTTPSessionTurn\(\)[\s\S]*?if shouldResumeListening,[\s\S]*?!client\.isHTTPSessionEnded[\s\S]*?await startRecordingTurn\(reason: "Barge-in recording"\)/);
 });
 
 test("DeepResponse Watch continuous barge-in starts recording before abort ack", () => {
-  const abortFunction = debugViewSource.match(/private func abortCurrentTurn\(\) async \{[\s\S]*?\n    \}/)?.[0] || "";
+  const abortFunction = debugViewSource.match(/private func abortCurrentTurn\([^)]*\) async \{[\s\S]*?\n    \}/)?.[0] || "";
   assert.match(realtimeClientSource, /func beginAbortHTTPSessionTurn\(\) -> Task<Void, Never>\?/);
   assert.match(realtimeClientSource, /let abortTurnID = httpTurnID \?\? ""/);
   assert.match(realtimeClientSource, /let abortGenerationID = httpGenerationID \?\? ""/);
@@ -385,7 +410,7 @@ test("DeepResponse Watch mic press during post-turn playback stops local audio",
 });
 
 test("DeepResponse Watch continuous barge-in handles session end after abort ack", () => {
-  const abortFunction = debugViewSource.match(/private func abortCurrentTurn\(\) async \{[\s\S]*?\n    \}/)?.[0] || "";
+  const abortFunction = debugViewSource.match(/private func abortCurrentTurn\([^)]*\) async \{[\s\S]*?\n    \}/)?.[0] || "";
   const continuousBranch = abortFunction.match(/if shouldResumeListening,[\s\S]*?\{([\s\S]*?)\n        \} else \{/)?.[1] || "";
   assert.match(continuousBranch, /await startRecordingTurn\(reason: "Barge-in recording"\)/);
   assert.match(continuousBranch, /await abortTask\?\.value/);

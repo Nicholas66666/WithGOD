@@ -63,7 +63,7 @@ final class DeepResponseAudioPlayer {
     private func prepareIfNeeded(format: AVAudioFormat) throws {
         guard !isPrepared else { return }
         let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.playback, mode: .spokenAudio)
+        try session.setCategory(.playAndRecord, mode: .voiceChat, options: [])
         try session.setActive(true)
         engine.attach(player)
         engine.connect(player, to: engine.mainMixerNode, format: format)
