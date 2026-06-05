@@ -8,11 +8,11 @@
 
 **Tech Stack:** watchOS SwiftUI, `URLSession` HTTP upload/download, SSE/chunked JSONL/short polling candidates, Node.js HTTP server, Doubao ASR provider, Ark LLM streaming, Doubao bidirectional TTS provider, Fire/Volcengine ECS deployment, Node test runner.
 
-**Testing policy:** This plan is completely self-test. Do not ask the user to operate Apple Watch as a planned validation step. Exhaust Node tests, provider fixtures, local HTTP harnesses, Fire/Volcengine remote smoke tests, source-level Watch checks, simulator autoruns where available, and watchOS builds. User-operated Watch testing is not part of phase progression, phase gates, or acceptance; it is only an optional product-experience spot check when the user explicitly asks for it.
+**Testing policy:** This plan is completely self-test. Do not ask the user to operate Apple Watch as a planned validation step, acceptance step, or normal feedback loop. Exhaust Node tests, provider fixtures, local HTTP harnesses, Fire/Volcengine remote smoke/conversation tests, source-level Watch checks, simulator autoruns where available, and watchOS builds. User-operated Watch testing is outside the development plan and must not be used for phase progression, phase gates, or acceptance.
 
 **2026-06-05 correction:** Watch WebSocket is completely out of scope for the current target text. Do not spend implementation time on Watch WebSocket feasibility, fallback, spike, benchmark, comparison, or validation work. The Watch-side transport goal is HTTP only. Development proceeds in completely self-test mode; user-operated Watch testing is not part of the implementation plan, phase gate, or required validation loop.
 
-**2026-06-05 latest target-text correction:** Treat the previous line as absolute: no Watch WebSocket work at all. Also treat self-testing as the default and required development mode. Phase progression must be decided by automated local Node tests, source gates, provider fixtures, Fire/Volcengine remote smoke/conversation gates, simulator/source checks where available, and watchOS builds, not by asking the user to operate a Watch.
+**2026-06-05 latest target-text correction:** Treat the previous line as absolute: no Watch WebSocket work at all. Also treat self-testing as the required development mode, not just the preferred mode. Phase progression must be decided by automated local Node tests, source gates, provider fixtures, Fire/Volcengine remote smoke/conversation gates, simulator/source checks where available, and watchOS builds, not by asking the user to operate a Watch.
 
 ---
 
@@ -476,13 +476,13 @@ Latest remote results:
 Status: completed for self-test gate. No user-operated Watch test was requested.
 
 Purpose:
-- Validate that the DeepLab Watch client is ready to consume cascade events/audio without UI or playback regressions, using source checks, builds, simulator autoruns where possible, and HTTP smoke tests before any product-experience spot check.
+- Validate that the DeepLab Watch client is ready to consume cascade events/audio without UI or playback regressions, using source checks, builds, simulator autoruns where possible, and HTTP smoke tests.
 
 Implementation:
 - Update Watch Lab only when event schema or cascade mode requires it.
 - Ensure session creation requests `pipelineMode: "cascade"`.
 - Ensure streaming `assistant_text_delta` events append instead of replacing the displayed reply.
-- Install only if a final experience check becomes necessary.
+- Do not use Watch install as a planned validation gate.
 - Keep single-reply fallback available.
 
 Self-test validation:
@@ -764,7 +764,7 @@ Integration gate update 2026-06-04:
   - No WebSocket feasibility or fallback work.
   - Feature flag before any main app entry.
   - Rollback tag before integration.
-  - Product-experience spot check is optional and user-requested.
+  - User-operated Watch testing is outside the development plan and not an integration gate.
 - Added `scripts/deep-response-integration-gate.test.mjs` to keep the gate machine-checkable against current code boundaries.
 - Verification:
   - `node --test scripts/deep-response-integration-gate.test.mjs`: `2/2` passed.
@@ -890,7 +890,7 @@ S6 idle-goodbye memory-sanitization update 2026-06-05:
 - Integration remains blocked by the explicit integration gate until user approval; this update does not touch Quick Response.
 
 Product gate:
-- Only after S1-S5 self-tests pass and any explicitly requested final experience check is acceptable.
+- Only after S1-S5 self-tests pass and the user explicitly approves a separate product-integration plan.
 - User approves whether to integrate into old Watch app or keep separate for more Lab testing.
 
 ## Next Development Shape
@@ -932,7 +932,7 @@ Status: completed.
 
 Purpose:
 - Prove progressive provider behavior and HTTP session semantics without Watch.
-- Reduce risk before any optional final experience check.
+- Reduce risk through self-tests before any product integration decision.
 
 Implementation:
 - Add provider streamability harness.
@@ -1031,7 +1031,7 @@ Completed:
 
 Remaining:
 
-- None for the current self-test gate. A real Watch product-experience spot check remains optional and user-requested, not a development gate.
+- None for the current self-test gate. User-operated Watch testing is outside the development plan.
 
 Expected effect:
 - AI speaks, then returns to listening.
@@ -1339,7 +1339,7 @@ Latest standard full self-test script:
 - Added package-script regression coverage so the full self-test command cannot silently drop Node tests, remote HTTP smoke, or the WatchLab build.
 - This is the default validation gate for continued DeepResponse development.
 - The Watch transport target remains HTTP only. Do not add Watch WebSocket feasibility, fallback, spike, benchmark, comparison, or validation work to this plan.
-- User-operated Watch testing is not part of the development gate. Only use it as an optional product-experience spot check when explicitly requested by the user.
+- User-operated Watch testing is outside the development plan. Do not schedule it, request it, or use it as a gate; unsolicited user observations are extra product feedback only.
 - Verification:
   - RED test first failed because both standard full self-test scripts were missing.
   - `node --test scripts/package-scripts.test.mjs`: `3/3` passed.
@@ -1555,7 +1555,7 @@ Latest obsolete Watch WebSocket spec cleanup:
 Goal: decide how to merge DeepResponse into the real app without risking old stable behavior.
 
 Preconditions:
-- DeepLab HTTP session streaming passes automated self-tests and any explicitly requested final experience check.
+- DeepLab HTTP session streaming passes automated self-tests.
 - HTTP v2 fallback remains available and covered by regression checks.
 - Barge-in behaves acceptably.
 - Fire/Volcengine deploy and env sync are documented.
@@ -2324,7 +2324,7 @@ Latest remote memory-opening-stem conversation gate:
   - `xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-volc-build DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 build`
 
 - Watch install:
-  - Not a default gate. Install only when the user explicitly requests a product-experience spot check.
+  - Outside normal development gates. Do not ask the user to install or operate Watch for planned validation.
 
 ## What Can Be Verified Without User
 
@@ -2338,7 +2338,7 @@ Latest remote memory-opening-stem conversation gate:
 - Watch source-level UI/transport checks.
 - Watch simulator autoruns where available.
 
-## What Should Not Require User By Default
+## What Must Not Require User
 
 - Normal phase progression.
 - Provider validation.
@@ -2346,16 +2346,12 @@ Latest remote memory-opening-stem conversation gate:
 - HTTP session timing and abort validation.
 - Watch build validation.
 - Watch UI source-level regression checks.
+- Watch transport decisions.
+- Continuous conversation, barge-in, idle goodbye, transcript, summary, and memory acceptance.
 
-## Product-Experience Spot Checks
+## User-Operated Watch Testing
 
-Not a development gate. Only ask the user if the user explicitly requests a real wrist experience check after self-tests pass:
-
-- Real microphone permission and live mic capture.
-- Real speaker playback quality.
-- UI legibility on wrist.
-- Perceived latency and naturalness.
-- Barge-in feel.
+Outside this implementation plan. Do not schedule it, request it, or make it a blocker. If the user independently chooses to try a build and reports observations, treat that as extra product feedback, not as the primary validation path.
 
 ## Version Management
 

@@ -30,7 +30,7 @@ Watch 持续会话
 - DeepResponse server 不暴露 client-facing WebSocket upgrade；Watch/server transport 只走 HTTP sessions。
 - Server 内部连接 Doubao ASR/TTS 可以继续使用 provider 所需的 WebSocket。
 - iPhone 不参与核心实时链路。
-- 完全采用自测试模式；用户人工 Watch 真机测试不作为阶段计划、推进条件或验收门槛。
+- 完全采用自测试模式；不要安排、请求或依赖用户人工 Watch 真机测试作为阶段计划、推进条件、验收门槛或常规反馈循环。
 - 每个阶段通过后提交并推送。
 
 ## Current Canonical References
@@ -263,14 +263,10 @@ During implementation:
 4. Do not touch Quick Response main flow.
 5. Do not add Watch WebSocket or client-facing DeepResponse WebSocket transport.
 6. Commit and push after each passing increment.
-7. Do not ask the user to operate Apple Watch as a planned validation step.
+7. Do not ask the user to operate Apple Watch as a planned validation step, acceptance step, or normal feedback loop.
 
 ## User Involvement Policy
 
-用户人工 Watch 真机测试不作为阶段计划、推进条件或验收门槛。
+用户人工 Watch 真机测试不作为阶段计划、推进条件、验收门槛或常规反馈循环。
 
-Only ask the user for a real Watch product-experience spot check if:
-
-- all relevant self-tests have already passed;
-- the check cannot be represented by scripts, source gates, simulator/source checks, or builds;
-- the request is bundled into one clear checklist with what to do, what should happen, and what to report.
+Do not schedule or request user-operated Watch testing for this implementation plan. If the user independently runs a build and reports observations, treat that as extra product feedback only; keep the validation path based on automated self-tests, source gates, simulator/source checks, remote harnesses, and builds.
