@@ -347,6 +347,22 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
     };
   }
 
+  if (event.type === "playback_wait_timeout") {
+    if (!state.isContinuousMode || state.isRecording || state.isWaitingForResponse || state.isHTTPSessionEnded || state.lastError || state.canAbortHTTPSessionTurn) {
+      return { state, actions };
+    }
+    actions.push("force_playback_inactive");
+    actions.push("start_recording:auto_listening");
+    return {
+      state: {
+        ...state,
+        isRecording: true,
+        conversationState: "userSpeaking"
+      },
+      actions
+    };
+  }
+
   if (event.type === "first_audio_received") {
     if (state.isRecording || state.lastError) {
       return { state, actions };

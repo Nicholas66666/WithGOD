@@ -567,6 +567,17 @@ final class DeepResponseRealtimeClient: ObservableObject {
         connectionStage = "http_session:playback_stopped"
     }
 
+    func finishHTTPSessionPlaybackAfterTimeout() {
+        player.stop()
+        isHTTPSessionPlaybackActive = false
+        connectionStage = "http_session:playback_timeout"
+    }
+
+    func estimatedHTTPSessionPlaybackWatchdogSeconds() -> TimeInterval {
+        let audioSeconds = Double(receivedAudioBytes) / 48_000.0
+        return min(max(audioSeconds + 2.0, 4.0), 12.0)
+    }
+
     func beginEndHTTPSessionRuntime(reason: String) -> Task<Void, Never>? {
         guard let sessionID = httpSessionID else {
             return nil

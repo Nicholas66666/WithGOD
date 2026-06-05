@@ -262,6 +262,17 @@ test("DeepResponse Watch playback drained waits for authoritative turn completio
   assert.match(drainedFunction, /guard isContinuousMode,[\s\S]*?!client\.canAbortHTTPSessionTurn,[\s\S]*?!isRecording,[\s\S]*?!isWaitingForResponse/);
 });
 
+test("DeepResponse Watch has a bounded playback-drain watchdog after turn done", () => {
+  const finishFunction = debugViewSource.match(/private func finishRecordingTurn\(reason: String\) async \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(finishFunction, /status = "Waiting playback"[\s\S]*?await waitForPlaybackDrainAfterTurnDone\(\)/);
+
+  const waitFunction = debugViewSource.match(/private func waitForPlaybackDrainAfterTurnDone\(\) async \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(waitFunction, /let deadline = Date\(\)\.addingTimeInterval/);
+  assert.match(waitFunction, /while client\.isHTTPSessionPlaybackActive,[\s\S]*?Date\(\) < deadline/);
+  assert.match(waitFunction, /client\.finishHTTPSessionPlaybackAfterTimeout\(\)/);
+  assert.match(waitFunction, /handlePlaybackDrained\(\)/);
+});
+
 test("DeepResponse Watch simulator autoruns a continuous HTTP fixture loop", () => {
   assert.match(debugViewSource, /DEEP_RESPONSE_AUTORUN_CONTINUOUS_FIXTURE/);
   assert.match(debugViewSource, /runContinuousFixtureLoop\(turns: 3\)/);

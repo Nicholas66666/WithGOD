@@ -284,6 +284,7 @@ struct DeepResponseDebugView: View {
             if client.isHTTPSessionPlaybackActive {
                 status = "Waiting playback"
                 conversationState = .assistantSpeaking
+                await waitForPlaybackDrainAfterTurnDone()
             } else {
                 await startRecordingTurn(reason: "Auto listening")
             }
@@ -295,6 +296,30 @@ struct DeepResponseDebugView: View {
                 conversationState = .listening
             }
         }
+    }
+
+    private func waitForPlaybackDrainAfterTurnDone() async {
+        let deadline = Date().addingTimeInterval(client.estimatedHTTPSessionPlaybackWatchdogSeconds())
+        while client.isHTTPSessionPlaybackActive,
+              Date() < deadline,
+              isContinuousMode,
+              !isRecording,
+              !isWaitingForResponse,
+              client.lastError == nil,
+              !client.isHTTPSessionEnded {
+            try? await Task.sleep(nanoseconds: 150_000_000)
+        }
+        guard isContinuousMode,
+              !isRecording,
+              !isWaitingForResponse,
+              client.lastError == nil,
+              !client.isHTTPSessionEnded else {
+            return
+        }
+        if client.isHTTPSessionPlaybackActive {
+            client.finishHTTPSessionPlaybackAfterTimeout()
+        }
+        handlePlaybackDrained()
     }
 
     private func handlePlaybackDrained() {
