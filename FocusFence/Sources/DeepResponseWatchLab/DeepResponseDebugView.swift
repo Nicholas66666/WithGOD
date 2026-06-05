@@ -408,10 +408,16 @@ struct DeepResponseDebugView: View {
 
     private func waitForFixturePlaybackDrain() async {
         #if targetEnvironment(simulator)
+        let deadline = Date().addingTimeInterval(30)
         while client.isHTTPSessionPlaybackActive,
               client.lastError == nil,
-              !client.isHTTPSessionEnded {
+              !client.isHTTPSessionEnded,
+              Date() < deadline {
             try? await Task.sleep(nanoseconds: 50_000_000)
+        }
+        if client.isHTTPSessionPlaybackActive {
+            status = "Loop fixture playback timeout"
+            client.stopHTTPSessionPlaybackForBargeIn()
         }
         #endif
     }

@@ -270,6 +270,14 @@ test("DeepResponse Watch continuous fixture waits for playback drain between tur
   assert.match(drainFunction, /Task\.sleep/);
 });
 
+test("DeepResponse Watch continuous fixture playback drain wait is bounded", () => {
+  const drainFunction = debugViewSource.match(/private func waitForFixturePlaybackDrain\(\) async \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(drainFunction, /let deadline = Date\(\)\.addingTimeInterval\(/);
+  assert.match(drainFunction, /Date\(\) < deadline/);
+  assert.match(drainFunction, /status = "Loop fixture playback timeout"/);
+  assert.match(drainFunction, /client\.stopHTTPSessionPlaybackForBargeIn\(\)/);
+});
+
 test("DeepResponse Watch HTTP polling is low-latency before first audio", () => {
   assert.match(realtimeClientSource, /private static let httpFastPollNanoseconds: UInt64 = 40_000_000/);
   assert.match(realtimeClientSource, /private static let httpSteadyPollNanoseconds: UInt64 = 120_000_000/);
