@@ -27,6 +27,7 @@ export function parseHTTPConversationArgs(argv) {
     forbidRepeatedMemoryLines: false,
     forbidIdenticalConsecutiveReplies: false,
     maxOpeningStemRepeats: 0,
+    maxMemoryOpeningStemRepeats: 0,
     maxAssistantReplyChars: 0,
     minAssistantReplyChars: 0,
     maxStopToFirstAudioMs: 0,
@@ -87,6 +88,9 @@ export function parseHTTPConversationArgs(argv) {
       args.forbidIdenticalConsecutiveReplies = true;
     } else if (arg === "--max-opening-stem-repeats") {
       args.maxOpeningStemRepeats = Number(argv[index + 1] || 0);
+      index += 1;
+    } else if (arg === "--max-memory-opening-stem-repeats") {
+      args.maxMemoryOpeningStemRepeats = Number(argv[index + 1] || 0);
       index += 1;
     } else if (arg === "--max-assistant-reply-chars") {
       args.maxAssistantReplyChars = Number(argv[index + 1] || 0);
@@ -267,6 +271,12 @@ export async function runHTTPConversationProbe(args) {
   if (repeatedOpeningStemFailures.length > 0) {
     throw new Error(`Repeated opening stem failures: ${JSON.stringify(repeatedOpeningStemFailures, null, 2)}`);
   }
+  const repeatedMemoryOpeningStemFailures = collectRepeatedMemoryOpeningStemFailures(memoryCandidate, {
+    maxRepeats: args.maxMemoryOpeningStemRepeats
+  });
+  if (repeatedMemoryOpeningStemFailures.length > 0) {
+    throw new Error(`Repeated memory opening stem failures: ${JSON.stringify(repeatedMemoryOpeningStemFailures, null, 2)}`);
+  }
   const repeatedReplyFailures = args.forbidIdenticalConsecutiveReplies
     ? collectRepeatedConversationReplyFailures(turns)
     : [];
@@ -337,6 +347,7 @@ export async function runHTTPConversationProbe(args) {
     forbiddenTextFailures,
     repeatedMemoryLineFailures,
     repeatedOpeningStemFailures,
+    repeatedMemoryOpeningStemFailures,
     repeatedReplyFailures,
     longReplyFailures,
     shortReplyFailures,
@@ -483,6 +494,35 @@ export function collectRepeatedMemoryLineFailures(memoryCandidate = null) {
     .map(([key, count]) => ({
       line: samples.get(key),
       count
+    }));
+}
+
+export function collectRepeatedMemoryOpeningStemFailures(memoryCandidate = null, { maxRepeats = 0 } = {}) {
+  const limit = Number(maxRepeats || 0);
+  if (!Number.isFinite(limit) || limit <= 0) {
+    return [];
+  }
+  const groups = new Map();
+  const lines = String(memoryCandidate?.summary || "")
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter((line) => /^AI:\s*/u.test(line));
+  for (const line of lines) {
+    const openingStem = extractMemoryAssistantOpeningStem(line);
+    if (!openingStem) {
+      continue;
+    }
+    const group = groups.get(openingStem) || { openingStem, lines: [] };
+    group.lines.push(line);
+    groups.set(openingStem, group);
+  }
+  return [...groups.values()]
+    .filter((group) => group.lines.length > limit)
+    .map((group) => ({
+      openingStem: group.openingStem,
+      count: group.lines.length,
+      maxRepeats: limit,
+      lines: group.lines.slice(0, 3)
     }));
 }
 
@@ -645,6 +685,15 @@ function extractOpeningStem(text) {
   return match ? match[1] : "";
 }
 
+function extractMemoryAssistantOpeningStem(line) {
+  const cleaned = String(line || "")
+    .replace(/^AI:\s*/u, "")
+    .replace(/^[\s"'“”‘’]+/u, "")
+    .trim();
+  const match = cleaned.match(/^([^。！？；，,]{2,12})/u);
+  return match ? match[1].trim() : "";
+}
+
 function buildURL(endpoint, path) {
   const base = endpoint.endsWith("/") ? endpoint.slice(0, -1) : endpoint;
   return `${base}${path}`;
@@ -731,6 +780,8 @@ Options:
                         Require first audio to arrive before turn_done for every turn.
   --forbid-identical-consecutive-replies
                         Fail if any assistant replies in the same session are identical.
+  --max-memory-opening-stem-repeats <n>
+                        Fail if any assistant opening phrase appears too often in memory summary.
   --max-assistant-reply-chars <n>
                         Fail if any assistant reply exceeds this spoken character budget.
   --max-stop-to-first-audio-ms <n>

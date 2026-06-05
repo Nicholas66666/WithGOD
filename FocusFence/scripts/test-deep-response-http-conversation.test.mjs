@@ -5,6 +5,7 @@ import {
   collectSessionLifecycleEvents,
   collectForbiddenConversationTextFailures,
   collectRepeatedOpeningStemFailures,
+  collectRepeatedMemoryOpeningStemFailures,
   collectRepeatedMemoryLineFailures,
   collectRepeatedConversationReplyFailures,
   collectLongConversationReplyFailures,
@@ -42,6 +43,7 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
     "--forbid-repeated-memory-lines",
     "--forbid-identical-consecutive-replies",
     "--max-opening-stem-repeats", "2",
+    "--max-memory-opening-stem-repeats", "2",
     "--max-assistant-reply-chars", "48",
     "--min-assistant-reply-chars", "8",
     "--max-stop-to-first-audio-ms", "3500",
@@ -60,6 +62,7 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
   assert.equal(args.forbidRepeatedMemoryLines, true);
   assert.equal(args.forbidIdenticalConsecutiveReplies, true);
   assert.equal(args.maxOpeningStemRepeats, 2);
+  assert.equal(args.maxMemoryOpeningStemRepeats, 2);
   assert.equal(args.maxAssistantReplyChars, 48);
   assert.equal(args.minAssistantReplyChars, 8);
   assert.equal(args.maxStopToFirstAudioMs, 3500);
@@ -304,6 +307,31 @@ test("collectRepeatedMemoryLineFailures flags repeated memory summary lines", ()
     {
       line: "User: 今天我有点累，想听一句安慰的话。",
       count: 2
+    }
+  ]);
+});
+
+test("collectRepeatedMemoryOpeningStemFailures flags overused assistant memory openings", () => {
+  const failures = collectRepeatedMemoryOpeningStemFailures({
+    summary: [
+      "User: 今天很累。",
+      "AI: 我陪你慢下来。主会扶持你。",
+      "AI: 我陪你慢下来。主会安慰你。",
+      "AI: 我陪你慢下来。主会赐力量。",
+      "AI: 先歇一歇吧。主会看顾你。"
+    ].join("\n")
+  }, { maxRepeats: 2 });
+
+  assert.deepEqual(failures, [
+    {
+      openingStem: "我陪你慢下来",
+      count: 3,
+      maxRepeats: 2,
+      lines: [
+        "AI: 我陪你慢下来。主会扶持你。",
+        "AI: 我陪你慢下来。主会安慰你。",
+        "AI: 我陪你慢下来。主会赐力量。"
+      ]
     }
   ]);
 });

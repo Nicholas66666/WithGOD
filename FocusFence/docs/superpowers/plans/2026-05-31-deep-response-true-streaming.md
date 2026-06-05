@@ -2287,6 +2287,21 @@ Latest WatchLab assistant-thinking mic reachability gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This is an S5/S4 WatchLab reachability self-test update; Watch transport remains HTTP-only, WebSocket is fully out of scope, and no user-operated Watch test was required.
 
+Latest remote memory-opening-stem conversation gate:
+- The standard Fire/Volcengine 8-turn conversation script now has `--max-memory-opening-stem-repeats`. It scans the final `memory_candidate.summary`, extracts assistant opening phrases from `AI:` lines, and fails if any memory opening appears more often than the configured limit.
+- `deep:volc:conversation:full` now runs with `--max-memory-opening-stem-repeats 2`, making memory-opening diversity part of the normal full self-test in addition to exact repeated-memory-line detection.
+- Verification:
+  - RED `node --test --test-name-pattern "session-end validation options|memory openings|continuous conversation gate" scripts/test-deep-response-http-conversation.test.mjs scripts/package-scripts.test.mjs` first failed because the collector/export/parser and package flag were missing.
+  - Same focused command passed after implementation: `3/3`.
+  - `node --test scripts/test-deep-response-http-conversation.test.mjs scripts/package-scripts.test.mjs`: `21/21` passed.
+  - `npm run test:node`: `235/235` passed.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `219ms`, `215ms`; `llm_started_from_partial: 1` on both turns; abort stale audio chunks/bytes: `0` / `0`; idle memory candidate `persisted: false`, `closureClean: true`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedMemoryLineFailures: []`, `repeatedMemoryOpeningStemFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `315ms`, `321ms`, `283ms`, `278ms`, `256ms`, `290ms`, `270ms`, `271ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This is an S6 remote self-test coverage update; Watch transport remains HTTP-only, WebSocket is fully out of scope, and no user-operated Watch test was required.
+
 - Unit and server tests:
   - `npm run test:node`
 
