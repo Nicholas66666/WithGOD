@@ -38,6 +38,7 @@ test("buildDeepResponseEnv applies non-secret provider defaults", () => {
   assert.equal(env.DOUBAO_ASR_RESOURCE_ID, "volc.bigasr.sauc.duration");
   assert.equal(env.DOUBAO_ASR_END_WINDOW_SIZE_MS, "300");
   assert.equal(env.DOUBAO_TTS_RESOURCE_ID, "volc.service_type.10029");
+  assert.equal(env.DEEP_RESPONSE_TTS_HTTP_FALLBACK, "1");
 });
 
 test("requireDeepResponseCredentials rejects missing or placeholder credentials", () => {

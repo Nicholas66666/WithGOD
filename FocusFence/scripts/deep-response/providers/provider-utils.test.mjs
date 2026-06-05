@@ -5,6 +5,7 @@ import zlib from "node:zlib";
 import { buildDoubaoASREndRequest, buildDoubaoASRInitRequest } from "./doubao-asr.mjs";
 import { ArkLLMProvider, extractArkStreamDelta, findSpeakableFirstPhrase, splitFirstPhrase } from "./ark-llm.mjs";
 import {
+  DoubaoTTSProvider,
   buildDoubaoTTSEventRequest,
   parseDoubaoTTSResponse,
   TTS_EVENTS
@@ -302,6 +303,35 @@ test("parseDoubaoTTSResponse extracts audio payload event", () => {
   assert.equal(parsed.messageType, 0x0b);
   assert.equal(parsed.sessionID, "session-1");
   assert.deepEqual(parsed.payload, audio);
+});
+
+test("DoubaoTTSProvider falls back to HTTP when websocket stream fails", async () => {
+  const provider = new DoubaoTTSProvider({
+    env: {
+      DEEP_RESPONSE_TTS_HTTP_FALLBACK: "1",
+      DOUBAO_TTS_SAMPLE_RATE: "24000"
+    }
+  });
+  provider.synthesizeWebSocketStream = async function* () {
+    throw new Error("doubao_tts_error 45000081: Timeout waiting next packet");
+  };
+  provider.synthesizeHTTP = async ({ text }) => ({
+    audioChunks: [Buffer.from(`fallback:${text}`)],
+    timing: { tts_first_audio_ms: 12 },
+    connectID: "http-fallback",
+    mode: "http_fallback"
+  });
+
+  const events = [];
+  for await (const event of provider.synthesizeStream({ text: "主与你同在。" })) {
+    events.push(event);
+  }
+
+  assert.equal(events[0].type, "audio_chunk");
+  assert.equal(events[0].audioChunk.toString("utf8"), "fallback:主与你同在。");
+  assert.equal(events[0].sampleRate, 24000);
+  assert.equal(events[1].type, "done");
+  assert.equal(events[1].mode, "http_fallback");
 });
 
 function int32(value) {

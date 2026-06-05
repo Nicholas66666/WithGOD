@@ -807,6 +807,7 @@ async function runHTTPSessionStreamedPipeline({
   let timing = {};
   let providerMeta = {};
   let resolvedGenerationID = "";
+  let providerError = "";
   const getGenerationID = async () => {
     if (!resolvedGenerationID) {
       resolvedGenerationID = typeof generationID?.then === "function" ? await generationID : generationID;
@@ -814,96 +815,114 @@ async function runHTTPSessionStreamedPipeline({
     return resolvedGenerationID;
   };
 
-  for await (const event of stream) {
-    const eventGenerationID = await getGenerationID();
-    if (session.canceledGenerations.has(eventGenerationID)) {
-      recordEvent("http_session_stale_dropped", {
-        sessionID: session.sessionID,
-        turnID,
-        generationID: eventGenerationID
-      });
-      return;
-    }
+  try {
+    for await (const event of stream) {
+      const eventGenerationID = await getGenerationID();
+      if (session.canceledGenerations.has(eventGenerationID)) {
+        recordEvent("http_session_stale_dropped", {
+          sessionID: session.sessionID,
+          turnID,
+          generationID: eventGenerationID
+        });
+        return;
+      }
 
-    if (event.type === "transcript_final") {
-      transcript = event.transcript || event.text || "";
-      pushSessionEvent(session, {
-        type: "transcript_final",
-        sessionID: session.sessionID,
-        turnID,
-        generationID: eventGenerationID,
-        text: transcript
-      });
-    } else if (event.type === "transcript_partial") {
-      pushSessionEvent(session, {
-        type: "transcript_partial",
-        sessionID: session.sessionID,
-        turnID,
-        generationID: eventGenerationID,
-        text: event.transcript || event.text || ""
-      });
-    } else if (event.type === "assistant_text_delta") {
-      firstText += event.delta || "";
-      pushSessionEvent(session, {
-        type: "assistant_text_delta",
-        sessionID: session.sessionID,
-        turnID,
-        generationID: eventGenerationID,
-        segment: event.segment || "reply",
-        delta: event.delta || ""
-      });
-    } else if (event.type === "assistant_phrase") {
-      pushSessionEvent(session, {
-        type: "assistant_phrase",
-        sessionID: session.sessionID,
-        turnID,
-        generationID: eventGenerationID,
-        segment: event.segment || "reply",
-        phraseIndex: event.phraseIndex,
-        text: event.text || "",
-        reason: event.reason || ""
-      });
-    } else if (event.type === "segment") {
-      if (event.segment === "followup") {
-        followupText = event.text || "";
-      } else {
-        firstText = event.text || "";
+      if (event.type === "transcript_final") {
+        transcript = event.transcript || event.text || "";
+        pushSessionEvent(session, {
+          type: "transcript_final",
+          sessionID: session.sessionID,
+          turnID,
+          generationID: eventGenerationID,
+          text: transcript
+        });
+      } else if (event.type === "transcript_partial") {
+        pushSessionEvent(session, {
+          type: "transcript_partial",
+          sessionID: session.sessionID,
+          turnID,
+          generationID: eventGenerationID,
+          text: event.transcript || event.text || ""
+        });
+      } else if (event.type === "assistant_text_delta") {
+        firstText += event.delta || "";
+        pushSessionEvent(session, {
+          type: "assistant_text_delta",
+          sessionID: session.sessionID,
+          turnID,
+          generationID: eventGenerationID,
+          segment: event.segment || "reply",
+          delta: event.delta || ""
+        });
+      } else if (event.type === "assistant_phrase") {
+        pushSessionEvent(session, {
+          type: "assistant_phrase",
+          sessionID: session.sessionID,
+          turnID,
+          generationID: eventGenerationID,
+          segment: event.segment || "reply",
+          phraseIndex: event.phraseIndex,
+          text: event.text || "",
+          reason: event.reason || ""
+        });
+      } else if (event.type === "segment") {
+        if (event.segment === "followup") {
+          followupText = event.text || "";
+        } else {
+          firstText = event.text || "";
+        }
+        pushAssistantSegment(session, {
+          turnID,
+          generationID: eventGenerationID,
+          segment: event.segment || "first",
+          text: event.text || "",
+          audioChunks: event.audioChunks || []
+        });
+      } else if (event.type === "segment_text") {
+        if (event.segment === "followup") {
+          followupText = event.text || "";
+        } else {
+          firstText = event.text || "";
+        }
+        pushAssistantSegment(session, {
+          turnID,
+          generationID: eventGenerationID,
+          segment: event.segment || "first",
+          text: event.text || "",
+          audioChunks: []
+        });
+      } else if (event.type === "audio_chunk") {
+        pushSessionAudio(session, {
+          turnID,
+          generationID: eventGenerationID,
+          segment: event.segment || "reply",
+          audio: Buffer.from(event.audioChunk || []),
+          sampleRate: event.sampleRate
+        });
+      } else if (event.type === "timing") {
+        timing = event.timing || {};
+        providerMeta = event.providerMeta || {};
+      } else if (event.type === "turn_done") {
+        transcript = event.transcript || transcript;
+        firstText = event.assistantText || firstText;
       }
-      pushAssistantSegment(session, {
-        turnID,
-        generationID: eventGenerationID,
-        segment: event.segment || "first",
-        text: event.text || "",
-        audioChunks: event.audioChunks || []
-      });
-    } else if (event.type === "segment_text") {
-      if (event.segment === "followup") {
-        followupText = event.text || "";
-      } else {
-        firstText = event.text || "";
-      }
-      pushAssistantSegment(session, {
-        turnID,
-        generationID: eventGenerationID,
-        segment: event.segment || "first",
-        text: event.text || "",
-        audioChunks: []
-      });
-    } else if (event.type === "audio_chunk") {
-      pushSessionAudio(session, {
-        turnID,
-        generationID: eventGenerationID,
-        segment: event.segment || "reply",
-        audio: Buffer.from(event.audioChunk || []),
-        sampleRate: event.sampleRate
-      });
-    } else if (event.type === "timing") {
-      timing = event.timing || {};
-      providerMeta = event.providerMeta || {};
-    } else if (event.type === "turn_done") {
-      transcript = event.transcript || transcript;
-      firstText = event.assistantText || firstText;
     }
+  } catch (error) {
+    const eventGenerationID = await getGenerationID();
+    providerError = error instanceof Error ? error.message : String(error);
+    pushSessionEvent(session, {
+      type: "error",
+      sessionID: session.sessionID,
+      turnID,
+      generationID: eventGenerationID,
+      message: providerError
+    });
+    recordEvent("http_session_failed", {
+      sessionID: session.sessionID,
+      turnID,
+      generationID: eventGenerationID,
+      message: providerError
+    });
   }
 
   const eventGenerationID = await getGenerationID();
@@ -912,7 +931,7 @@ async function runHTTPSessionStreamedPipeline({
     sessionID: session.sessionID,
     turnID,
     generationID: eventGenerationID,
-    reason: "provider_complete"
+    reason: providerError ? "provider_error" : "provider_complete"
   });
   pushSessionEvent(session, {
     type: "timing",
@@ -920,7 +939,7 @@ async function runHTTPSessionStreamedPipeline({
     turnID,
     generationID: eventGenerationID,
     timing,
-    providerMeta
+    providerMeta: providerError ? { ...providerMeta, providerError } : providerMeta
   });
   pushSessionEvent(session, {
     type: "turn_done",

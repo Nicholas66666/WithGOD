@@ -681,6 +681,58 @@ test("DeepResponse HTTP session audio endpoint long-polls until new audio arrive
   }
 });
 
+test("DeepResponse HTTP session stream failure completes turn instead of timing out", async () => {
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    createPipeline: () => ({
+      async *streamCascadeTurn() {
+        yield { type: "transcript_final", transcript: "第二句话。" };
+        yield {
+          type: "assistant_text_delta",
+          turnID: "turn-provider-error",
+          generationID: "gen-provider-error",
+          delta: "我在这里。"
+        };
+        throw new Error("volc_server_error 45000081 timeout waiting next packet");
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {
+      pipelineMode: "cascade"
+    });
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+    await postBytes(`${base}/audio?turn_id=turn-provider-error&seq=0`, Buffer.from("voice"));
+    await postJSON(`${base}/input-stop`, {
+      turnID: "turn-provider-error",
+      generationID: "gen-provider-error"
+    });
+
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "error")
+        && events.events.some((event) => event.type === "turn_done");
+    });
+
+    const events = await fetchJSON(`${base}/events?cursor=0`);
+    assert(events.events.some((event) => event.type === "error"
+      && /45000081/.test(event.message)));
+    assert(events.events.some((event) => event.type === "audio_done"
+      && event.reason === "provider_error"));
+    assert(events.events.some((event) => event.type === "turn_done"
+      && event.generationID === "gen-provider-error"
+      && event.transcript === "第二句话。"
+      && event.assistantText === "我在这里。"));
+  } finally {
+    await server.close();
+  }
+});
+
 test("DeepResponse HTTP session starts provider audio consumption before input stop", async () => {
   let firstChunkSeenAt = 0;
   let inputStopPostedAt = 0;
