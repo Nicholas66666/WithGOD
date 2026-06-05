@@ -208,6 +208,9 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
 
   if (event.type === "playback_drained") {
     if (state.isHTTPSessionEnded) {
+      if (state.conversationState === "ending") {
+        actions.push("finalize_session_end");
+      }
       return {
         state: {
           ...state,
@@ -412,7 +415,11 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
       actions.push("stop_recording");
     }
     actions.push("stop_auto_listen");
-    actions.push("finalize_session_end");
+    if (state.conversationState === "assistantSpeaking") {
+      actions.push("wait_for_playback_drain");
+    } else {
+      actions.push("finalize_session_end");
+    }
     return {
       state: {
         ...state,

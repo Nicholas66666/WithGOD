@@ -79,20 +79,21 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `226/226` passed.
+- Node self-tests: `228/228` passed.
 - Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply, lookup-style-comfort, harsh repeated-comfort, mechanical tired/fatigue, incomplete-utterance, `是还想听`, formulaic scripture lead-in, awkward spoken-opening, and dangling `啦。` gates enabled.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
 - Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
 - Fire/Volcengine partial-ASR LLM start: `llm_started_from_partial: 1` on both standard smoke turns.
-- Fire/Volcengine smoke stop-to-first-audio: `219ms`, `215ms`.
+- Fire/Volcengine smoke stop-to-first-audio: `269ms`, `227ms`.
 - Fire/Volcengine repeated reply failures: `[]`.
 - Fire/Volcengine forbidden lookup/harsh/mechanical comfort failures: `[]`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: true`, `store: jsonl`, `reason: idle_timeout`, `summary: ""`, `closureClean: true`.
 - Fire/Volcengine 8-turn continuous conversation gate now uses realtime upload pacing (`--upload-sleep-ms 1000`) and `--max-stop-to-first-audio-ms 1000`.
 - Fire/Volcengine 8-turn continuous conversation gate: passed with `session_end` reason `user_goodbye`, `memoryRecalled.count: 3`, `memory_candidate.persisted: true`, `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, and late audio `409 session_ended`.
-- Fire/Volcengine 8-turn stop-to-first-audio: `214ms`, `229ms`, `234ms`, `227ms`, `347ms`, `311ms`, `326ms`, `257ms`.
+- Fire/Volcengine 8-turn stop-to-first-audio: `199ms`, `207ms`, `229ms`, `219ms`, `202ms`, `237ms`, `199ms`, `207ms`.
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
+- Latest WatchLab session-end playback-drain gate: if `session_end` arrives while assistant audio is still queued/playing, DeepLab now enters `.ending` and waits for `onHTTPSessionPlaybackDrained` before final `.ended`, preserving goodbye/remaining audio while blocking auto-listen. The scriptable state machine emits `wait_for_playback_drain` and only finalizes on `playback_drained`; Swift source gates cover `markSessionEnded()` and the playback-drained callback. Full `npm run deep:selftest:full` passed with Node `228/228`, Fire/Volcengine smoke `269ms` / `227ms`, 8-turn stop-to-first-audio `199ms`, `207ms`, `229ms`, `219ms`, `202ms`, `237ms`, `199ms`, `207ms`, and WatchLab `BUILD SUCCEEDED`. No user-operated Watch test was required.
 - Latest target-text correction confirmed: Watch WebSocket is fully out of scope, not a spike/fallback/benchmark path. Development and phase progression use automated local/server/remote/build checks only; user-operated Watch testing is not a required gate.
 - Latest WatchLab assistant-thinking barge-in gate: pressing the mic while the Watch is in `assistantThinking` now aborts the active generation and starts barge-in recording in continuous mode. The scriptable state machine and Swift source gate cover this, and full `npm run deep:selftest:full` passed. No user-operated Watch test was required.
 - Latest biblical-story analogy quality gate: `VoicePipeline.streamCascadeTurn()` removes story-style analogies before assistant text/audio emission, and the standard Fire/Volcengine smoke plus 8-turn gates now forbid `大卫.*歌利亚`, `摩西.*杖`, `耶路撒冷城墙`, `牧人引领羊群`, `约书亚`, and `以利亚`. Full `npm run deep:selftest:full` passed after direct ECS sync. No user-operated Watch test was required.

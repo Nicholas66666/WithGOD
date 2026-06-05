@@ -354,6 +354,9 @@ struct DeepResponseDebugView: View {
         isRecording = false
         isWaitingForResponse = false
         conversationState = .ending
+        if client.isHTTPSessionPlaybackActive {
+            return
+        }
         conversationState = .ended
     }
 
