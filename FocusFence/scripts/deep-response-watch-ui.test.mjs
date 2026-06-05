@@ -219,8 +219,14 @@ test("DeepResponse Watch enters assistantSpeaking on first streamed audio", () =
   assert.match(appearBlock, /handleFirstAudioReceived\(\)/);
 
   const firstAudioFunction = debugViewSource.match(/private func handleFirstAudioReceived\(\) \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.doesNotMatch(firstAudioFunction, /guard isContinuousMode,/);
   assert.match(firstAudioFunction, /isWaitingForResponse = false/);
   assert.match(firstAudioFunction, /conversationState = \.assistantSpeaking/);
+});
+
+test("DeepResponse Watch playback drained returns non-continuous speaking to listening", () => {
+  const drainedFunction = debugViewSource.match(/private func handlePlaybackDrained\(\) \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(drainedFunction, /if !isContinuousMode,[\s\S]*?conversationState == \.assistantSpeaking \{[\s\S]*?conversationState = \.listening[\s\S]*?return/);
 });
 
 test("DeepResponse Watch simulator autoruns a continuous HTTP fixture loop", () => {

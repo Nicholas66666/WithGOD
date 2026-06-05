@@ -296,6 +296,11 @@ struct DeepResponseDebugView: View {
             markSessionEnded()
             return
         }
+        if !isContinuousMode,
+           conversationState == .assistantSpeaking {
+            conversationState = .listening
+            return
+        }
         guard isContinuousMode,
               !isRecording,
               !isWaitingForResponse,
@@ -309,8 +314,7 @@ struct DeepResponseDebugView: View {
     }
 
     private func handleFirstAudioReceived() {
-        guard isContinuousMode,
-              !isRecording,
+        guard !isRecording,
               !client.isHTTPSessionEnded,
               client.lastError == nil else {
             return

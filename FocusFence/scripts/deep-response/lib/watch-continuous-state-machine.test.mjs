@@ -119,6 +119,29 @@ test("turning continuous mode off while assistant is thinking clears waiting sta
   assert.deepEqual(result.actions, ["wait_for_playback"]);
 });
 
+test("in-flight playback after continuous mode off still shows speaking until drained", () => {
+  const afterFirstAudio = simulateDeepResponseWatchEvents([
+    { type: "toggle_continuous", enabled: true },
+    { type: "recording_started" },
+    { type: "recording_finished", playbackActive: true },
+    { type: "toggle_continuous", enabled: false },
+    { type: "first_audio_received" }
+  ]);
+
+  assert.equal(afterFirstAudio.state.isContinuousMode, false);
+  assert.equal(afterFirstAudio.state.conversationState, "assistantSpeaking");
+  assert.equal(afterFirstAudio.state.isRecording, false);
+  assert.equal(afterFirstAudio.state.isWaitingForResponse, false);
+
+  const afterDrain = applyDeepResponseWatchEvent(afterFirstAudio.state, {
+    type: "playback_drained"
+  });
+
+  assert.equal(afterDrain.state.isContinuousMode, false);
+  assert.equal(afterDrain.state.conversationState, "listening");
+  assert.deepEqual(afterDrain.actions, []);
+});
+
 test("continuous barge-in abort resumes recording after local-first stop", () => {
   const afterAbort = applyDeepResponseWatchEvent({
     isContinuousMode: true,

@@ -217,6 +217,17 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
         actions
       };
     }
+    if (!state.isContinuousMode && state.conversationState === "assistantSpeaking") {
+      return {
+        state: {
+          ...state,
+          conversationState: "listening",
+          isRecording: false,
+          isWaitingForResponse: false
+        },
+        actions
+      };
+    }
     if (!state.isContinuousMode || state.isRecording || state.isWaitingForResponse || state.lastError) {
       return { state, actions };
     }
@@ -242,7 +253,7 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
         actions
       };
     }
-    if (state.conversationState !== "assistantThinking") {
+    if (state.conversationState !== "assistantThinking" && state.isContinuousMode) {
       return { state, actions };
     }
     return {

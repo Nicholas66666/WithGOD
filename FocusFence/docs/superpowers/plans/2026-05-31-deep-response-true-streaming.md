@@ -2189,6 +2189,22 @@ Latest WatchLab continuous-off thinking gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This is a WatchLab hands-free state-model update; no ECS deploy and no user-operated Watch test were required.
 
+Latest WatchLab post-continuous-off playback gate:
+- Strengthened the handoff after continuous mode is turned off while the current HTTP response is still in flight. The app should stop the hands-free loop, but the current single response may still produce audio and the debug UI must reflect that playback.
+- `watch-continuous-state-machine.mjs` now allows `first_audio_received` after continuous mode has been turned off to move the local state into `assistantSpeaking`, and `playback_drained` then returns non-continuous `assistantSpeaking` to `listening` without starting another recording.
+- `DeepResponseDebugView.handleFirstAudioReceived()` no longer requires `isContinuousMode`; it now updates speaking state for any valid non-recording, non-ended, non-error first audio. `handlePlaybackDrained()` now returns non-continuous `assistantSpeaking` to `listening`.
+- Verification:
+  - RED `node --test --test-name-pattern "in-flight playback|first streamed audio|playback drained" scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs` first failed because first audio after continuous-off stayed `listening`, Swift first-audio handling was guarded by `isContinuousMode`, and non-continuous playback drain had no listening transition.
+  - `node --test --test-name-pattern "in-flight playback|first streamed audio|playback drained" scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`: `3/3` passed.
+  - `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs scripts/deep-response-integration-gate.test.mjs`: `66/66` passed.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Node self-tests: `223/223` passed.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `219ms`, `204ms`; `llm_started_from_partial: 1` on both turns; abort stale audio chunks/bytes: `0` / `0`; idle memory `closureClean: true`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `208ms`, `211ms`, `218ms`, `231ms`, `231ms`, `209ms`, `219ms`, `213ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This is a WatchLab playback-state alignment update; no ECS deploy and no user-operated Watch test were required.
+
 - Unit and server tests:
   - `npm run test:node`
 
