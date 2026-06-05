@@ -222,6 +222,19 @@ export function applyDeepResponseWatchEvent(stateInput = {}, event = {}) {
 
   if (event.type === "turn_done") {
     if (state.isHTTPSessionEnded || event.sessionEnded) {
+      if (event.playbackActive) {
+        actions.push("wait_for_playback_drain");
+        return {
+          state: {
+            ...state,
+            isRecording: false,
+            isWaitingForResponse: false,
+            isHTTPSessionEnded: true,
+            conversationState: "ending"
+          },
+          actions
+        };
+      }
       return {
         state: {
           ...state,

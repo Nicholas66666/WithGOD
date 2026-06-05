@@ -88,6 +88,30 @@ test("continuous loop restarts recording when turn completes without queued audi
   assert.deepEqual(afterTurnDone.actions, ["start_recording:auto_listening"]);
 });
 
+test("turn done with session end waits for queued goodbye playback", () => {
+  const afterTurnDone = applyDeepResponseWatchEvent({
+    isContinuousMode: true,
+    isRecording: false,
+    isWaitingForResponse: true,
+    isHTTPSessionEnded: false,
+    lastError: null,
+    conversationState: "assistantThinking"
+  }, { type: "turn_done", playbackActive: true, sessionEnded: true });
+
+  assert.equal(afterTurnDone.state.conversationState, "ending");
+  assert.equal(afterTurnDone.state.isHTTPSessionEnded, true);
+  assert.equal(afterTurnDone.state.isRecording, false);
+  assert.equal(afterTurnDone.state.isWaitingForResponse, false);
+  assert.deepEqual(afterTurnDone.actions, ["wait_for_playback_drain"]);
+
+  const afterDrain = applyDeepResponseWatchEvent(afterTurnDone.state, {
+    type: "playback_drained"
+  });
+
+  assert.equal(afterDrain.state.conversationState, "ended");
+  assert.deepEqual(afterDrain.actions, ["finalize_session_end"]);
+});
+
 test("late first audio is ignored while a new local recording is active", () => {
   const afterFirstAudio = applyDeepResponseWatchEvent({
     isContinuousMode: false,
