@@ -260,6 +260,16 @@ test("DeepResponse Watch simulator autoruns a continuous HTTP fixture loop", () 
   assert.match(debugViewSource, /conversationState = \.ended/);
 });
 
+test("DeepResponse Watch continuous fixture waits for playback drain between turns", () => {
+  const fixtureLoop = debugViewSource.match(/private func runContinuousFixtureLoop\(turns: Int\) async \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(fixtureLoop, /await waitForFixturePlaybackDrain\(\)/);
+  assert.doesNotMatch(fixtureLoop, /Task\.sleep\(nanoseconds: 100_000_000\)/);
+
+  const drainFunction = debugViewSource.match(/private func waitForFixturePlaybackDrain\(\) async \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(drainFunction, /while client\.isHTTPSessionPlaybackActive/);
+  assert.match(drainFunction, /Task\.sleep/);
+});
+
 test("DeepResponse Watch HTTP polling is low-latency before first audio", () => {
   assert.match(realtimeClientSource, /private static let httpFastPollNanoseconds: UInt64 = 40_000_000/);
   assert.match(realtimeClientSource, /private static let httpSteadyPollNanoseconds: UInt64 = 120_000_000/);

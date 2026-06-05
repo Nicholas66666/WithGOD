@@ -397,12 +397,22 @@ struct DeepResponseDebugView: View {
                 break
             }
             conversationState = client.isHTTPSessionPlaybackActive ? .assistantSpeaking : .idleWaiting
-            try? await Task.sleep(nanoseconds: 100_000_000)
+            await waitForFixturePlaybackDrain()
             conversationState = .listening
         }
         isContinuousMode = false
         conversationState = .ended
         status = client.lastError == nil ? "Loop fixture done" : "Loop fixture failed"
+        #endif
+    }
+
+    private func waitForFixturePlaybackDrain() async {
+        #if targetEnvironment(simulator)
+        while client.isHTTPSessionPlaybackActive,
+              client.lastError == nil,
+              !client.isHTTPSessionEnded {
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        }
         #endif
     }
 }
