@@ -571,7 +571,64 @@ selftest FAIL 时先看:
 - 加真机 Watch 辅助体验 checklist，但仍不能替代自动化 gate。
 - 更细化 provider error 分类和自动 triage。
 
-## 12. 目标完成
+## 12. 2026-06-05 真实 10 轮 Watch Simulator 产品自检
+
+本轮目标不是继续扩展实验室本身，而是用已交付的 selftest 和 Watch Simulator fake mic 路径发现 DeepResponse 当前产品链路问题。
+
+Baseline:
+
+- `npm run test:node`: PASS, 278/278.
+- `npm run deep:watchlab:build:volc`: BUILD SUCCEEDED.
+- `npm run deep:lab:selftest`: PASS, report `/private/tmp/deep-response-lab-selftest-2026-06-05T05-43-29-696Z`.
+- Baseline 10-turn Watch fake mic manual report: `/private/tmp/deep-response-watch-sim-10-baseline`.
+
+问题分类:
+
+- 产品 bug: 10 轮真实 Watch Simulator fake mic 链路中出现相邻 turn 开场话术重复，baseline server evidence 里 `先把...` 在 turns 1-2 重复，`我陪...` 在 turns 7-8 重复。这会影响真实连续体验，也会误导后续开发判断为“对话已连续但产品听感机械”。
+- 实验室局限: 标准 `deep:lab:selftest` Watch 部分只跑 2 turn，能覆盖 mouth/eye/ear/server/judge 和 goodbye/interrupt/silent recovery，但不足以单独暴露 10 轮连续话术退化。
+- 环境问题: 本轮没有发现 Fire/Volcengine、Xcode build、watchOS Simulator 或网络阻塞问题。
+- 可接受后续增强项: 更丰富 fake mic fixtures、OCR/pixel-semantic UI 检查、真实扬声器/人耳听感、更多 Watch goodbye fixture。
+
+修复:
+
+- `scripts/deep-response/pipeline/voice-pipeline.mjs`
+  - 扩大高频 comfort opening stem 的一轮内去重范围: `我陪`, `先把`, `不用`, `今天`, `那今`。
+  - 扩大替换 opening pool，避免 fallback 又选回同一个 stem。
+- `scripts/deep-response/pipeline/voice-pipeline.test.mjs`
+  - 新增 regression: `VoicePipeline streamCascadeTurn avoids repeating the previous opening stem`。
+- `scripts/run-deep-response-watch-sim-experience.mjs`
+  - 新增 10-turn Watch Simulator fake mic 产品体验 gate，读取真实 server events/audio/timing/screenshots 并判定 repeated opening、audio、turn completion、blocking errors。
+- `package.json`
+  - 新增 `npm run deep:watchlab:experience:10`。
+
+修复后证据:
+
+- Focused tests: PASS.
+- `npm run test:node`: PASS, 278/278.
+- `npm run deep:watchlab:build:volc`: BUILD SUCCEEDED.
+- `npm run deep:lab:selftest`: PASS, report `/private/tmp/deep-response-lab-selftest-2026-06-05T06-00-03-025Z`.
+  - `summary.json.overall`: `PASS`
+  - `mouth`, `eye`, `ear`, `server`, `judge`: all PASS
+  - scenarios: `normal_turn`, `multi_turn`, `goodbye_end`, `silent_recovery`, `interrupt_entry`
+  - server events include `session_end`, `idle`, `abort`, and `abort_next_turn`
+  - audio audits: 4/4 PASS
+  - screenshots checked: running `Waiting playback`, done `Sim mic done`
+- `npm run deep:watchlab:experience:10`: PASS, report `/private/tmp/deep-response-watch-sim-experience-after-opening-fix`.
+  - Watch turns requested: 10
+  - Server turns observed: 10
+  - Audio audits: 10/10 PASS
+  - server events: 164 total; 10 `input_stop`, 10 `transcript_final`, 10 `audio_done`, 10 `timing`, 10 `turn_done`
+  - no `-999`, `-1001`, `Volc_Server_Error`, provider error, empty ASR/god output, silent audio, or timeout-like error event
+  - openings no longer repeat consecutively: `那今`, `今天`, `我陪`, `先把`, `不用`, `先别`, `这会`, `让自`, `把肩`, `那咱`
+  - screenshots checked: running legal `Waiting playback`, done `Sim mic done`
+
+残余风险:
+
+- 10-turn Watch experience uses one repeated comfort fixture, so it validates long continuous client/server behavior and anti-repetition guard but not broad intent diversity.
+- Goodbye and interrupt are proven by standard selftest/server evidence and Watch source tests in this pass, not by a dedicated 10-turn Watch goodbye/abort fixture.
+- PCM audit proves received/generated audio bytes are non-silent and complete enough for automation; it still does not prove real Watch speaker route or human subjective voice quality.
+
+## 13. 目标完成
 
 目标完成。
 

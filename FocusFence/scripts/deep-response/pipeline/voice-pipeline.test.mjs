@@ -873,6 +873,49 @@ test("VoicePipeline streamCascadeTurn rotates high-frequency comfort stems after
   assert.deepEqual(ttsTexts, ["我陪你慢下来。", "“他必坚固你。”"]);
 });
 
+test("VoicePipeline streamCascadeTurn avoids repeating the previous opening stem", async () => {
+  const ttsTexts = [];
+  const asr = {
+    async *transcribeStream() {
+      yield { type: "transcript_final", transcript: "今天我很累，想听一句安慰。", timing: { transcript_final_ms: 1000 } };
+    }
+  };
+  const llm = {
+    async *streamTokens() {
+      yield { type: "delta", delta: "先把这口气放下。主会让你重新得力。" };
+      yield { type: "done", timing: { llm_first_token_ms: 100, llm_total_ms: 200 } };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      ttsTexts.push(text);
+      yield { type: "audio_chunk", audioChunk: Buffer.from(`${text}:audio`), sampleRate: 24000 };
+      yield { type: "done", timing: { tts_first_audio_ms: 80 }, connectID: "tts-previous-opening-rotated" };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20, 30]) });
+  const events = [];
+  for await (const event of pipeline.streamCascadeTurn({
+    audioChunks: [Buffer.from("voice")],
+    turnID: "turn-previous-opening",
+    generationID: "gen-previous-opening",
+    maxSpokenReplyChars: 80,
+    context: [
+      { role: "assistant", content: "先把这口气放下。主会使你得力。" }
+    ]
+  })) {
+    events.push(event);
+  }
+
+  const text = events
+    .filter((event) => event.type === "assistant_text_delta")
+    .map((event) => event.delta)
+    .join("");
+  assert.doesNotMatch(text, /^先把/);
+  assert.notEqual(ttsTexts[0], "先把这口气放下。");
+});
+
 test("VoicePipeline streamCascadeTurn removes dangling particles after normalized comfort openings", async () => {
   const ttsTexts = [];
   const asr = {

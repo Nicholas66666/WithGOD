@@ -886,7 +886,14 @@ function rotateOverusedOpeningStem(text, { context = [], maxRepeats = 2 } = {}) 
 }
 
 function getOpeningStemMaxRepeats(openingStem, defaultMaxRepeats) {
-  const highFrequencyComfortStems = new Set(["我在"]);
+  const highFrequencyComfortStems = new Set([
+    "我在",
+    "我陪",
+    "先把",
+    "不用",
+    "今天",
+    "那今"
+  ]);
   return highFrequencyComfortStems.has(openingStem) ? 1 : defaultMaxRepeats;
 }
 
@@ -894,12 +901,17 @@ function pickOpeningReplacement(context, avoidedStem, maxRepeats) {
   const candidates = [
     "我陪你慢下来。",
     "先把这口气放下。",
-    "不用硬撑着。"
+    "不用硬撑着。",
+    "今天先歇口气。",
+    "先别急着撑住。",
+    "这会儿慢一点。",
+    "让自己歇一下。",
+    "把肩先放松。"
   ];
   return candidates.find((candidate) => {
     const stem = extractOpeningStem(candidate);
     return stem && stem !== avoidedStem && countAssistantOpeningStem(context, stem) < maxRepeats;
-  }) || "我陪你慢下来。";
+  }) || candidates.find((candidate) => extractOpeningStem(candidate) !== avoidedStem) || "我陪你慢下来。";
 }
 
 function pickShortReplyFallback(context) {

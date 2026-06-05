@@ -52,6 +52,13 @@ test("package exposes DeepResponse WatchLab simulator fake mic run", () => {
   assert.match(command, /node scripts\/run-deep-response-watch-sim-fakemic\.mjs/);
 });
 
+test("package exposes DeepResponse WatchLab 10-turn real experience gate", () => {
+  const command = packageJSON.scripts?.["deep:watchlab:experience:10"] || "";
+
+  assert.match(command, /node scripts\/run-deep-response-watch-sim-experience\.mjs/);
+  assert.match(command, /--turns 10/);
+});
+
 test("package exposes DeepResponse product self-test lab", () => {
   const command = packageJSON.scripts?.["deep:lab:selftest"] || "";
 
