@@ -234,6 +234,11 @@ test("DeepResponse Watch enters assistantSpeaking on first streamed audio", () =
   assert.match(firstAudioFunction, /conversationState = \.assistantSpeaking/);
 });
 
+test("DeepResponse Watch mic button remains tappable for assistant-thinking barge-in", () => {
+  assert.doesNotMatch(debugViewSource, /\.disabled\(isWaitingForResponse\)/);
+  assert.match(debugViewSource, /conversationState == \.assistantThinking[\s\S]*?await abortCurrentTurn\(\)/);
+});
+
 test("DeepResponse Watch playback drained returns non-continuous speaking to listening", () => {
   const drainedFunction = debugViewSource.match(/private func handlePlaybackDrained\(\) \{[\s\S]*?\n    \}/)?.[0] || "";
   assert.match(drainedFunction, /if !isContinuousMode,[\s\S]*?conversationState == \.assistantSpeaking \{[\s\S]*?conversationState = \.listening[\s\S]*?return/);

@@ -79,20 +79,21 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `233/233` passed.
+- Node self-tests: `234/234` passed.
 - Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply, lookup-style-comfort, harsh repeated-comfort, mechanical tired/fatigue, incomplete-utterance, `是还想听`, formulaic scripture lead-in, awkward spoken-opening, and dangling `啦。` gates enabled.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
 - Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
 - Fire/Volcengine partial-ASR LLM start: `llm_started_from_partial: 1` on both standard smoke turns.
-- Fire/Volcengine smoke stop-to-first-audio: `230ms`, `212ms`.
+- Fire/Volcengine smoke stop-to-first-audio: `230ms`, `247ms`.
 - Fire/Volcengine repeated reply failures: `[]`.
 - Fire/Volcengine forbidden lookup/harsh/mechanical comfort failures: `[]`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: false`, `store: jsonl`, `reason: idle_timeout`, `summary: ""`, `closureClean: true`.
 - Fire/Volcengine 8-turn continuous conversation gate now uses realtime upload pacing (`--upload-sleep-ms 1000`) and `--max-stop-to-first-audio-ms 1000`.
 - Fire/Volcengine 8-turn continuous conversation gate: passed with `session_end` reason `user_goodbye`, `memoryRecalled.count: 3`, `memory_candidate.persisted: true`, `forbiddenTextFailures: []`, `repeatedMemoryLineFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, and late audio `409 session_ended`.
-- Fire/Volcengine 8-turn stop-to-first-audio: `249ms`, `241ms`, `243ms`, `254ms`, `237ms`, `243ms`, `252ms`, `235ms`.
+- Fire/Volcengine 8-turn stop-to-first-audio: `234ms`, `236ms`, `242ms`, `238ms`, `238ms`, `231ms`, `257ms`, `279ms`.
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
+- Latest WatchLab assistant-thinking mic reachability gate: the primary microphone button is no longer disabled while `isWaitingForResponse` is true, so the already-modeled `assistantThinking` barge-in path is actually reachable from the UI before first audio arrives. `toggleMicrophoneTurn()` and `startRecordingTurn()` still guard illegal new recordings by state; the change only removes the SwiftUI-level blocker that prevented local-first abort. RED source gate first failed on `.disabled(isWaitingForResponse)`. Full `npm run deep:selftest:full` passed with Node `234/234`, Fire/Volcengine smoke `230ms` / `247ms`, 8-turn stop-to-first-audio `234ms`, `236ms`, `242ms`, `238ms`, `238ms`, `231ms`, `257ms`, `279ms`, and WatchLab `BUILD SUCCEEDED`. No user-operated Watch test was required.
 - Latest remote repeated-memory-line gate: the standard Fire/Volcengine 8-turn conversation script now accepts `--forbid-repeated-memory-lines`, collects duplicate lines from the final `memory_candidate.summary`, and fails if any normalized line appears more than once. This makes the previous memory line-dedupe behavior an actual remote ECS regression gate, not only a server unit test. Full `npm run deep:selftest:full` passed with Node `233/233`, Fire/Volcengine smoke `230ms` / `212ms`, remote 8-turn `repeatedMemoryLineFailures: []`, 8-turn stop-to-first-audio `249ms`, `241ms`, `243ms`, `254ms`, `237ms`, `243ms`, `252ms`, `235ms`, and WatchLab `BUILD SUCCEEDED`. No user-operated Watch test was required.
 - Latest S6 memory candidate line-dedupe gate: new async memory candidates and recalled JSONL summaries now remove repeated identical memory lines before event emission, JSONL persistence, or LLM context injection. This keeps repeated turns from writing the same `User:` line many times while preserving distinct assistant memory lines. RED regression first showed two identical user lines persisted; latest remote 8-turn memory candidate now contains one `User: 今天我有点累...` line followed by distinct AI lines. Full `npm run deep:selftest:full` passed after direct Fire/Volcengine ECS sync with Node `232/232`, Fire/Volcengine smoke `217ms` / `228ms`, 8-turn stop-to-first-audio `262ms`, `219ms`, `260ms`, `245ms`, `257ms`, `257ms`, `288ms`, `220ms`, and WatchLab `BUILD SUCCEEDED`. No user-operated Watch test was required.
 - Latest S6 empty-memory persistence gate: HTTP session memory candidates still emit diagnostics when idle/goodbye cleanup leaves an empty summary, but empty summaries no longer write a JSONL row. The standard Fire/Volcengine smoke gate now uses `--expect-idle-memory-candidate` instead of requiring idle empty memory persistence, and latest remote idle output showed `persisted: false`, `store: jsonl`, `summary: ""`, `closureClean: true`. Full `npm run deep:selftest:full` passed after direct Fire/Volcengine ECS sync. No user-operated Watch test was required.

@@ -2270,6 +2270,23 @@ Latest remote repeated-memory-line conversation gate:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This is an S6 remote self-test coverage update; Watch transport remains HTTP-only, WebSocket is fully out of scope, and no user-operated Watch test was required.
 
+Latest WatchLab assistant-thinking mic reachability gate:
+- The existing state machine already modeled `mic_pressed` during `assistantThinking` as local-first barge-in, but the SwiftUI microphone button was still disabled by `isWaitingForResponse`, making that path unreachable before first audio.
+- Removed the microphone button's `.disabled(isWaitingForResponse)` modifier. The state guard remains inside `toggleMicrophoneTurn()` and `startRecordingTurn()`, so illegal new recordings are still rejected while assistant-thinking barge-in can call `abortCurrentTurn()`.
+- Added a source-level WatchLab regression gate proving the microphone button is not disabled during waiting and that `assistantThinking` routes to `abortCurrentTurn()`.
+- Verification:
+  - RED `node --test --test-name-pattern "mic button remains tappable" scripts/deep-response-watch-ui.test.mjs` first failed on `.disabled(isWaitingForResponse)`.
+  - Focused gate passed after implementation.
+  - `node --test scripts/deep-response-watch-ui.test.mjs scripts/deep-response/lib/watch-continuous-state-machine.test.mjs`: `60/60` passed.
+  - `npm run test:node`: `234/234` passed.
+  - `DEEP_RESPONSE_REALTIME_ENDPOINT=http://124.174.96.149:8797 xcodebuild -project Focus.xcodeproj -scheme DeepResponseWatchLab -configuration Debug -destination generic/platform=watchOS -derivedDataPath /private/tmp/focus-deepresponse-volc-build build`: `BUILD SUCCEEDED`.
+  - `npm run deep:selftest:full`: passed end to end.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `230ms`, `247ms`; `llm_started_from_partial: 1` on both turns; abort stale audio chunks/bytes: `0` / `0`; idle memory candidate `persisted: false`, `closureClean: true`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedMemoryLineFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `234ms`, `236ms`, `242ms`, `238ms`, `238ms`, `231ms`, `257ms`, `279ms`.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This is an S5/S4 WatchLab reachability self-test update; Watch transport remains HTTP-only, WebSocket is fully out of scope, and no user-operated Watch test was required.
+
 - Unit and server tests:
   - `npm run test:node`
 

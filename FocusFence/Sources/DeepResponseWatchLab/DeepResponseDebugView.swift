@@ -124,7 +124,6 @@ struct DeepResponseDebugView: View {
                     Image(systemName: isRecording ? "stop.circle.fill" : "mic.circle.fill")
                 }
                 .buttonStyle(.borderedProminent)
-                .disabled(isWaitingForResponse)
 
                 if client.canAbortHTTPSessionTurn {
                     Button {
