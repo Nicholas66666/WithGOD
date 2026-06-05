@@ -245,7 +245,13 @@ struct DeepResponseDebugView: View {
             try await client.startHTTPSessionTurn()
             status = reason
             try await recorder.start(
-                configuration: .init(isEndpointingEnabled: isContinuousMode),
+                configuration: .init(
+                    isEndpointingEnabled: isContinuousMode,
+                    voiceActivityThreshold: isContinuousMode ? 0.02 : 0.012,
+                    minimumSpeechMilliseconds: 240,
+                    endSilenceMilliseconds: 700,
+                    maximumSpeechMilliseconds: 8_000
+                ),
                 onChunk: { chunk in
                     Task { @MainActor in
                         client.enqueueHTTPSessionAudio(chunk)
@@ -438,7 +444,8 @@ struct DeepResponseDebugView: View {
                         isEndpointingEnabled: true,
                         voiceActivityThreshold: 0.035,
                         minimumSpeechMilliseconds: 180,
-                        endSilenceMilliseconds: 180
+                        endSilenceMilliseconds: 180,
+                        maximumSpeechMilliseconds: 1_500
                     ),
                     onChunk: nil,
                     onSilence: nil,

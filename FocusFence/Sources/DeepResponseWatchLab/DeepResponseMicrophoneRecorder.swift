@@ -7,6 +7,7 @@ final class DeepResponseMicrophoneRecorder {
         var voiceActivityThreshold = 0.012
         var minimumSpeechMilliseconds = 240
         var endSilenceMilliseconds = 900
+        var maximumSpeechMilliseconds = 8_000
     }
 
     private let engine = AVAudioEngine()
@@ -253,6 +254,11 @@ final class DeepResponseMicrophoneRecorder {
                 speechStartedAt = now
             }
             lastVoiceAt = now
+            if let speechStartedAt,
+               now.timeIntervalSince(speechStartedAt) * 1_000 >= Double(configuration.maximumSpeechMilliseconds) {
+                emitSilenceIfNeeded()
+                return
+            }
             if let speechStartedAt,
                !didEmitVoiceStart,
                now.timeIntervalSince(speechStartedAt) * 1_000 >= Double(configuration.minimumSpeechMilliseconds) {

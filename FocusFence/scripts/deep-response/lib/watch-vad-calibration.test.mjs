@@ -17,6 +17,7 @@ test("extractWatchVADConfiguration reads Watch endpointing constants", () => {
   assert.equal(config.voiceActivityThreshold, 0.012);
   assert.equal(config.minimumSpeechMilliseconds, 240);
   assert.equal(config.endSilenceMilliseconds, 900);
+  assert.equal(config.maximumSpeechMilliseconds, 8_000);
 });
 
 test("voiceActivityLevelPCM16 matches average absolute Int16 amplitude", () => {

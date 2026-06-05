@@ -109,7 +109,7 @@ Run date: 2026-06-05.
 Report:
 
 ```text
-/private/tmp/deep-response-lab-selftest-2026-06-05T06-07-29-861Z
+/private/tmp/deep-response-lab-selftest-2026-06-05T07-55-55-139Z
 ```
 
 Result:
@@ -118,15 +118,31 @@ Result:
 - `mouth`, `eye`, `ear`, `server`, `judge`: all `PASS`
 - Scenarios covered: `normal_turn`, `multi_turn`, `goodbye_end`, `silent_recovery`, `interrupt_entry`
 - Audio audits: 4/4 PASS; no silent audio or clipping
-- Audio audit bytes: 216,846-286,080 bytes per conversation turn
+- Audio audit bytes: 241,286-270,262 bytes per conversation turn
 - Screenshots checked: `screenshots/running.png` and `screenshots/done.png`
 
 Findings from this pass:
 
-- Product bugs: no new bugs found in the standard self-test pass.
+- Product bug fixed after real Watch testing: continuous auto-listen could stay in `Auto listening` indefinitely when local VAD never observed enough silence on hardware.
 - Blocking lab defects: none in this run.
 - Environment issues: none in this run.
-- Accepted follow-ups: OCR/pixel-semantic UI checks, true speaker/human hearing checks, and broader fixture coverage remain outside this product self-test pass.
+- Accepted follow-ups: OCR/pixel-semantic UI checks, true speaker/human hearing checks, broader fixture coverage, and real acoustic echo cancellation quality remain outside this product self-test pass.
+
+Fix in this pass:
+
+- `DeepResponseMicrophoneRecorder.Configuration` now has `maximumSpeechMilliseconds` as a hard endpointing guard.
+- Continuous Watch recording uses a bounded endpointing config: threshold `0.02`, silence `700ms`, and max speech `8,000ms`.
+- Playback barge-in monitoring is also bounded at `1,500ms` and still does not upload speaker-monitor audio.
+
+Evidence:
+
+- Focused Watch UI/VAD tests: 53/53 PASS.
+- `npm run test:node`: 281/281 PASS.
+- `npm run deep:watchlab:build:volc`: PASS.
+- `npm run deep:lab:selftest`: PASS.
+- Screenshot `running.png` showed the state advance to `Auto silence` instead of remaining stuck in `Auto listening`.
+- Timing max `http_stop_to_first_audio_ms`: `251`.
+- Server evidence included 4 conversation `turn_done` events, user-goodbye `session_end`, idle-timeout `session_end`, and abort entry/recovery events.
 
 ## Latest 10-Turn Watch Simulator Experience Pass
 

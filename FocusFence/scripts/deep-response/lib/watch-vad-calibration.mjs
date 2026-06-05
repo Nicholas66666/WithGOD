@@ -2,7 +2,8 @@ export function extractWatchVADConfiguration(source) {
   return {
     voiceActivityThreshold: extractNumber(source, "voiceActivityThreshold"),
     minimumSpeechMilliseconds: extractNumber(source, "minimumSpeechMilliseconds"),
-    endSilenceMilliseconds: extractNumber(source, "endSilenceMilliseconds")
+    endSilenceMilliseconds: extractNumber(source, "endSilenceMilliseconds"),
+    maximumSpeechMilliseconds: extractNumber(source, "maximumSpeechMilliseconds")
   };
 }
 

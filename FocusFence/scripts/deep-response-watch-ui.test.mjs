@@ -98,13 +98,15 @@ test("DeepResponse Watch recorder exposes local silence endpointing hooks", () =
   assert.match(recorderSource, /struct Configuration/);
   assert.match(recorderSource, /isEndpointingEnabled/);
   assert.match(recorderSource, /endSilenceMilliseconds/);
+  assert.match(recorderSource, /maximumSpeechMilliseconds/);
   assert.match(recorderSource, /onSilence: \(\(\) -> Void\)\?/);
   assert.match(recorderSource, /voiceActivityLevel\(in data: Data\)/);
   assert.match(recorderSource, /emitSilenceIfNeeded\(\)/);
+  assert.match(recorderSource, /timeIntervalSince\(speechStartedAt\) \* 1_000 >= Double\(configuration\.maximumSpeechMilliseconds\)[\s\S]*?emitSilenceIfNeeded\(\)/);
 });
 
 test("DeepResponse Watch continuous mode auto-finishes a turn on recorder silence", () => {
-  assert.match(debugViewSource, /configuration: \.init\(isEndpointingEnabled: isContinuousMode\)/);
+  assert.match(debugViewSource, /configuration: \.init\([\s\S]*?isEndpointingEnabled: isContinuousMode,[\s\S]*?voiceActivityThreshold: isContinuousMode \? 0\.02 : 0\.012,[\s\S]*?endSilenceMilliseconds: 700,[\s\S]*?maximumSpeechMilliseconds: 8_000/);
   assert.match(debugViewSource, /onSilence: \{/);
   assert.match(debugViewSource, /await finishRecordingTurn\(reason: "Auto silence"\)/);
 });
@@ -113,7 +115,7 @@ test("DeepResponse Watch monitors playback for barge-in without uploading speake
   assert.match(debugViewSource, /@State private var isMonitoringPlaybackBargeIn = false/);
   assert.match(debugViewSource, /startPlaybackBargeInMonitor\(\)/);
   assert.match(debugViewSource, /#if targetEnvironment\(simulator\)[\s\S]*?return[\s\S]*?#else[\s\S]*?guard isContinuousMode/);
-  assert.match(debugViewSource, /configuration: \.init\([\s\S]*?isEndpointingEnabled: true,[\s\S]*?voiceActivityThreshold: 0\.035,[\s\S]*?minimumSpeechMilliseconds: 180,[\s\S]*?endSilenceMilliseconds: 180/);
+  assert.match(debugViewSource, /configuration: \.init\([\s\S]*?isEndpointingEnabled: true,[\s\S]*?voiceActivityThreshold: 0\.035,[\s\S]*?minimumSpeechMilliseconds: 180,[\s\S]*?endSilenceMilliseconds: 180,[\s\S]*?maximumSpeechMilliseconds: 1_500/);
   assert.match(debugViewSource, /onChunk: nil/);
   assert.match(debugViewSource, /await abortCurrentTurn\(fromPlaybackMonitor: true\)/);
   assert.doesNotMatch(debugViewSource, /startPlaybackBargeInMonitor[\s\S]*?client\.enqueueHTTPSessionAudio/);
