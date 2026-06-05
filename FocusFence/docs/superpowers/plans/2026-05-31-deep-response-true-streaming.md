@@ -44,6 +44,7 @@
   - Full hands-free listening loop has a source/build gate, including local VAD/silence endpointing, but still needs stronger simulator/script state-machine coverage before final product readiness.
   - Goodbye and idle-end flows are implemented on the server and covered by smoke tests.
   - Summary/memory candidate JSONL persistence is implemented, and new HTTP sessions can recall bounded recent JSONL memory into LLM context.
+  - Continuous mode initial entry now starts the first Watch recording turn immediately; this path is covered by the state-machine test and a Swift source gate after a real Watch report showed the UI could toggle `Continuous on` without opening the microphone.
   - Watch installation/launch is sometimes blocked by CoreDevice tunnel instability; do not rely on user-operated Watch testing for normal development progress.
   - Development mode is now completely self-test. Do not ask the user to operate Apple Watch as a planned validation step; local/server/simulator/source/build checks are the phase gates.
 
@@ -2369,6 +2370,18 @@ Latest WatchLab session-end playback-active state-machine gate:
   - `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`: `66/66` passed.
   - `npm run test:node`: `243/243` passed.
 - This is a WatchLab state-model self-test update only; no server deploy, WebSocket work, or user-operated Watch test was required.
+
+Latest WatchLab continuous-on initial recording gate:
+- Fixed the first-entry continuous mode path after a real Watch observation: the UI showed `Continuous on`, but no microphone recording began.
+- `DeepResponseDebugView.toggleContinuousMode()` now starts `startRecordingTurn(reason: "Auto listening")` immediately when enabling continuous mode from idle/listening.
+- The scriptable state model emits `start_recording:continuous_on` for this transition.
+- Verification:
+  - RED focused test first failed for the missing source/state transition.
+  - `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`: `72/72` passed.
+  - `npm run test:node`: `250/250` passed.
+  - Fire/Volcengine WatchLab build succeeded.
+  - `DeepLab` was installed and launched on the connected Watch using `devicectl`.
+- This is still HTTP-only Watch transport. No Watch WebSocket or client-facing server WebSocket work was introduced.
 
 - Unit and server tests:
   - `npm run test:node`

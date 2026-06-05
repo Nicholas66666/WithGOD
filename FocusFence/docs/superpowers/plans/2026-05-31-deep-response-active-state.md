@@ -56,6 +56,7 @@ DeepResponse remains in the independent Lab target.
 
 Latest pushed commits:
 
+- `4fe9aee` Start DeepResponse recording when continuous turns on.
 - `3de76d0` Gate DeepResponse phrase-to-audio cascade latency.
 - `1fbce0e` Wait for DeepResponse goodbye audio after turn done.
 - `55fcb55` Model DeepResponse turn-done playback drain.
@@ -265,6 +266,7 @@ npm run deep:provider:benchmark -- \
 - Continuous conversation self-test gate: multi-turn context, goodbye intent, idle goodbye, late audio rejection.
 - Fire/Volcengine continuous 8-turn gate is part of the standard full self-test.
 - Watch continuous-loop state-machine self-test: auto-listen after playback drain, immediate auto-listen without queued playback, barge-in resume, and session-end stop.
+- Watch continuous-mode entry gate: turning Continuous on from idle/listening must immediately start the first recording turn, not merely toggle UI state.
 - Watch barge-in local-first self-test: continuous-mode `abort_requested` starts recording before server abort ack while preserving stale generation discard.
 - Watch assistant-thinking self-test: continuous mode enters `assistantThinking` while waiting for server response before playback starts.
 - Watch ending-state self-test: continuous mode enters `ending` during server session closure before final `ended`.
@@ -298,3 +300,28 @@ During implementation:
 用户人工 Watch 真机测试不作为阶段计划、推进条件、验收门槛或常规反馈循环。
 
 Do not schedule or request user-operated Watch testing for this implementation plan. If the user independently runs a build and reports observations, treat that as extra product feedback only; keep the validation path based on automated self-tests, source gates, simulator/source checks, remote harnesses, and builds.
+
+## Latest Increment: Continuous-On Entry Fix
+
+User-observed Watch feedback exposed a self-test gap: tapping Continuous changed the label to `Continuous on`, but the first microphone recording did not start.
+
+Root cause:
+
+- `DeepResponseDebugView.toggleContinuousMode()` only toggled `isContinuousMode` and status on the initial entry path.
+- Existing self-tests covered auto-listen after playback drain and barge-in resume, but not the first transition from idle/listening into continuous mode.
+
+Fix:
+
+- `toggleContinuousMode()` now calls `startRecordingTurn(reason: "Auto listening")` immediately when continuous mode is enabled and the Watch is idle, not recording, not waiting for response, and the HTTP session is not ended.
+- `watch-continuous-state-machine` now models this as `start_recording:continuous_on`.
+- Source gate `DeepResponse Watch continuous mode on starts initial recording` prevents regressing this Swift path.
+
+Verification:
+
+- RED first failed for:
+  - `node --test --test-name-pattern "continuous mode on starts|turning continuous mode on" scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`
+- After implementation:
+  - `node --test scripts/deep-response/lib/watch-continuous-state-machine.test.mjs scripts/deep-response-watch-ui.test.mjs`: `72/72` passed.
+  - `npm run test:node`: `250/250` passed.
+  - Watch build with Fire/Volcengine endpoint succeeded.
+  - Installed and launched `DeepLab` on `Niu's Apple Watch` through `devicectl`.
