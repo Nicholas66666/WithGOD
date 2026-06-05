@@ -268,7 +268,7 @@ test("mic press during post-turn playback stops local audio without server abort
   ]);
 });
 
-test("session end blocks auto-listen and keeps the loop ended", () => {
+test("session end blocks auto-listen while queued playback drains", () => {
   const result = simulateDeepResponseWatchEvents([
     { type: "toggle_continuous", enabled: true },
     { type: "recording_started" },
@@ -278,7 +278,33 @@ test("session end blocks auto-listen and keeps the loop ended", () => {
 
   assert.equal(result.state.conversationState, "ended");
   assert.equal(result.state.isRecording, false);
-  assert.deepEqual(result.actions, []);
+  assert.deepEqual(result.actions, [
+    "wait_for_playback_drain",
+    "finalize_session_end"
+  ]);
+});
+
+test("recording finish with session end waits for active playback before ending", () => {
+  const afterRecordingFinished = applyDeepResponseWatchEvent({
+    isContinuousMode: true,
+    isRecording: true,
+    isWaitingForResponse: false,
+    isHTTPSessionEnded: false,
+    lastError: null,
+    conversationState: "userSpeaking"
+  }, { type: "recording_finished", playbackActive: true, sessionEnded: true });
+
+  assert.equal(afterRecordingFinished.state.conversationState, "ending");
+  assert.equal(afterRecordingFinished.state.isHTTPSessionEnded, true);
+  assert.equal(afterRecordingFinished.state.isRecording, false);
+  assert.deepEqual(afterRecordingFinished.actions, ["wait_for_playback_drain"]);
+
+  const afterPlaybackDrain = applyDeepResponseWatchEvent(afterRecordingFinished.state, {
+    type: "playback_drained"
+  });
+
+  assert.equal(afterPlaybackDrain.state.conversationState, "ended");
+  assert.deepEqual(afterPlaybackDrain.actions, ["finalize_session_end"]);
 });
 
 test("session end without active playback enters ending before final ended state", () => {
