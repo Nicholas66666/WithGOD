@@ -31,6 +31,7 @@ export function parseHTTPConversationArgs(argv) {
     maxAssistantReplyChars: 0,
     minAssistantReplyChars: 0,
     maxStopToFirstAudioMs: 0,
+    maxFirstAudioAfterFirstPhraseMs: 0,
     forbiddenTextPatterns: [],
     verbose: false
   };
@@ -100,6 +101,9 @@ export function parseHTTPConversationArgs(argv) {
       index += 1;
     } else if (arg === "--max-stop-to-first-audio-ms") {
       args.maxStopToFirstAudioMs = Number(argv[index + 1] || 0);
+      index += 1;
+    } else if (arg === "--max-first-audio-after-first-phrase-ms") {
+      args.maxFirstAudioAfterFirstPhraseMs = Number(argv[index + 1] || 0);
       index += 1;
     } else if (arg === "--forbid-text-pattern") {
       args.forbiddenTextPatterns.push(argv[index + 1] || "");
@@ -314,6 +318,12 @@ export async function runHTTPConversationProbe(args) {
   if (stopToFirstAudioFailures.length > 0) {
     throw new Error(`Stop-to-first-audio failures: ${JSON.stringify(stopToFirstAudioFailures, null, 2)}`);
   }
+  const firstAudioAfterFirstPhraseFailures = collectFirstAudioAfterFirstPhraseFailures(turns, {
+    maxMs: args.maxFirstAudioAfterFirstPhraseMs
+  });
+  if (firstAudioAfterFirstPhraseFailures.length > 0) {
+    throw new Error(`First-audio-after-first-phrase failures: ${JSON.stringify(firstAudioAfterFirstPhraseFailures, null, 2)}`);
+  }
   const partialStartFailures = args.expectLLMStartedFromPartial
     ? collectConversationPartialStartFailures(turns)
     : [];
@@ -365,6 +375,7 @@ export async function runHTTPConversationProbe(args) {
     longReplyFailures,
     shortReplyFailures,
     stopToFirstAudioFailures,
+    firstAudioAfterFirstPhraseFailures,
     partialStartFailures,
     audioBeforeTurnDoneFailures,
     lateAudioRejected,
@@ -648,6 +659,28 @@ export function collectStopToFirstAudioFailures(turns = [], { maxMs = 0 } = {}) 
         turnID: turn?.turnID || "",
         maxMs: limit,
         stopToFirstAudioMs,
+        text: String(turn?.text || "").trim()
+      });
+    }
+  }
+  return failures;
+}
+
+export function collectFirstAudioAfterFirstPhraseFailures(turns = [], { maxMs = 0 } = {}) {
+  const limit = Number(maxMs || 0);
+  if (!Number.isFinite(limit) || limit <= 0) {
+    return [];
+  }
+  const failures = [];
+  for (const turn of turns || []) {
+    const firstAudioAfterFirstPhraseMs = Number.isFinite(turn?.timing?.http_first_audio_after_first_phrase_ms)
+      ? Number(turn.timing.http_first_audio_after_first_phrase_ms)
+      : null;
+    if (firstAudioAfterFirstPhraseMs == null || firstAudioAfterFirstPhraseMs < 0 || firstAudioAfterFirstPhraseMs > limit) {
+      failures.push({
+        turnID: turn?.turnID || "",
+        maxMs: limit,
+        firstAudioAfterFirstPhraseMs,
         text: String(turn?.text || "").trim()
       });
     }

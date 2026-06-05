@@ -70,6 +70,7 @@ test("package exposes standard Fire Volcengine DeepResponse continuous conversat
   assert.match(command, /--min-assistant-reply-chars 8/);
   assert.match(command, /--max-memory-opening-stem-repeats 2/);
   assert.match(command, /--max-stop-to-first-audio-ms 1000/);
+  assert.match(command, /--max-first-audio-after-first-phrase-ms 1000/);
   assert.match(command, /--forbid-text-pattern '大卫\.\*歌利亚'/);
   assert.match(command, /--forbid-text-pattern '你知道\.\*为什么'/);
   assert.match(command, /--forbid-text-pattern '摩西\.\*杖\|耶路撒冷城墙\|牧人引领羊群\|约书亚\|以利亚'/);

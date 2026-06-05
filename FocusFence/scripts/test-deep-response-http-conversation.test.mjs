@@ -12,6 +12,7 @@ import {
   collectLongConversationReplyFailures,
   collectShortConversationReplyFailures,
   collectStopToFirstAudioFailures,
+  collectFirstAudioAfterFirstPhraseFailures,
   collectConversationPartialStartFailures,
   collectAudioBeforeTurnDoneFailures,
   parseHTTPConversationArgs,
@@ -57,6 +58,7 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
     "--max-assistant-reply-chars", "48",
     "--min-assistant-reply-chars", "8",
     "--max-stop-to-first-audio-ms", "3500",
+    "--max-first-audio-after-first-phrase-ms", "1000",
     "--forbid-text-pattern", "[:：]\\s*$|你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|是还想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)"
   ]);
 
@@ -76,6 +78,7 @@ test("parseHTTPConversationArgs accepts session-end validation options", () => {
   assert.equal(args.maxAssistantReplyChars, 48);
   assert.equal(args.minAssistantReplyChars, 8);
   assert.equal(args.maxStopToFirstAudioMs, 3500);
+  assert.equal(args.maxFirstAudioAfterFirstPhraseMs, 1000);
   assert.deepEqual(args.forbiddenTextPatterns, ["[:：]\\s*$|你还想听|你还是想听|你又想听|喊累|没说完|只说.*想听|是还想听|你(?:今天)?还是(?:觉得|有点)?累|你又累|你又(?:觉得|感到)(?:累|疲惫)"]);
 });
 
@@ -444,6 +447,41 @@ test("collectStopToFirstAudioFailures flags long-tail first audio latency", () =
       maxMs: 3000,
       stopToFirstAudioMs: null,
       text: "这轮没有音频。"
+    }
+  ]);
+});
+
+test("collectFirstAudioAfterFirstPhraseFailures flags delayed phrase-to-audio cascade", () => {
+  const failures = collectFirstAudioAfterFirstPhraseFailures([
+    {
+      turnID: "turn-1",
+      timing: { http_first_audio_after_first_phrase_ms: 120 },
+      text: "我陪你慢下来。"
+    },
+    {
+      turnID: "turn-2",
+      timing: { http_first_audio_after_first_phrase_ms: 1250 },
+      text: "这一轮 TTS 等太久。"
+    },
+    {
+      turnID: "turn-3",
+      timing: {},
+      text: "这一轮没有 phrase/audio 顺序。"
+    }
+  ], { maxMs: 1000 });
+
+  assert.deepEqual(failures, [
+    {
+      turnID: "turn-2",
+      maxMs: 1000,
+      firstAudioAfterFirstPhraseMs: 1250,
+      text: "这一轮 TTS 等太久。"
+    },
+    {
+      turnID: "turn-3",
+      maxMs: 1000,
+      firstAudioAfterFirstPhraseMs: null,
+      text: "这一轮没有 phrase/audio 顺序。"
     }
   ]);
 });
