@@ -79,20 +79,21 @@ npm run deep:selftest:full
 
 Latest result:
 
-- Node self-tests: `231/231` passed.
+- Node self-tests: `232/232` passed.
 - Fire/Volcengine HTTP smoke: passed with identical-consecutive-reply, lookup-style-comfort, harsh repeated-comfort, mechanical tired/fatigue, incomplete-utterance, `是还想听`, formulaic scripture lead-in, awkward spoken-opening, and dangling `啦。` gates enabled.
 - Fire/Volcengine memory recall: `count: 3`, `store: jsonl`.
 - Fire/Volcengine debug config: `arkModel: doubao-seed-character-251128`, `arkFallbackModel: ""`.
 - Fire/Volcengine partial-ASR LLM start: `llm_started_from_partial: 1` on both standard smoke turns.
-- Fire/Volcengine smoke stop-to-first-audio: `293ms`, `179ms`.
+- Fire/Volcengine smoke stop-to-first-audio: `217ms`, `228ms`.
 - Fire/Volcengine repeated reply failures: `[]`.
 - Fire/Volcengine forbidden lookup/harsh/mechanical comfort failures: `[]`.
 - Fire/Volcengine abort stale audio chunks/bytes: `0` / `0`.
 - Fire/Volcengine idle memory candidate: `persisted: false`, `store: jsonl`, `reason: idle_timeout`, `summary: ""`, `closureClean: true`.
 - Fire/Volcengine 8-turn continuous conversation gate now uses realtime upload pacing (`--upload-sleep-ms 1000`) and `--max-stop-to-first-audio-ms 1000`.
 - Fire/Volcengine 8-turn continuous conversation gate: passed with `session_end` reason `user_goodbye`, `memoryRecalled.count: 3`, `memory_candidate.persisted: true`, `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, full-session `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, and late audio `409 session_ended`.
-- Fire/Volcengine 8-turn stop-to-first-audio: `258ms`, `239ms`, `279ms`, `260ms`, `331ms`, `250ms`, `272ms`, `248ms`.
+- Fire/Volcengine 8-turn stop-to-first-audio: `262ms`, `219ms`, `260ms`, `245ms`, `257ms`, `257ms`, `288ms`, `220ms`.
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
+- Latest S6 memory candidate line-dedupe gate: new async memory candidates and recalled JSONL summaries now remove repeated identical memory lines before event emission, JSONL persistence, or LLM context injection. This keeps repeated turns from writing the same `User:` line many times while preserving distinct assistant memory lines. RED regression first showed two identical user lines persisted; latest remote 8-turn memory candidate now contains one `User: 今天我有点累...` line followed by distinct AI lines. Full `npm run deep:selftest:full` passed after direct Fire/Volcengine ECS sync with Node `232/232`, Fire/Volcengine smoke `217ms` / `228ms`, 8-turn stop-to-first-audio `262ms`, `219ms`, `260ms`, `245ms`, `257ms`, `257ms`, `288ms`, `220ms`, and WatchLab `BUILD SUCCEEDED`. No user-operated Watch test was required.
 - Latest S6 empty-memory persistence gate: HTTP session memory candidates still emit diagnostics when idle/goodbye cleanup leaves an empty summary, but empty summaries no longer write a JSONL row. The standard Fire/Volcengine smoke gate now uses `--expect-idle-memory-candidate` instead of requiring idle empty memory persistence, and latest remote idle output showed `persisted: false`, `store: jsonl`, `summary: ""`, `closureClean: true`. Full `npm run deep:selftest:full` passed after direct Fire/Volcengine ECS sync. No user-operated Watch test was required.
 - Latest spoken-text repeated-modal typo gate: a remote 8-turn run exposed `吗吗` inside spoken text, so `VoicePipeline.streamCascadeTurn()` now removes repeated `吗` typo sequences before assistant text/audio emission, and the standard Fire/Volcengine smoke plus 8-turn gates forbid `吗吗`. Full `npm run deep:selftest:full` passed with Node `231/231`, Fire/Volcengine smoke `293ms` / `179ms`, 8-turn stop-to-first-audio `258ms`, `239ms`, `279ms`, `260ms`, `331ms`, `250ms`, `272ms`, `248ms`, idle empty memory `persisted: false`, and WatchLab `BUILD SUCCEEDED`. No user-operated Watch test was required.
 - Latest S6 recalled-memory story-analogy sanitization gate: recalled JSONL memory summaries now normalize old assistant lines that contain biblical/story analogies such as `大卫/歌利亚`, `摩西`, `耶路撒冷城墙`, `牧人引领羊群`, `约书亚`, and `以利亚`, while preserving useful user memory and cleaned comfort content. RED regression first proved old recalled memory still carried `以利亚` / `约书亚`; server now strips those analogy tails before they enter LLM context. Full `npm run deep:selftest:full` passed after direct Fire/Volcengine ECS sync with Node `229/229`, Fire/Volcengine smoke `232ms` / `222ms`, 8-turn stop-to-first-audio `208ms`, `227ms`, `195ms`, `204ms`, `244ms`, `226ms`, `203ms`, `195ms`, and WatchLab `BUILD SUCCEEDED`. No user-operated Watch test was required.

@@ -1260,6 +1260,7 @@ function buildHTTPSessionMemoryCandidate(session, {
     .split("\n")
     .filter((line) => !isLookupStyleComfortLine(line))
     .filter((line) => !isSessionClosureMemoryLine(line))
+    .filter(createUniqueMemoryLineFilter())
     .join("\n")
     .slice(0, 1200);
   return {
@@ -1281,8 +1282,21 @@ function sanitizeHTTPSessionMemorySummary(summary) {
     .map((line) => normalizeHTTPSessionMemoryLine(line))
     .filter((line) => line && !isLookupStyleComfortLine(line))
     .filter((line) => !isSessionClosureMemoryLine(line))
+    .filter(createUniqueMemoryLineFilter())
     .join("\n")
     .trim();
+}
+
+function createUniqueMemoryLineFilter() {
+  const seen = new Set();
+  return (line) => {
+    const key = String(line || "").replace(/\s+/gu, "");
+    if (!key || seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  };
 }
 
 function normalizeHTTPSessionMemoryLine(line) {

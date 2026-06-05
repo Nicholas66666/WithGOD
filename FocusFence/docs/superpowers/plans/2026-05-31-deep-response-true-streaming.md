@@ -2241,6 +2241,21 @@ Latest S6 empty-memory persistence and repeated-modal typo gates:
   - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
 - This is an S6 memory/quality self-test update; Watch transport remains HTTP-only, WebSocket is fully out of scope, and no user-operated Watch test was required.
 
+Latest S6 memory candidate line-dedupe gate:
+- Async memory candidate summaries now deduplicate identical full memory lines before event emission and before JSONL persistence. Recalled persisted summaries also run through the same line-level dedupe before they are injected back into LLM context.
+- This specifically fixes repeated continuous-conversation turns where the same `User: 今天我有点累，想听一句安慰的话。` line was persisted many times in one session summary. Distinct assistant lines are preserved.
+- Verification:
+  - RED `node --test --test-name-pattern "deduplicates repeated memory candidate lines" scripts/deep-response-server.test.mjs` first failed because the candidate summary contained two identical `User:` lines.
+  - `node --test --test-name-pattern "memory candidate|persist memory|empty memory|recalled memory|memory summaries|memory recall|deduplicates repeated memory candidate lines" scripts/deep-response-server.test.mjs`: `9/9` passed.
+  - `npm run test:node`: `232/232` passed.
+  - `npm run deep:selftest:full`: passed end to end after direct Fire/Volcengine ECS sync.
+  - Full self-test Fire/Volcengine smoke stop-to-first-audio: `217ms`, `228ms`; idle memory candidate `persisted: false`, `store: jsonl`, `summary: ""`, `closureClean: true`; `llm_started_from_partial: 1` on both turns; abort stale audio chunks/bytes: `0` / `0`.
+  - Full self-test Fire/Volcengine 8-turn conversation gate passed with `forbiddenTextFailures: []`, `repeatedOpeningStemFailures: []`, `repeatedReplyFailures: []`, `longReplyFailures: []`, `shortReplyFailures: []`, `stopToFirstAudioFailures: []`, `partialStartFailures: []`, `audioBeforeTurnDoneFailures: []`, memory recalled/persisted, user-goodbye session end, and late audio `409`.
+  - Full self-test Fire/Volcengine 8-turn stop-to-first-audio: `262ms`, `219ms`, `260ms`, `245ms`, `257ms`, `257ms`, `288ms`, `220ms`.
+  - Remote 8-turn memory candidate retained one repeated `User:` line and distinct AI lines.
+  - DeepResponseWatchLab watchOS build: `BUILD SUCCEEDED`.
+- This is an S6 memory-quality self-test update; Watch transport remains HTTP-only, WebSocket is fully out of scope, and no user-operated Watch test was required.
+
 - Unit and server tests:
   - `npm run test:node`
 

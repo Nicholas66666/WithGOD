@@ -1425,6 +1425,77 @@ test("DeepResponse HTTP session can persist memory candidate to JSONL", async ()
   }
 });
 
+test("DeepResponse HTTP session deduplicates repeated memory candidate lines before JSONL", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "deep-response-memory-line-dedupe-"));
+  const memoryPath = join(tempDir, "memory.jsonl");
+  const server = await startDeepResponseServer({
+    port: 0,
+    host: "127.0.0.1",
+    mode: "provider",
+    log: false,
+    audioReplayIntervalMs: 0,
+    env: {
+      DEEP_RESPONSE_MEMORY_JSONL_PATH: memoryPath
+    },
+    createPipeline: () => ({
+      async *streamSegmented({ audioChunks }) {
+        const collected = [];
+        for await (const chunk of audioChunks) {
+          collected.push(Buffer.from(chunk).toString("utf8"));
+        }
+        const text = collected.join("");
+        yield { type: "transcript_final", transcript: "今天我有点累，想听一句安慰的话。" };
+        yield {
+          type: "segment",
+          segment: "first",
+          text: text === "second" ? "我会记得你最近容易累。" : "我陪你慢下来。",
+          audioChunks: [Buffer.from(`audio-${text}`)]
+        };
+        yield { type: "timing", timing: {}, providerMeta: {} };
+      }
+    })
+  });
+
+  try {
+    const created = await postJSON(`http://127.0.0.1:${server.port}/deep-response/sessions`, {});
+    const base = `http://127.0.0.1:${server.port}/deep-response/sessions/${created.sessionID}`;
+
+    await postBytes(`${base}/audio?turn_id=turn-memory-line-dedupe-1&seq=0`, Buffer.from("first"));
+    await postJSON(`${base}/input-stop`, { turnID: "turn-memory-line-dedupe-1" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "timing" && event.turnID === "turn-memory-line-dedupe-1");
+    });
+
+    await postBytes(`${base}/audio?turn_id=turn-memory-line-dedupe-2&seq=0`, Buffer.from("second"));
+    await postJSON(`${base}/input-stop`, { turnID: "turn-memory-line-dedupe-2" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "timing" && event.turnID === "turn-memory-line-dedupe-2");
+    });
+
+    await postJSON(`${base}/end`, { reason: "memory_line_dedupe_probe" });
+    await waitFor(async () => {
+      const events = await fetchJSON(`${base}/events?cursor=0`);
+      return events.events.some((event) => event.type === "memory_candidate" && event.persisted === true);
+    });
+
+    const events = await fetchJSON(`${base}/events?cursor=0`);
+    const memory = events.events.find((event) => event.type === "memory_candidate");
+    assert.equal((memory.summary.match(/User: 今天我有点累/g) || []).length, 1);
+    assert.match(memory.summary, /AI: 我陪你慢下来。/);
+    assert.match(memory.summary, /AI: 我会记得你最近容易累。/);
+
+    const persisted = JSON.parse(readFileSync(memoryPath, "utf8").trim());
+    assert.equal((persisted.summary.match(/User: 今天我有点累/g) || []).length, 1);
+    assert.match(persisted.summary, /AI: 我陪你慢下来。/);
+    assert.match(persisted.summary, /AI: 我会记得你最近容易累。/);
+  } finally {
+    await server.close();
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test("DeepResponse HTTP session does not persist empty memory summaries to JSONL", async () => {
   const tempDir = mkdtempSync(join(tmpdir(), "deep-response-empty-memory-"));
   const memoryPath = join(tempDir, "memory.jsonl");
