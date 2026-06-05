@@ -56,6 +56,7 @@ DeepResponse remains in the independent Lab target.
 
 Latest pushed commits:
 
+- `f999f64` Bound DeepResponse fixture playback wait.
 - `96b0ccf` Wait for DeepResponse fixture playback drain.
 - `558350b` Guard Watch state model late first audio.
 - `93da4d5` Record DeepResponse self-test-only target.
@@ -103,6 +104,7 @@ Latest result:
 - DeepResponseWatchLab build: `BUILD SUCCEEDED`.
 - Latest target-text correction is canonical: Watch/client transport is HTTP-only and completely excludes WebSocket work. Do not plan WebSocket spikes, fallback, benchmarks, comparisons, feasibility checks, or mainline return paths. Server-internal Doubao provider WebSocket remains allowed only as provider plumbing.
 - Latest validation policy is canonical: development proceeds by automated self-tests only. Do not schedule, request, or depend on user-operated Watch testing for phase progression, acceptance, or normal feedback loops.
+- Latest WatchLab simulator fixture bounded-drain gate: `waitForFixturePlaybackDrain()` now uses a `30s` deadline and stops local playback with `Loop fixture playback timeout` if `client.isHTTPSessionPlaybackActive` stays stuck. This prevents simulator autoruns from hanging indefinitely while still waiting for real playback drain under normal conditions. RED source gate first failed because the drain wait had no deadline; focused Watch checks passed `65/65`, `npm run test:node` passed with Node `242/242`, and `npm run deep:watchlab:build:volc` reported `BUILD SUCCEEDED`. No user-operated Watch test was required.
 - Latest WatchLab simulator continuous-fixture gate: `runContinuousFixtureLoop(turns:)` now waits for `client.isHTTPSessionPlaybackActive` to drain between fixture turns instead of using a fixed `100ms` sleep. This makes simulator autorun closer to the real hands-free loop: it cannot mark the next listening turn while queued assistant audio is still active. RED source gate first failed on the fixed sleep; focused Watch checks passed `64/64`, `npm run test:node` passed with Node `241/241`, and `npm run deep:watchlab:build:volc` reported `BUILD SUCCEEDED`. No user-operated Watch test was required.
 - Latest WatchLab late first-audio state-machine gate: the scriptable continuous-mode state model now ignores delayed first-audio callbacks while a new local recording is active or after a local HTTP/session error. RED tests first showed the model incorrectly moved `userSpeaking` / errored `assistantThinking` back into `assistantSpeaking`. Focused Watch state/source checks passed `63/63`, and `npm run test:node` passed with Node `240/240`. No user-operated Watch test was required.
 - Latest WatchLab late first-audio guard: `DeepResponseDebugView.handleFirstAudioReceived()` now ignores late first audio after local recording has stopped, the HTTP session has ended, local state is ending/ended, or the client has an error. This prevents delayed audio callbacks from resurrecting the UI into `assistantSpeaking` after local session closure.

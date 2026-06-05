@@ -2344,6 +2344,17 @@ Latest WatchLab simulator continuous-fixture playback-drain gate:
   - `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
 - This is a WatchLab simulator/source/build self-test update only; no server deploy, WebSocket work, or user-operated Watch test was required.
 
+Latest WatchLab simulator fixture bounded-drain gate:
+- Bounded the simulator autorun playback-drain wait so the self-test harness cannot hang indefinitely if local playback-active state gets stuck.
+- `waitForFixturePlaybackDrain()` now uses a `30s` deadline; on timeout it reports `Loop fixture playback timeout` and stops local playback through the same local stop path used for barge-in.
+- Verification:
+  - RED `node --test --test-name-pattern "playback drain wait is bounded" scripts/deep-response-watch-ui.test.mjs` first failed because the drain wait had no deadline.
+  - Focused command passed after implementation: `node --test --test-name-pattern "playback drain wait is bounded|continuous fixture waits" scripts/deep-response-watch-ui.test.mjs`.
+  - `node --test scripts/deep-response-watch-ui.test.mjs scripts/deep-response/lib/watch-continuous-state-machine.test.mjs`: `65/65` passed.
+  - `npm run test:node`: `242/242` passed.
+  - `npm run deep:watchlab:build:volc`: `BUILD SUCCEEDED`.
+- This is a WatchLab simulator/source/build self-test hardening update only; no server deploy, WebSocket work, or user-operated Watch test was required.
+
 - Unit and server tests:
   - `npm run test:node`
 
