@@ -49,15 +49,7 @@ export async function runVolcengineDeploy(args) {
     throw new Error(`SSH key not found: ${args.keyPath}`);
   }
 
-  const remoteScript = [
-    "set -e",
-    "cd /opt/deep-response/repo",
-    `sudo git fetch origin ${shellQuote(args.branch)}`,
-    `sudo git reset --hard origin/${shellQuote(args.branch)}`,
-    "cd FocusFence",
-    args.skipRestart ? "true" : "sudo systemctl restart deep-response",
-    "systemctl is-active deep-response"
-  ].join("\n");
+  const remoteScript = buildRemoteDeployScript(args);
 
   const output = execFileSync("ssh", [
     "-i", args.keyPath,
@@ -80,6 +72,26 @@ export async function runVolcengineDeploy(args) {
     remoteOutput: output.trim().split(/\r?\n/).slice(-5),
     health
   };
+}
+
+export function buildRemoteDeployScript(args) {
+  return [
+    "set -e",
+    "cd /opt/deep-response/repo",
+    "for attempt in 1 2 3; do",
+    `  if sudo git fetch origin ${shellQuote(args.branch)}; then`,
+    "    break",
+    "  fi",
+    "  if [ \"$attempt\" = \"3\" ]; then",
+    "    exit 1",
+    "  fi",
+    "  sleep $((attempt * 2))",
+    "done",
+    `sudo git reset --hard origin/${shellQuote(args.branch)}`,
+    "cd FocusFence",
+    args.skipRestart ? "true" : "sudo systemctl restart deep-response",
+    "systemctl is-active deep-response"
+  ].join("\n");
 }
 
 async function fetchHealth(endpoint) {
