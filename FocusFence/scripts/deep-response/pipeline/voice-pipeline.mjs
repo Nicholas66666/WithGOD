@@ -893,7 +893,8 @@ function getOpeningStemMaxRepeats(openingStem, defaultMaxRepeats) {
     "先把",
     "不用",
     "今天",
-    "那今"
+    "那今",
+    "那咱"
   ]);
   return highFrequencyComfortStems.has(openingStem) ? 1 : defaultMaxRepeats;
 }
