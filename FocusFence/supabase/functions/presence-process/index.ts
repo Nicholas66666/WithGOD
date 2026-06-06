@@ -77,10 +77,10 @@ const responseSchema = {
       type: "object",
       additionalProperties: false,
       properties: {
-        eyebrow: { type: "string" },
-        headline: { type: "string" },
-        body: { type: "string" },
-        footnote: { type: "string" },
+        eyebrow: { type: "string", minLength: 4, maxLength: 8 },
+        headline: { type: "string", minLength: 2, maxLength: 6 },
+        body: { type: "string", minLength: 10, maxLength: 28 },
+        footnote: { type: "string", minLength: 3, maxLength: 10 },
         accent: { type: "string", enum: ["green", "blue", "gold", "red", "gray"] }
       },
       required: ["eyebrow", "headline", "body", "footnote", "accent"]
@@ -118,10 +118,10 @@ const quickResponseSchema = {
       type: "object",
       additionalProperties: false,
       properties: {
-        eyebrow: { type: "string" },
-        headline: { type: "string" },
-        body: { type: "string" },
-        footnote: { type: "string" },
+        eyebrow: { type: "string", minLength: 4, maxLength: 8 },
+        headline: { type: "string", minLength: 2, maxLength: 6 },
+        body: { type: "string", minLength: 10, maxLength: 28 },
+        footnote: { type: "string", minLength: 3, maxLength: 10 },
         accent: { type: "string", enum: ["green", "blue", "gold", "red", "gray"] }
       },
       required: ["eyebrow", "headline", "body", "footnote", "accent"]
@@ -553,12 +553,15 @@ function quickResponseProductRules() {
     "安抚强情绪：焦虑、羞耻、创伤、怒气、委屈、孤独时，先稳住人，再给现实/属灵锚点，再给一个极小动作。",
     "危险/危机表达现实支持优先：自伤、自杀、伤人、家暴、被跟踪、严重创伤闪回时，不只给属灵安慰；body 必须指向立刻联系可信的人、当地急救或现实安全动作；accent=red。",
     "祷告/交托：像安静陪伴和确认，不总结待办；可指向交托、信靠、下一件忠心小事。",
+    "不要把祷告改写成冥想、正念或心理技巧；用户向主祷告时，body 要保留祷告处境和属灵锚点。",
     "回转/自省/认罪：指向恩典、悔改和一个很小的当下行动，不加羞耻。",
     "关系冲突/怒气：先慢下来，保护言语和边界，再决定是否回应。",
     "灵感/待办/普通记录，不强行属灵化；不给经文，不写神/主/祷告/恩典/悔改，直接给最小下一步。",
     "高确定性经文池：焦虑/交托=腓 4:6 或 太 6:34；怒气/言语=雅 1:19 或 箴 15:1；认罪/赦免=约一 1:9 或 罗 8:1；决定/信靠=箴 3:5 或 箴 3:5-6；软弱/恩典=林后 12:9；惧怕=提后 1:7 或 诗 56:3；忍耐/爱=林前 13:4。",
     "经文出处只允许使用高确定性经文池；不确定就不要写出处，footnote 用小动作或状态，例如：现实支持、先求支持、想法种子、待办记录、可再展开。",
     "推荐结构：情绪/痛苦类 body 包含安抚 + 锚点 + 小动作中的至少两项；普通记录 body 包含可执行下一步。",
+    "示例：焦虑祷告 => {\"eyebrow\":\"把心交托\",\"headline\":\"先交托\",\"body\":\"先把焦虑带到主前，慢慢呼吸三次。\",\"footnote\":\"腓 4:6\",\"accent\":\"blue\"}。",
+    "示例：普通待办 => {\"eyebrow\":\"两个小事项\",\"headline\":\"先列清\",\"body\":\"八点打电话，路上顺手买牛奶。\",\"footnote\":\"待办记录\",\"accent\":\"gray\"}。",
     "默认 responseMode=watchText；只有用户明确要求语音回答才 watchVoice。"
   ];
 }

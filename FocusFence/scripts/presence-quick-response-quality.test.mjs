@@ -205,8 +205,16 @@ test("Quick Response prompt encodes the new immediate-help product contract", ()
   assert.match(source, /不要冒充神|不得冒充神/);
   assert.match(source, /高确定性经文池/);
   assert.match(source, /灵感\/待办\/普通记录，不强行属灵化/);
+  assert.match(source, /不要把祷告改写成冥想/);
   assert.match(source, /body 10-28字/);
   assert.match(source, /footnote 3-10字/);
+});
+
+test("Quick Response schema enforces Watch field length bounds", () => {
+  assert.match(source, /eyebrow: \{ type: "string", minLength: 4, maxLength: 8 \}/);
+  assert.match(source, /headline: \{ type: "string", minLength: 2, maxLength: 6 \}/);
+  assert.match(source, /body: \{ type: "string", minLength: 10, maxLength: 28 \}/);
+  assert.match(source, /footnote: \{ type: "string", minLength: 3, maxLength: 10 \}/);
 });
 
 test("Quick Response fixtures cover twelve Chinese scenarios with valid Watch JSON", () => {
