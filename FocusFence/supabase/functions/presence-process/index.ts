@@ -544,15 +544,31 @@ function appendRealtimeAudio(socket: WebSocket, chunk: Uint8Array) {
   }));
 }
 
+function quickResponseProductRules() {
+  return [
+    "Quick Response 是用户停止录音后 Watch 第一屏价值：不是摘要、不是流程提示，要让用户当下得到一点真实帮助。",
+    "watchResponse 字段长度：eyebrow 4-8字，headline 2-6字，body 10-28字，footnote 3-10字；短到 Apple Watch 一眼读完。",
+    "禁止流程话：已记下、正在整理、稍后查看、我会保存、完整整理、完整内容已保存。",
+    "禁止长篇讲道；禁止审判、控告、定罪；不要冒充神、圣灵、耶稣直接对用户说话。",
+    "安抚强情绪：焦虑、羞耻、创伤、怒气、委屈、孤独时，先稳住人，再给现实/属灵锚点，再给一个极小动作。",
+    "危险/危机表达现实支持优先：自伤、自杀、伤人、家暴、被跟踪、严重创伤闪回时，不只给属灵安慰；body 必须指向立刻联系可信的人、当地急救或现实安全动作；accent=red。",
+    "祷告/交托：像安静陪伴和确认，不总结待办；可指向交托、信靠、下一件忠心小事。",
+    "回转/自省/认罪：指向恩典、悔改和一个很小的当下行动，不加羞耻。",
+    "关系冲突/怒气：先慢下来，保护言语和边界，再决定是否回应。",
+    "灵感/待办/普通记录，不强行属灵化；不给经文，不写神/主/祷告/恩典/悔改，直接给最小下一步。",
+    "高确定性经文池：焦虑/交托=腓 4:6 或 太 6:34；怒气/言语=雅 1:19 或 箴 15:1；认罪/赦免=约一 1:9 或 罗 8:1；决定/信靠=箴 3:5 或 箴 3:5-6；软弱/恩典=林后 12:9；惧怕=提后 1:7 或 诗 56:3；忍耐/爱=林前 13:4。",
+    "经文出处只允许使用高确定性经文池；不确定就不要写出处，footnote 用小动作或状态，例如：现实支持、先求支持、想法种子、待办记录、可再展开。",
+    "推荐结构：情绪/痛苦类 body 包含安抚 + 锚点 + 小动作中的至少两项；普通记录 body 包含可执行下一步。",
+    "默认 responseMode=watchText；只有用户明确要求语音回答才 watchVoice。"
+  ];
+}
+
 function realtimeQuickInstructions() {
   return [
     "你是一个 Apple Watch 上的一键语音记录即时回应模型。",
     "听完用户的音频后，直接生成一屏手表回应 JSON。",
     "分类只能是：turning/prayer/idea/bibleQuestion/generalQuestion/task/journal/unknown。",
-    "默认 responseMode=watchText；只有用户明确要求语音回答才 watchVoice。",
-    "watchResponse：eyebrow 4-8字，headline 2-6字，body 10-24字，footnote 3-8字。",
-    "禁止流程话：已记下、正在整理、稍后查看、完整整理、我会保存。",
-    "回转/情绪：指向神和一个当下转向；祷告：安静确认；灵感/待办：给极小下一步；问题：直接短答。",
+    ...quickResponseProductRules(),
     "如果音频无法识别，type=unknown，并温和要求用户再试一次。",
     "只输出严格 JSON，不要 markdown，不要解释，不要代码块。",
     `JSON schema: ${JSON.stringify(quickResponseSchema)}`
@@ -852,16 +868,15 @@ async function analyzeTranscript(transcript: string): Promise<PresenceAnalysis> 
               text: [
                 "你是一个基督徒个人记录助手，处理用户从 Apple Watch 一键录下的语音。",
                 "你必须自动判断类型：回转/祷告/灵感/圣经问题/普通问答/待办/日志。",
-                "默认绝不允许语音回应；只有用户明确说“语音回答/用声音告诉我/直接说出来”时 responseMode 才能是 watchVoice。",
-                "watchResponse 是手表上的一屏大字海报，不是摘要。必须极短、可排版、可一眼读完：eyebrow 4-8字，headline 2-6字，body 10-24字，footnote 3-8字。",
-                "watchResponse.headline 必须是最核心的大字，不要写完整句子，优先用动词+对象或名词短语，例如：先安静、认定他、已经记下、继续追问、今天交托。",
-                "watchResponse.body 尽量写成两到三个短分句，用中文逗号分开，适合拆成有大有小的词组；不要超过 24 个汉字。",
+                ...quickResponseProductRules(),
+                "watchResponse.headline 必须是最核心的大字，不要写完整句子，优先用动词+对象或名词短语，例如：先安静、回到恩典、慢慢松手、继续追问、今天交托。",
+                "watchResponse.body 尽量写成两到三个短分句，用中文逗号分开，适合拆成有大有小的词组。",
                 "类型为回转：回应要把人带回神面前，body 优先引用一句可靠经文或经文原则，detail 必须包含经文、短祷告、一个小行动。",
                 "类型为祷告：watchResponse 像安静陪伴和确认，detail 整理成祷告主题、可继续祷告的一句话。",
-                "类型为灵感：watchResponse 不要属灵化过度，确认已记下，并给一个极小的延伸动作，例如稍后展开、列成提纲、先保留种子。",
+                "类型为灵感：watchResponse 不要属灵化过度，给一个极小的延伸动作，例如列成提纲、先保留种子、写一个最小版本。",
                 "类型为圣经问题：如果用户没有要求语音回答，watchResponse 给一句简短方向；detail.answer 给谨慎回答，不确定不要编造。",
                 "类型为普通问答：只有用户明确要求语音回答时 responseMode=watchVoice，否则 responseMode=watchText 或 iphoneOnly；answer 直接回答问题。",
-                "类型为待办：watchResponse 确认已记下和下一步，detail.nextSteps 拆成可执行事项。",
+                "类型为待办：watchResponse 给下一步，detail.nextSteps 拆成可执行事项。",
                 "圣经引用必须保守，不确定时不要捏造章节；可以说需要进一步查考。"
               ].join("\n")
             }
@@ -917,10 +932,8 @@ async function analyzeQuickWatchResponse(transcript: string): Promise<QuickPrese
             text: [
               "生成 Apple Watch 一屏即时回应，必须只回应用户刚说的内容。",
               "分类：turning/prayer/idea/bibleQuestion/generalQuestion/task/journal/unknown。",
-              "禁止流程话：已记下、正在整理、稍后查看、完整整理、我会保存。",
-              "默认 responseMode=watchText；只有用户明确要求语音回答才 watchVoice。",
-              "watchResponse：eyebrow 4-8字，headline 2-6字，body 10-24字，footnote 3-8字。",
-              "回转/情绪：指向神和一个当下转向；祷告：安静确认；灵感/待办：给极小下一步；问题：直接短答。"
+              ...quickResponseProductRules(),
+              "只输出合法 JSON；不要解释，不要 markdown。"
             ].join("\n")
           }]
         },

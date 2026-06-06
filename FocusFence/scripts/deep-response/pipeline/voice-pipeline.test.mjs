@@ -696,6 +696,52 @@ test("VoicePipeline streamCascadeTurn normalizes awkward meta comfort openings b
   ]);
 });
 
+test("VoicePipeline streamCascadeTurn normalizes observed remote cup-of-water opening", async () => {
+  const ttsTexts = [];
+  const asr = {
+    async *transcribeStream() {
+      yield { type: "transcript_partial", transcript: "今天我有点累，想听一句安慰的话。" };
+      yield { type: "transcript_final", transcript: "今天我有点累，想听一句安慰的话。" };
+    }
+  };
+  const llm = {
+    async *streamTokens() {
+      yield { type: "delta", delta: "那来杯温水，坐下聊聊吧。" };
+      yield { type: "delta", delta: "主是你的避难所，会保守你。" };
+      yield { type: "done", timing: { llm_first_token_ms: 1 } };
+    }
+  };
+  const tts = {
+    async *synthesizeStream({ text }) {
+      ttsTexts.push(text);
+      yield { type: "audio_chunk", audioChunk: Buffer.from(`${text}:audio`), sampleRate: 24000 };
+      yield { type: "done", timing: { tts_first_audio_ms: 1 }, connectID: "tts-cup-opening" };
+    }
+  };
+
+  const pipeline = new VoicePipeline({ asr, llm, tts, clock: fakeClock([0, 10, 20, 30]) });
+  const events = [];
+  for await (const event of pipeline.streamCascadeTurn({
+    audioChunks: [Buffer.from("audio")],
+    turnID: "turn-cup-opening",
+    generationID: "gen-cup-opening",
+    maxSpokenReplyChars: 120
+  })) {
+    events.push(event);
+  }
+
+  const text = events
+    .filter((event) => event.type === "assistant_text_delta")
+    .map((event) => event.delta)
+    .join("");
+  assert.doesNotMatch(text, /那来|来句|听这句|缓缓神/);
+  assert.match(text, /我陪你慢下来。/);
+  assert.deepEqual(ttsTexts, [
+    "我陪你慢下来。",
+    "主是你的避难所，会保守你。"
+  ]);
+});
+
 test("VoicePipeline streamCascadeTurn normalizes mechanical repeated-tired openings before speech", async () => {
   const ttsTexts = [];
   const asr = {

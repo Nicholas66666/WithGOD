@@ -117,3 +117,12 @@ test("package does not expose Watch or DeepResponse WebSocket development entryp
   assert(!scriptNames.includes("deep:echo:test"));
   assert(!scriptNames.includes("deep:realtime:test"));
 });
+
+test("package keeps Render only under explicit rollback script names", () => {
+  const scripts = packageJSON.scripts || {};
+
+  assert(!Object.hasOwn(scripts, "deep:render:deploy"));
+  assert(!Object.hasOwn(scripts, "deep:render:sync-env"));
+  assert.match(scripts["deep:rollback:render:deploy"] || "", /node scripts\/render-deploy\.mjs/);
+  assert.match(scripts["deep:rollback:render:sync-env"] || "", /node scripts\/render-sync-deep-env\.mjs/);
+});

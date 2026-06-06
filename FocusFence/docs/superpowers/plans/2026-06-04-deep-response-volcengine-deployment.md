@@ -82,6 +82,14 @@ Service command:
 npm run deep:server:provider
 ```
 
+Default local deploy command:
+
+```bash
+npm run deep:volc:deploy
+```
+
+The script deploys the current `codex/deep-response-lab` branch from GitHub on the ECS, restarts `deep-response.service`, then checks `/health`. It must either return JSON with `ok: true` or fail with a clear missing-key/SSH/service/health error.
+
 Useful SSH diagnostics:
 
 ```bash
@@ -104,7 +112,20 @@ ssh -i .volcengine/drs-test-key ubuntu@124.174.96.149 '
 
 ## Verification
 
-Smoke command:
+Default verification gate:
+
+```bash
+npm run deep:provider:check
+npm run deep:volc:deploy
+curl -s http://124.174.96.149:8797/health
+npm run deep:volc:smoke:full
+npm run deep:volc:conversation:full
+npm run deep:watchlab:build:volc
+npm run deep:lab:selftest
+npm run test:node
+```
+
+Underlying smoke command:
 
 ```bash
 npm run deep:http-smoke:test -- \
@@ -134,6 +155,19 @@ Render comparison from previous baseline:
 - Render stop-to-first-audio was about `1682ms` / `1993ms`.
 - Fire-and-smoke baseline on Volcengine is about `4x` faster for stop-to-first-audio in the script harness.
 
+## Render Rollback
+
+Render is no longer the default deploy, test, WatchLab build, or self-test path. Keep it only as an explicit rollback while Volcengine remains the main endpoint.
+
+Rollback scripts:
+
+```bash
+npm run deep:rollback:render:sync-env
+npm run deep:rollback:render:deploy
+```
+
+If rollback is used, pass the Render endpoint explicitly to ad hoc tests or builds. Do not change package defaults, WatchLab fallback, or self-test defaults back to Render unless Volcengine is unavailable and the rollback decision is recorded.
+
 ## Current Issues
 
 - Instance cloud-init initially failed because GitHub clone from inside the ECS had a transient TLS interruption. Manual retry succeeded.
@@ -143,12 +177,8 @@ Render comparison from previous baseline:
 
 ## Next Steps
 
-1. Add a reusable deploy script for the Volcengine ECS instead of manual SSH commands.
-2. Point DeepLab build endpoint to `http://124.174.96.149:8797` and install when Watch is reachable.
-3. Run the same Watch manual gate:
-   - health works
-   - mic recording uploads chunks
-   - first audio starts faster than Render
-   - abort button stops old audio
+1. Keep `npm run deep:volc:deploy` as the default deploy entrypoint.
+2. Keep DeepLab build and self-test defaults pointed at `http://124.174.96.149:8797`.
+3. Use the default verification gate above before claiming the Volcengine path is healthy.
 4. Add HTTPS/domain before any broader TestFlight or product integration.
-5. Keep Render running as rollback until Watch validates Volcengine endpoint.
+5. Keep Render only as an explicit rollback path.
