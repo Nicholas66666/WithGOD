@@ -150,14 +150,22 @@ Latest passing result after increasing EIP bandwidth to 5Mbps:
 - abort stale audio chunks: `0`
 - abort stale audio bytes: `0`
 
-Latest passing smoke on 2026-06-06:
+Latest passing smoke on 2026-06-06 after deploying `7deca61`:
 
 - health: `200`
-- turn 1 stop-to-first-audio: `232ms`
-- turn 2 stop-to-first-audio: `229ms`
+- turn 1 stop-to-first-audio: `195ms`
+- turn 2 stop-to-first-audio: `200ms`
 - abort stale audio chunks: `0`
 - abort stale audio bytes: `0`
 - failures: `[]`
+
+Latest passing conversation on 2026-06-06:
+
+- turns: `8/8`
+- stop-to-first-audio range: `171ms-237ms`
+- p50: about `188ms`
+- p90: below `250ms`
+- all forbidden/repeated/latency/audio-order failure arrays: `[]`
 
 Render comparison from previous baseline:
 

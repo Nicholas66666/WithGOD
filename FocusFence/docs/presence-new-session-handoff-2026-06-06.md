@@ -489,8 +489,10 @@ npm run deep:rollback:render:sync-env
 - Render stop-to-first-audio 约 `1682ms` / `1993ms`。
 - 火山 stop-to-first-audio 曾测得约 `448ms` / `454ms`。
 - 后续产品 selftest 中 `http_stop_to_first_audio_ms` 曾达到约 `197ms-240ms`。
-- 2026-06-06 最新火山 smoke：turn stop-to-first-audio 约 `232ms` / `229ms`，failures `[]`。
-- 最新 10-turn Watch Simulator experience pass：10/10 turn，audio audits 10/10 PASS，无 `-999`、`-1001`、`Volc_Server_Error`、provider errors、silent audio、timeout-like errors。
+- 2026-06-06 最新火山部署提交：`7deca61`。
+- 2026-06-06 最新火山 smoke：turn stop-to-first-audio 约 `195ms` / `200ms`，failures `[]`。
+- 2026-06-06 最新火山 conversation：8/8 turn 有 transcript、assistant text、audioDone、turnDone；stop-to-first-audio 约 `171ms-237ms`，p50 约 `188ms`，p90 低于 `250ms`；failure arrays `[]`。
+- 2026-06-06 最新 10-turn Watch Simulator experience pass：10/10 turn 有 transcript、assistant text、assistant audio、audioDone、turnDone；audio audits 10/10 PASS；failures `[]`；无 `-999`、`-1001`、`Volc_Server_Error`、provider errors、silent audio、timeout-like errors。
 
 ## 7. DeepResponse 当前关键决策
 
