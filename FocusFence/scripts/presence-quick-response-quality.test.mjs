@@ -8,7 +8,15 @@ const forbiddenPhrases = [
   "已记下",
   "正在整理",
   "稍后查看",
-  "我会保存"
+  "我会保存",
+  "冥想",
+  "正念",
+  "闭眼",
+  "闭上眼睛",
+  "感受当下",
+  "感受空气",
+  "扫描身体",
+  "观呼吸"
 ];
 
 const inventedVoicePatterns = [
@@ -206,8 +214,21 @@ test("Quick Response prompt encodes the new immediate-help product contract", ()
   assert.match(source, /高确定性经文池/);
   assert.match(source, /灵感\/待办\/普通记录，不强行属灵化/);
   assert.match(source, /不要把祷告改写成冥想/);
+  assert.match(source, /禁用冥想化词组/);
+  assert.match(source, /必须包含主\/神\/交托\/信靠\/祷告/);
   assert.match(source, /body 10-28字/);
   assert.match(source, /footnote 3-10字/);
+});
+
+test("Quick Response normalizer rewrites meditation-like prayer cards", () => {
+  assert.match(source, /function normalizeQuickPresenceAnalysis/);
+  assert.match(source, /meditationLikePattern/);
+  assert.match(source, /prayerLikePattern/);
+  assert.match(source, /先把焦虑带到主前，慢慢呼吸三次。/);
+});
+
+test("Quick Response generation stays within a tight token budget", () => {
+  assert.match(source, /max_output_tokens: 160/);
 });
 
 test("Quick Response schema enforces Watch field length bounds", () => {

@@ -554,6 +554,8 @@ function quickResponseProductRules() {
     "危险/危机表达现实支持优先：自伤、自杀、伤人、家暴、被跟踪、严重创伤闪回时，不只给属灵安慰；body 必须指向立刻联系可信的人、当地急救或现实安全动作；accent=red。",
     "祷告/交托：像安静陪伴和确认，不总结待办；可指向交托、信靠、下一件忠心小事。",
     "不要把祷告改写成冥想、正念或心理技巧；用户向主祷告时，body 要保留祷告处境和属灵锚点。",
+    "祷告/交托类 body 禁止写成纯呼吸练习；必须包含主/神/交托/信靠/祷告中的至少一个属灵锚点。",
+    "禁用冥想化词组：冥想、正念、闭眼、闭上眼睛、感受当下、感受空气、扫描身体、观呼吸。",
     "回转/自省/认罪：指向恩典、悔改和一个很小的当下行动，不加羞耻。",
     "关系冲突/怒气：先慢下来，保护言语和边界，再决定是否回应。",
     "灵感/待办/普通记录，不强行属灵化；不给经文，不写神/主/祷告/恩典/悔改，直接给最小下一步。",
@@ -913,7 +915,7 @@ async function analyzeTranscript(transcript: string): Promise<PresenceAnalysis> 
     throw new Error("analysis_missing_output_text");
   }
 
-  return JSON.parse(text);
+  return normalizePresenceAnalysis(JSON.parse(text), transcript);
 }
 
 async function analyzeQuickWatchResponse(transcript: string): Promise<QuickPresenceAnalysis> {
@@ -926,7 +928,7 @@ async function analyzeQuickWatchResponse(transcript: string): Promise<QuickPrese
     body: JSON.stringify({
       model: requiredEnv("OPENAI_FAST_ANALYSIS_MODEL", false)
         || "gpt-4.1-nano",
-      max_output_tokens: 220,
+      max_output_tokens: 160,
       input: [
         {
           role: "system",
@@ -968,7 +970,40 @@ async function analyzeQuickWatchResponse(transcript: string): Promise<QuickPrese
     throw new Error("quick_analysis_missing_output_text");
   }
 
-  return JSON.parse(text);
+  return normalizeQuickPresenceAnalysis(JSON.parse(text), transcript);
+}
+
+const meditationLikePattern = /冥想|正念|闭眼|闭上眼睛|感受当下|感受空气|扫描身体|观呼吸/;
+const prayerLikePattern = /主啊|天父|祷告|交托|求你|阿们|信靠|神/;
+
+function normalizePresenceAnalysis(analysis: PresenceAnalysis, transcript: string): PresenceAnalysis {
+  return {
+    ...analysis,
+    watchResponse: normalizeWatchResponse(analysis.watchResponse, transcript)
+  };
+}
+
+function normalizeQuickPresenceAnalysis(analysis: QuickPresenceAnalysis, transcript: string): QuickPresenceAnalysis {
+  return {
+    ...analysis,
+    watchResponse: normalizeWatchResponse(analysis.watchResponse, transcript)
+  };
+}
+
+function normalizeWatchResponse(response: WatchResponse, transcript: string): WatchResponse {
+  const combined = `${response.eyebrow}${response.headline}${response.body}${response.footnote}`;
+  if (!prayerLikePattern.test(transcript) || !meditationLikePattern.test(combined)) {
+    return response;
+  }
+
+  const anxious = /焦虑|害怕|怕|慌|不安|紧张/.test(transcript);
+  return {
+    eyebrow: anxious ? "把心交托" : "安静交托",
+    headline: anxious ? "先交托" : "交给主",
+    body: anxious ? "先把焦虑带到主前，慢慢呼吸三次。" : "把这件事交给主，先做下一件忠心事。",
+    footnote: anxious ? "腓 4:6" : "箴 3:5",
+    accent: response.accent === "red" ? "red" : "blue"
+  };
 }
 
 async function createVoiceResponse(supabase: ReturnType<typeof createClient>, recordID: string, analysis: PresenceAnalysis) {
