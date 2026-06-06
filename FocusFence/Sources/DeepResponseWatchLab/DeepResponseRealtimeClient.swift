@@ -874,7 +874,7 @@ final class DeepResponseRealtimeClient: ObservableObject {
             }
             return url
         }
-        guard let fallback = URL(string: "https://withgod-deep-response.onrender.com") else {
+        guard let fallback = URL(string: "http://124.174.96.149:8797") else {
             throw DeepResponseClientError.missingEndpoint
         }
         return fallback

@@ -32,6 +32,11 @@ test("DeepResponseWatchLab preserves HTTPS endpoints for HTTP transport", () => 
   assert.match(realtimeClient, /scheme == "http" \|\| scheme == "https"/);
 });
 
+test("DeepResponseWatchLab defaults to the Volcengine endpoint, not Render", () => {
+  assert.match(realtimeClient, /http:\/\/124\.174\.96\.149:8797/);
+  assert.doesNotMatch(realtimeClient, /onrender\.com|withgod-deep-response/);
+});
+
 test("DeepResponseWatchLab owns the simulator microphone speech fixture", () => {
   assert.match(pbxProject, /simulated-mic-speech\.pcm/);
   const deepLabResources = pbxProject.match(/425A24DAC6CC8748CBF4C3FB \/\* Resources \*\/ = \{[\s\S]*?\n\t\t\};/)?.[0] || "";

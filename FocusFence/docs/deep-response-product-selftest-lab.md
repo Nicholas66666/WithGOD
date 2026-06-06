@@ -111,7 +111,7 @@ Run date: 2026-06-06.
 Report:
 
 ```text
-/private/tmp/deep-response-lab-selftest-2026-06-06T00-59-04-691Z
+/private/tmp/deep-response-lab-selftest-2026-06-06T01-04-14-423Z
 ```
 
 Result:
@@ -120,11 +120,11 @@ Result:
 - `mouth`, `eye`, `ear`, `server`, `judge`: all `PASS`
 - Scenarios covered: `normal_turn`, `multi_turn`, `goodbye_end`, `silent_recovery`, `interrupt_entry`
 - Audio audits: 4/4 PASS; no silent audio or clipping
-- Audio audit bytes: 224,256-273,006 bytes per conversation turn
+- Audio audit bytes: 243,730-315,754 bytes per conversation turn
 - Screenshots checked: `screenshots/running.png` and `screenshots/done.png`
 - Screenshot audits: 2/2 PASS; both screenshots had `orangeStatusPixels: 0`
 - Server events: 111 total; 6 `input_stop`, 6 `audio_done`, 6 `turn_done`, 2 `session_end`, 1 `abort`, 0 error events
-- Timing: max `http_stop_to_first_audio_ms` `472`; max first phrase to first audio `281`; 4/4 turns started LLM from partial transcript
+- Timing: max `http_stop_to_first_audio_ms` `190`; max first phrase to first audio `104`; 4/4 turns started LLM from partial transcript
 
 Findings from this pass:
 
@@ -137,6 +137,7 @@ Findings from this pass:
 Fix in this pass:
 
 - `DeepResponseRealtimeClient.uploadHTTPSessionAudio` now clears `lastError` and `lastErrorCode` after a successful upload retry.
+- `DeepResponseWatchLab` now falls back to the current Fire/Volcengine endpoint `http://124.174.96.149:8797` instead of the old Render endpoint when no build-time endpoint override is provided.
 - The product self-test lab now audits Watch Simulator screenshots for targeted orange error/status pixels in the status area and fails `eye`/`judge` if found.
 - Focused regression tests cover clearing transient upload errors and failing the judge when screenshot audit detects a visible UI error.
 
@@ -144,10 +145,10 @@ Evidence:
 
 - Focused tests: `node --test scripts/deep-response-watch-ui.test.mjs scripts/deep-response-lab.test.mjs`, 62/62 PASS.
 - Old bad screenshot audit proof: `/private/tmp/deep-response-lab-selftest-2026-06-06T00-54-46-464Z/screenshots/done.png` failed with 1,149 orange status pixels.
-- `npm run test:node`: 285/285 PASS.
+- `npm run test:node`: 286/286 PASS.
 - `npm run deep:watchlab:build:volc`: PASS.
 - `npm run deep:lab:selftest`: PASS.
-- Visible Simulator was activated before the standard self-test run; screenshots show `Waiting playback` during the run and `Sim mic done` at completion, with no stale orange error badge.
+- Visible Simulator was activated before the standard self-test run; screenshots show `Auto silence` during the run and `Sim mic done` at completion, with no stale orange error badge.
 - Server evidence included normal/multi-turn `turn_done`, user-goodbye `session_end`, idle-timeout `session_end`, and abort entry/recovery events.
 - Source/state tests still guard the playback barge-in monitor behavior: the monitor does not pass speaker-monitor chunks into the upload path. Simulator validation cannot prove real acoustic echo cancellation quality.
 
