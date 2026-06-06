@@ -267,6 +267,12 @@ test("DeepResponse Watch clears stale client diagnostics when the view appears",
   assert.match(resetFunction, /lastMemoryStatusText = nil/);
 });
 
+test("DeepResponse Watch clears transient upload errors after retry success", () => {
+  const uploadFunction = realtimeClientSource.match(/private func uploadHTTPSessionAudio\(_ audio: Data\) async -> Bool \{[\s\S]*?\n    \}/)?.[0] || "";
+  assert.match(uploadFunction, /if statusCode == 200 \{[\s\S]*?lastError = nil[\s\S]*?lastErrorCode = nil[\s\S]*?uploadedAudioChunks \+= 1/);
+  assert.match(uploadFunction, /lastError = "Upload \\\(statusCode\)"/);
+});
+
 test("DeepResponse Watch marks server wait as assistantThinking before playback", () => {
   const finishFunction = debugViewSource.match(/private func finishRecordingTurn\(reason: String\) async \{[\s\S]*?\n    \}/)?.[0] || "";
   assert.match(finishFunction, /isWaitingForResponse = true[\s\S]*?conversationState = \.assistantThinking[\s\S]*?await client\.finishHTTPSessionTurn\(\)/);

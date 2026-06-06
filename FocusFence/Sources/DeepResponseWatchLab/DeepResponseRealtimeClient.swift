@@ -436,6 +436,8 @@ final class DeepResponseRealtimeClient: ObservableObject {
                 let (_, response) = try await URLSession.shared.upload(for: request, from: uploadBody)
                 let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
                 if statusCode == 200 {
+                    lastError = nil
+                    lastErrorCode = nil
                     uploadedAudioChunks += 1
                     uploadedAudioBytes += audio.count
                     uploadedEncodedBytes += uploadBody.count

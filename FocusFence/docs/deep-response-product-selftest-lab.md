@@ -47,7 +47,7 @@ Each run writes a report directory, for example:
 
 - `overall`: `PASS` or `FAIL`.
 - `mouth`: speech fixture scenarios for normal turn, multi-turn, silent recovery, goodbye end, and interrupt entry.
-- `eye`: Watch Simulator evidence and screenshot paths.
+- `eye`: Watch Simulator evidence, screenshot paths, and targeted screenshot audits for visible orange error/status badges.
 - `ear`: PCM audio audits for returned assistant audio.
 - `server`: session/turn/generation evidence from DeepResponse server events.
 - `judge`: required scenarios and failure reasons.
@@ -89,6 +89,8 @@ The ear audit verifies PCM bytes that the Watch/server path received and prepare
 
 The eye audit archives Watch Simulator screenshots and relies on existing source/state-machine tests for precise state assertions. It is not a full OCR or pixel-semantic UI inspector, and it does not replace a small optional real-device listening check after automated gates pass.
 
+The screenshot audit intentionally checks only for targeted visible orange error/status pixels in the Watch status area. It is meant to catch product-blocking stale error banners such as `Upload 502`; it is not a general-purpose visual understanding system.
+
 ## For Later Codex
 
 Before changing DeepResponse continuous conversation, barge-in, memory, session end, timing display, or WatchLab UI state:
@@ -104,12 +106,12 @@ Do not use user-operated Watch testing as the phase gate. Real hardware listenin
 
 ## Latest Product Self-Test Pass
 
-Run date: 2026-06-05.
+Run date: 2026-06-06.
 
 Report:
 
 ```text
-/private/tmp/deep-response-lab-selftest-2026-06-05T08-03-47-570Z
+/private/tmp/deep-response-lab-selftest-2026-06-06T00-59-04-691Z
 ```
 
 Result:
@@ -118,32 +120,36 @@ Result:
 - `mouth`, `eye`, `ear`, `server`, `judge`: all `PASS`
 - Scenarios covered: `normal_turn`, `multi_turn`, `goodbye_end`, `silent_recovery`, `interrupt_entry`
 - Audio audits: 4/4 PASS; no silent audio or clipping
-- Audio audit bytes: 232,310-260,518 bytes per conversation turn
+- Audio audit bytes: 224,256-273,006 bytes per conversation turn
 - Screenshots checked: `screenshots/running.png` and `screenshots/done.png`
+- Screenshot audits: 2/2 PASS; both screenshots had `orangeStatusPixels: 0`
+- Server events: 111 total; 6 `input_stop`, 6 `audio_done`, 6 `turn_done`, 2 `session_end`, 1 `abort`, 0 error events
+- Timing: max `http_stop_to_first_audio_ms` `472`; max first phrase to first audio `281`; 4/4 turns started LLM from partial transcript
 
 Findings from this pass:
 
-- Product bug fixed after real Watch testing: continuous auto-listen could stay in `Auto listening` indefinitely when local VAD never observed enough silence on hardware.
-- Blocking lab defects: none in this run.
+- Baseline standard self-test reported `PASS`, but screenshot inspection showed a visible orange `Upload 502` badge in both `running.png` and `done.png`.
+- Product bug: a transient HTTP upload failure followed by a successful retry left `lastError`/`lastErrorCode` visible on the Watch UI, which could mislead product testing even though the turn recovered.
+- Blocking lab defect: the `eye` category only required screenshot capture, so a visible Watch error badge could still pass the final judge.
 - Environment issues: none in this run.
-- Accepted follow-ups: OCR/pixel-semantic UI checks, true speaker/human hearing checks, broader fixture coverage, and real acoustic echo cancellation quality remain outside this product self-test pass.
+- Accepted follow-ups: full OCR/pixel-semantic UI checks, true speaker/human hearing checks, broader fixture coverage, and real acoustic echo cancellation quality remain outside this product self-test pass.
 
 Fix in this pass:
 
-- `DeepResponseMicrophoneRecorder.Configuration` now has `maximumSpeechMilliseconds` as a hard endpointing guard.
-- Continuous Watch recording uses a bounded endpointing config: threshold `0.02`, silence `700ms`, and max speech `8,000ms`.
-- `DeepResponseDebugView` also has an independent 8-second UI watchdog for continuous recording, so a real Watch turn can finish even if local VAD never reaches speech-start or silence.
-- Playback barge-in monitoring is also bounded at `1,500ms` and still does not upload speaker-monitor audio.
+- `DeepResponseRealtimeClient.uploadHTTPSessionAudio` now clears `lastError` and `lastErrorCode` after a successful upload retry.
+- The product self-test lab now audits Watch Simulator screenshots for targeted orange error/status pixels in the status area and fails `eye`/`judge` if found.
+- Focused regression tests cover clearing transient upload errors and failing the judge when screenshot audit detects a visible UI error.
 
 Evidence:
 
-- Focused Watch UI tests: 51/51 PASS.
-- `npm run test:node`: 282/282 PASS.
+- Focused tests: `node --test scripts/deep-response-watch-ui.test.mjs scripts/deep-response-lab.test.mjs`, 62/62 PASS.
+- Old bad screenshot audit proof: `/private/tmp/deep-response-lab-selftest-2026-06-06T00-54-46-464Z/screenshots/done.png` failed with 1,149 orange status pixels.
+- `npm run test:node`: 285/285 PASS.
 - `npm run deep:watchlab:build:volc`: PASS.
 - `npm run deep:lab:selftest`: PASS.
-- Screenshot `running.png` showed the state advance to `Auto silence` instead of remaining stuck in `Auto listening`.
-- Timing max `http_stop_to_first_audio_ms`: `240`.
-- Server evidence included 4 conversation `turn_done` events, user-goodbye `session_end`, idle-timeout `session_end`, and abort entry/recovery events.
+- Visible Simulator was activated before the standard self-test run; screenshots show `Waiting playback` during the run and `Sim mic done` at completion, with no stale orange error badge.
+- Server evidence included normal/multi-turn `turn_done`, user-goodbye `session_end`, idle-timeout `session_end`, and abort entry/recovery events.
+- Source/state tests still guard the playback barge-in monitor behavior: the monitor does not pass speaker-monitor chunks into the upload path. Simulator validation cannot prove real acoustic echo cancellation quality.
 
 ## Latest 10-Turn Watch Simulator Experience Pass
 

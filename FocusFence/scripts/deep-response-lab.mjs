@@ -3,6 +3,7 @@
 import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { pathToFileURL } from "node:url";
+import { inflateSync } from "node:zlib";
 
 import { runHTTPAbortProbe, parseHTTPAbortArgs } from "./test-deep-response-http-abort.mjs";
 import { runHTTPConversationProbe, parseHTTPConversationArgs } from "./test-deep-response-http-conversation.mjs";
@@ -132,6 +133,145 @@ export function auditPCM16Audio(buffer, {
   };
 }
 
+export function detectOrangeStatusPixelsFromRGBA({
+  data,
+  width,
+  height,
+  minPixels = 24,
+  region = { x0: 0.18, x1: 0.82, y0: 0.12, y1: 0.31 }
+} = {}) {
+  if (!data || !width || !height) {
+    return { ok: false, orangePixels: 0, minPixels, error: "missing image data" };
+  }
+  const xStart = Math.max(0, Math.floor(width * region.x0));
+  const xEnd = Math.min(width, Math.ceil(width * region.x1));
+  const yStart = Math.max(0, Math.floor(height * region.y0));
+  const yEnd = Math.min(height, Math.ceil(height * region.y1));
+  let orangePixels = 0;
+  for (let y = yStart; y < yEnd; y += 1) {
+    for (let x = xStart; x < xEnd; x += 1) {
+      const offset = (y * width + x) * 4;
+      const r = data[offset];
+      const g = data[offset + 1];
+      const b = data[offset + 2];
+      const a = data[offset + 3];
+      if (a > 180 && r >= 190 && g >= 80 && g <= 180 && b <= 90) {
+        orangePixels += 1;
+      }
+    }
+  }
+  return {
+    ok: orangePixels < minPixels,
+    orangePixels,
+    minPixels,
+    region
+  };
+}
+
+export function auditWatchScreenshot(filePath) {
+  try {
+    const image = readPngRGBA(filePath);
+    const orange = detectOrangeStatusPixelsFromRGBA(image);
+    const failures = [];
+    if (!orange.ok) {
+      failures.push(`visible orange error/status pixels in Watch status area: ${orange.orangePixels}`);
+    }
+    return {
+      path: filePath,
+      ok: failures.length === 0,
+      failures,
+      width: image.width,
+      height: image.height,
+      orangeStatusPixels: orange.orangePixels
+    };
+  } catch (error) {
+    return {
+      path: filePath,
+      ok: false,
+      failures: [error instanceof Error ? error.message : String(error)]
+    };
+  }
+}
+
+function readPngRGBA(filePath) {
+  const buffer = readFileSync(filePath);
+  if (buffer.toString("ascii", 1, 4) !== "PNG") {
+    throw new Error(`not a PNG screenshot: ${filePath}`);
+  }
+  let offset = 8;
+  let width = 0;
+  let height = 0;
+  let colorType = 0;
+  const idat = [];
+  while (offset + 8 <= buffer.length) {
+    const length = buffer.readUInt32BE(offset);
+    const type = buffer.toString("ascii", offset + 4, offset + 8);
+    const dataStart = offset + 8;
+    const dataEnd = dataStart + length;
+    if (type === "IHDR") {
+      width = buffer.readUInt32BE(dataStart);
+      height = buffer.readUInt32BE(dataStart + 4);
+      const bitDepth = buffer[dataStart + 8];
+      colorType = buffer[dataStart + 9];
+      const interlace = buffer[dataStart + 12];
+      if (bitDepth !== 8 || colorType !== 6 || interlace !== 0) {
+        throw new Error(`unsupported PNG format: bitDepth=${bitDepth} colorType=${colorType} interlace=${interlace}`);
+      }
+    } else if (type === "IDAT") {
+      idat.push(buffer.subarray(dataStart, dataEnd));
+    } else if (type === "IEND") {
+      break;
+    }
+    offset = dataEnd + 4;
+  }
+  if (!width || !height || colorType !== 6 || idat.length === 0) {
+    throw new Error(`invalid PNG screenshot: ${filePath}`);
+  }
+  const inflated = inflateSync(Buffer.concat(idat));
+  const rowBytes = width * 4;
+  const rgba = Buffer.alloc(width * height * 4);
+  let inputOffset = 0;
+  for (let y = 0; y < height; y += 1) {
+    const filter = inflated[inputOffset];
+    inputOffset += 1;
+    const row = inflated.subarray(inputOffset, inputOffset + rowBytes);
+    inputOffset += rowBytes;
+    const outputOffset = y * rowBytes;
+    for (let x = 0; x < rowBytes; x += 1) {
+      const left = x >= 4 ? rgba[outputOffset + x - 4] : 0;
+      const up = y > 0 ? rgba[outputOffset + x - rowBytes] : 0;
+      const upLeft = y > 0 && x >= 4 ? rgba[outputOffset + x - rowBytes - 4] : 0;
+      let value;
+      if (filter === 0) {
+        value = row[x];
+      } else if (filter === 1) {
+        value = row[x] + left;
+      } else if (filter === 2) {
+        value = row[x] + up;
+      } else if (filter === 3) {
+        value = row[x] + Math.floor((left + up) / 2);
+      } else if (filter === 4) {
+        value = row[x] + paethPredictor(left, up, upLeft);
+      } else {
+        throw new Error(`unsupported PNG filter ${filter}`);
+      }
+      rgba[outputOffset + x] = value & 0xff;
+    }
+  }
+  return { data: rgba, width, height };
+}
+
+function paethPredictor(left, up, upLeft) {
+  const p = left + up - upLeft;
+  const pa = Math.abs(p - left);
+  const pb = Math.abs(p - up);
+  const pc = Math.abs(p - upLeft);
+  if (pa <= pb && pa <= pc) {
+    return left;
+  }
+  return pb <= pc ? up : upLeft;
+}
+
 export function judgeLabResults({
   mouth = { ok: false, scenarios: [] },
   eye = { ok: false, screenshots: [] },
@@ -151,6 +291,9 @@ export function judgeLabResults({
   }
   if (!eye.ok || !Array.isArray(eye.screenshots) || eye.screenshots.length === 0) {
     failures.push("eye category needs at least one passing Watch UI screenshot");
+  }
+  if (Array.isArray(eye.screenshotAudits) && eye.screenshotAudits.some((audit) => !audit.ok)) {
+    failures.push("eye category has visible Watch UI screenshot failures");
   }
   if (!ear.ok || !Array.isArray(ear.audits) || ear.audits.length === 0 || ear.audits.some((audit) => !audit.ok)) {
     failures.push("ear category needs passing non-silent audio audit evidence");
@@ -386,8 +529,9 @@ export async function runDeepResponseLabSelfTest(args) {
           eye.screenshots.push(filePath);
         }
       }
+      eye.screenshotAudits = eye.screenshots.map((filePath) => auditWatchScreenshot(filePath));
       eye.watch = watch;
-      eye.ok = watch.ok && eye.screenshots.length > 0;
+      eye.ok = watch.ok && eye.screenshots.length > 0 && eye.screenshotAudits.every((audit) => audit.ok);
     } catch (error) {
       eye.error = error instanceof Error ? error.message : String(error);
       if (args.failFast) {

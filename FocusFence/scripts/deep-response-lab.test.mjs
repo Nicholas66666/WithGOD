@@ -63,6 +63,7 @@ import {
   auditPCM16Audio,
   buildLabSummary,
   collectLabServerEvents,
+  detectOrangeStatusPixelsFromRGBA,
   judgeLabResults,
   parseDeepResponseLabArgs
 } from "./deep-response-lab.mjs";
@@ -119,6 +120,35 @@ test("auditPCM16Audio passes non-silent audio and reports drain metrics", () => 
   assert.equal(audit.clippedSamples, 0);
 });
 
+test("detectOrangeStatusPixelsFromRGBA flags visible Watch status errors", () => {
+  const width = 20;
+  const height = 20;
+  const data = Buffer.alloc(width * height * 4);
+  for (let index = 0; index < data.length; index += 4) {
+    data[index + 3] = 255;
+  }
+  for (let y = 4; y < 8; y += 1) {
+    for (let x = 4; x < 12; x += 1) {
+      const offset = (y * width + x) * 4;
+      data[offset] = 255;
+      data[offset + 1] = 149;
+      data[offset + 2] = 38;
+      data[offset + 3] = 255;
+    }
+  }
+
+  const audit = detectOrangeStatusPixelsFromRGBA({
+    data,
+    width,
+    height,
+    minPixels: 4,
+    region: { x0: 0, x1: 1, y0: 0, y1: 1 }
+  });
+
+  assert.equal(audit.ok, false);
+  assert.equal(audit.orangePixels, 32);
+});
+
 test("buildLabSummary always contains five evidence categories", () => {
   const summary = buildLabSummary({
     reportDir: "/tmp/deep-lab",
@@ -146,6 +176,31 @@ test("buildLabSummary always contains five evidence categories", () => {
   assert.equal(summary.ear.ok, true);
   assert.equal(summary.server.ok, true);
   assert.equal(summary.judge.ok, true);
+});
+
+test("judgeLabResults fails when Watch screenshot audit sees a visible UI error", () => {
+  const judge = judgeLabResults({
+    mouth: {
+      ok: true,
+      scenarios: [
+        { name: "normal_turn", ok: true },
+        { name: "multi_turn", ok: true },
+        { name: "silent_recovery", ok: true },
+        { name: "goodbye_end", ok: true },
+        { name: "interrupt_entry", ok: true }
+      ]
+    },
+    eye: {
+      ok: false,
+      screenshots: ["running.png"],
+      screenshotAudits: [{ ok: false, failures: ["visible orange error"] }]
+    },
+    ear: { ok: true, audits: [{ ok: true }] },
+    server: { ok: true, sessions: [{ sessionID: "s1" }] }
+  });
+
+  assert.equal(judge.ok, false);
+  assert.match(judge.failures.join("\n"), /screenshot failures/);
 });
 
 test("judgeLabResults fails when required scenarios are missing", () => {
