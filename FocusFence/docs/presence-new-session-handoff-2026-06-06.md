@@ -473,6 +473,7 @@ npm run deep:volc:conversation:full
 npm run deep:watchlab:build:volc
 npm run deep:lab:selftest
 npm run deep:selftest:full
+npm run presence:quick:samples:live
 npm run test:node
 ```
 
@@ -488,6 +489,7 @@ npm run deep:rollback:render:sync-env
 - Render stop-to-first-audio 约 `1682ms` / `1993ms`。
 - 火山 stop-to-first-audio 曾测得约 `448ms` / `454ms`。
 - 后续产品 selftest 中 `http_stop_to_first_audio_ms` 曾达到约 `197ms-240ms`。
+- 2026-06-06 最新火山 smoke：turn stop-to-first-audio 约 `232ms` / `229ms`，failures `[]`。
 - 最新 10-turn Watch Simulator experience pass：10/10 turn，audio audits 10/10 PASS，无 `-999`、`-1001`、`Volc_Server_Error`、provider errors、silent audio、timeout-like errors。
 
 ## 7. DeepResponse 当前关键决策
@@ -668,7 +670,7 @@ Quick Response 的 Watch 卡片字段继续用：
 - 冒充神、圣灵、耶稣直接对用户说话。
 - 危机场景只给属灵话语而不给现实支持。
 
-建议增加样例测试，至少覆盖：
+已有样例测试覆盖：
 
 - 焦虑害怕
 - 羞耻自责
@@ -696,6 +698,21 @@ Quick Response 的 Watch 卡片字段继续用：
 - 不出现禁止话术。
 - Supabase Function 部署后 smoke 成功。
 - iPhone 详情仍保留完整整理，不被 Quick Response 限制。
+
+当前实现补充：
+
+- `quickResponseProductRules()` 约束 Watch 第一屏短卡片、禁用流程话、禁用冥想化改写、限制高置信经文池。
+- `normalizeWatchResponse()` / `highConfidenceWatchResponse()` 对危机、焦虑、羞耻、创伤、孤独、怒气、认罪、交托、饶恕、灵感、待办、普通问题做高置信兜底，避免模型漂移。
+- Quick schema 对 `eyebrow/headline/body/footnote` 有长度上限。
+- `scripts/presence-quick-response-quality.test.mjs` 做静态/fixture 回归。
+- `npm run presence:quick:samples:live` 会实际调用 fast model 跑 12 个中文样例，输出 JSON 卡片并校验字段长度、禁用词、危机现实支持、普通记录不强行属灵化、经文池。
+
+2026-06-06 最新 Quick Response 验证：
+
+- `npm run presence:quick:samples:live`：12/12 pass，failed `0`，latency p50 约 `1579ms`，p90 约 `2635ms`，max 约 `2873ms`。
+- Supabase deployed `presence-process` health：`{"ok":true,"openaiConfigured":true,"supabaseConfigured":true}`。
+- Supabase raw-audio smoke 5 次：`quick_total_ms` 为 `1928/2052/2475/2789/3406`，p50 约 `2475ms`，p90 低于 `3.5s`。
+- Smoke card 示例：`{"eyebrow":"把心交托","headline":"先呼吸","body":"先把惧怕交给主，慢慢吸气三次。","footnote":"腓 4:6","accent":"blue"}`。
 
 ## 9. 优先阅读顺序
 

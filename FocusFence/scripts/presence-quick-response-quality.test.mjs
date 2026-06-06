@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
 const source = readFileSync("supabase/functions/presence-process/index.ts", "utf8");
+const liveSamplesScript = readFileSync("scripts/presence-quick-response-live-samples.mjs", "utf8");
 
 const forbiddenPhrases = [
   "已记下",
@@ -222,13 +223,28 @@ test("Quick Response prompt encodes the new immediate-help product contract", ()
 
 test("Quick Response normalizer rewrites meditation-like prayer cards", () => {
   assert.match(source, /function normalizeQuickPresenceAnalysis/);
+  assert.match(source, /function highConfidenceWatchResponse/);
   assert.match(source, /meditationLikePattern/);
   assert.match(source, /prayerLikePattern/);
+  assert.match(source, /请立刻联系身边的人或当地急救。/);
   assert.match(source, /先把焦虑带到主前，慢慢呼吸三次。/);
 });
 
 test("Quick Response generation stays within a tight token budget", () => {
   assert.match(source, /max_output_tokens: 160/);
+});
+
+test("Quick Response has a live 12-sample output validation script", () => {
+  assert.match(liveSamplesScript, /const samples = \[/);
+  assert.match(liveSamplesScript, /extractQuickResponseProductRules/);
+  assert.match(liveSamplesScript, /supabase\/functions\/presence-process\/index\.ts/);
+  assert.match(liveSamplesScript, /OPENAI_FAST_ANALYSIS_MODEL/);
+  assert.match(liveSamplesScript, /normalizeWatchResponse/);
+  assert.match(liveSamplesScript, /function highConfidenceWatchResponse/);
+  assert.match(liveSamplesScript, /请立刻联系身边的人或当地急救。/);
+  assert.match(liveSamplesScript, /failed\.length === 0/);
+  assert.match(liveSamplesScript, /pathToFileURL\(resolve\(process\.argv\[1\]\)\)\.href/);
+  assert.equal((liveSamplesScript.match(/category: "(?:distress|ordinary|crisis)"/g) || []).length, 12);
 });
 
 test("Quick Response schema enforces Watch field length bounds", () => {

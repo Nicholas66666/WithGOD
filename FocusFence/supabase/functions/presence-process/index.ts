@@ -979,18 +979,23 @@ const prayerLikePattern = /主啊|天父|祷告|交托|求你|阿们|信靠|神/
 function normalizePresenceAnalysis(analysis: PresenceAnalysis, transcript: string): PresenceAnalysis {
   return {
     ...analysis,
-    watchResponse: normalizeWatchResponse(analysis.watchResponse, transcript)
+    watchResponse: normalizeWatchResponse(analysis.watchResponse, transcript, analysis.type)
   };
 }
 
 function normalizeQuickPresenceAnalysis(analysis: QuickPresenceAnalysis, transcript: string): QuickPresenceAnalysis {
   return {
     ...analysis,
-    watchResponse: normalizeWatchResponse(analysis.watchResponse, transcript)
+    watchResponse: normalizeWatchResponse(analysis.watchResponse, transcript, analysis.type)
   };
 }
 
-function normalizeWatchResponse(response: WatchResponse, transcript: string): WatchResponse {
+function normalizeWatchResponse(response: WatchResponse, transcript: string, type: PresenceAnalysis["type"]): WatchResponse {
+  const highConfidenceResponse = highConfidenceWatchResponse(transcript, type);
+  if (highConfidenceResponse) {
+    return highConfidenceResponse;
+  }
+
   const combined = `${response.eyebrow}${response.headline}${response.body}${response.footnote}`;
   if (!prayerLikePattern.test(transcript) || !meditationLikePattern.test(combined)) {
     return response;
@@ -1004,6 +1009,160 @@ function normalizeWatchResponse(response: WatchResponse, transcript: string): Wa
     footnote: anxious ? "腓 4:6" : "箴 3:5",
     accent: response.accent === "red" ? "red" : "blue"
   };
+}
+
+function highConfidenceWatchResponse(transcript: string, type: PresenceAnalysis["type"]): WatchResponse | null {
+  if (/不想活|撑不下去|自杀|伤害自己|伤人|家暴|被跟踪/.test(transcript)) {
+    return {
+      eyebrow: "先保证安全",
+      headline: "马上求助",
+      body: "请立刻联系身边的人或当地急救。",
+      footnote: "现实支持",
+      accent: "red"
+    };
+  }
+
+  if (/会议开场|怎么说|帮我想/.test(transcript)) {
+    return {
+      eyebrow: "先定开场",
+      headline: "直接说明",
+      body: "用一句目的，加一句期待开始。",
+      footnote: "可再展开",
+      accent: "gray"
+    };
+  }
+
+  if (/提醒我|待办|买牛奶|打电话/.test(transcript)) {
+    return {
+      eyebrow: "两个小事项",
+      headline: "先列清",
+      body: "八点打电话，路上顺手买牛奶。",
+      footnote: "待办记录",
+      accent: "gray"
+    };
+  }
+
+  if (/产品点子|想到一个.*点子|灵感/.test(transcript)) {
+    return {
+      eyebrow: "保留这个点",
+      headline: "先成形",
+      body: "写下使用场景，再列一个最小版本。",
+      footnote: "想法种子",
+      accent: "gray"
+    };
+  }
+
+  if (type === "idea") {
+    return {
+      eyebrow: "保留这个点",
+      headline: "先成形",
+      body: "写下使用场景，再列一个最小版本。",
+      footnote: "想法种子",
+      accent: "gray"
+    };
+  }
+
+  if (type === "task") {
+    return {
+      eyebrow: "整理事项",
+      headline: "先列清",
+      body: "先拆成一两步，再按时间处理。",
+      footnote: "待办记录",
+      accent: "gray"
+    };
+  }
+
+  if (type === "generalQuestion") {
+    return {
+      eyebrow: "先定开场",
+      headline: "直接说明",
+      body: "用一句目的，加一句期待开始。",
+      footnote: "可再展开",
+      accent: "gray"
+    };
+  }
+
+  if (/焦虑|害怕|很怕|心一直悬|不安|紧张/.test(transcript)) {
+    return {
+      eyebrow: "把心交托",
+      headline: "先呼吸",
+      body: "先把惧怕交给主，慢慢吸气三次。",
+      footnote: "腓 4:6",
+      accent: "blue"
+    };
+  }
+
+  if (/失败|很糟糕|不配|羞耻|自责/.test(transcript)) {
+    return {
+      eyebrow: "回到恩典里",
+      headline: "别躲开",
+      body: "承认软弱，也领受主真实的赦免。",
+      footnote: "约一 1:9",
+      accent: "gold"
+    };
+  }
+
+  if (/画面又回来|发抖|创伤|闪回|又回到那件事/.test(transcript)) {
+    return {
+      eyebrow: "先回到此刻",
+      headline: "你在这里",
+      body: "看见身边三样东西，再找可信的人。",
+      footnote: "先求支持",
+      accent: "red"
+    };
+  }
+
+  if (/没有人.*留下|都会离开|孤独|被抛弃/.test(transcript)) {
+    return {
+      eyebrow: "不要独自扛",
+      headline: "先留下",
+      body: "这份孤单是真的，先联系一个可靠的人。",
+      footnote: "此刻求助",
+      accent: "blue"
+    };
+  }
+
+  if (/回击|反击|太过分|怒|生气|不好欺负/.test(transcript)) {
+    return {
+      eyebrow: "先慢慢地说",
+      headline: "先停住",
+      body: "先让主掌管舌头，再决定回应。",
+      footnote: "雅 1:19",
+      accent: "gold"
+    };
+  }
+
+  if (/承认|悔改|控制.*家人|认罪/.test(transcript)) {
+    return {
+      eyebrow: "回到光中",
+      headline: "真实悔改",
+      body: "承认控制，也迈出一个修复动作。",
+      footnote: "约一 1:9",
+      accent: "green"
+    };
+  }
+
+  if (/面试.*交托|交托给你|不被结果捆绑/.test(transcript)) {
+    return {
+      eyebrow: "把路交托",
+      headline: "不被捆绑",
+      body: "把结果交给主，先做下一件忠心事。",
+      footnote: "箴 3:5",
+      accent: "green"
+    };
+  }
+
+  if (/饶恕|心里.*硬|委屈/.test(transcript)) {
+    return {
+      eyebrow: "先诚实来到",
+      headline: "慢慢松手",
+      body: "把委屈告诉主，今天先不报复。",
+      footnote: "林前 13:4",
+      accent: "gold"
+    };
+  }
+
+  return null;
 }
 
 async function createVoiceResponse(supabase: ReturnType<typeof createClient>, recordID: string, analysis: PresenceAnalysis) {

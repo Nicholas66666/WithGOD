@@ -150,6 +150,15 @@ Latest passing result after increasing EIP bandwidth to 5Mbps:
 - abort stale audio chunks: `0`
 - abort stale audio bytes: `0`
 
+Latest passing smoke on 2026-06-06:
+
+- health: `200`
+- turn 1 stop-to-first-audio: `232ms`
+- turn 2 stop-to-first-audio: `229ms`
+- abort stale audio chunks: `0`
+- abort stale audio bytes: `0`
+- failures: `[]`
+
 Render comparison from previous baseline:
 
 - Render stop-to-first-audio was about `1682ms` / `1993ms`.

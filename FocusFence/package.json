@@ -3,6 +3,7 @@
     "presence:server": "node scripts/presence-server.mjs",
     "presence:supabase:deploy": "bash scripts/deploy-presence-supabase.sh",
     "presence:supabase:health": "bash scripts/check-presence-supabase.sh",
+    "presence:quick:samples:live": "node scripts/presence-quick-response-live-samples.mjs",
     "deep:provider:check": "node scripts/test-volcengine-provider.mjs",
     "deep:provider:benchmark": "node scripts/deep-response-benchmark.mjs",
     "deep:fixture:tts-http": "node scripts/deep-response-generate-fixture.mjs",

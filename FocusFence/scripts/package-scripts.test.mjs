@@ -65,6 +65,12 @@ test("package exposes DeepResponse product self-test lab", () => {
   assert.match(command, /node scripts\/deep-response-lab\.mjs/);
 });
 
+test("package exposes live Quick Response Chinese sample validation", () => {
+  const command = packageJSON.scripts?.["presence:quick:samples:live"] || "";
+
+  assert.match(command, /node scripts\/presence-quick-response-live-samples\.mjs/);
+});
+
 test("package exposes standard Fire Volcengine DeepResponse continuous conversation gate", () => {
   const command = packageJSON.scripts?.["deep:volc:conversation:full"] || "";
 
