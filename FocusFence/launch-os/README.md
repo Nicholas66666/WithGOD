@@ -1,38 +1,41 @@
 # Launch OS
 
-Launch OS is the public-ready operating system for the Scripture companion overseas launch.
+Launch OS 是圣经智能手表海外上线项目的公开可读操作系统。
 
-It keeps the launch honest: every data pull, decision, mistake, page draft, keyword finding, ad result, and daily review should be traceable from this workspace.
+它的职责是让上线过程可追溯：每一次数据拉取、决策、错误、页面草稿、关键词发现、广告结果和每日复盘，都应该能在这个工作区里找到来源。
 
-## Current Launch Goal
+## 当前上线目标
 
-Ship a mature $149 Scripture companion wearable to the US market, run the first focused paid-search validation, and get the first real order.
+把成熟的 $149 圣经智能手表推向美国市场，先完成第一轮聚焦的付费搜索验证，并拿到第一笔真实订单。
 
-## Source Of Truth
+## 信息源
 
-- `daily/` records what happened each day.
-- `decisions/` records important commercial and product decisions.
-- `research/` stores keyword, competitor, ad, and landing-page investigations.
-- `data/raw/` stores API outputs exactly as received.
-- `data/processed/` stores normalized data used by the dashboard.
-- `scripts/` contains repeatable data and dashboard jobs.
-- `dashboard/public/` contains the readable project dashboard.
-- `infra/volcengine/` contains the public deployment scaffold.
+- `daily/` 记录每天发生了什么。
+- `decisions/` 记录重要商业和产品决策。
+- `research/` 存放关键词、竞品、广告和落地页研究。
+- `data/raw/` 原样保存 API 输出。
+- `data/processed/` 存放看板使用的标准化数据。
+- `scripts/` 存放可重复运行的数据和看板脚本。
+- `dashboard/public/` 存放可读项目看板。
+- `infra/volcengine/` 存放公网部署脚手架。
 
-## Daily Loop
+## 每日循环
 
-1. Plan the day.
-2. Pull or inspect source data.
-3. Record findings before making decisions.
-4. Write decisions with evidence and reversal criteria.
-5. Update the dashboard.
-6. Commit meaningful progress.
+1. 制定当天计划。
+2. 拉取或检查源数据。
+3. 先记录发现，再做判断。
+4. 重要决策必须写证据和推翻条件。
+5. 更新看板。
+6. 对有意义的进展提交 git commit。
 
-## Data Rule
+## 数据规则
 
-Raw API results are never edited by hand. Processed files can be regenerated from scripts. If a decision cites a number, it should cite the source file or query that produced it.
+原始 API 结果不能手工编辑。处理后的文件必须能从脚本重新生成。凡是决策引用数字，都要能追溯到源文件或查询。
 
-## Secret Rule
+## 密钥规则
 
-Do not commit API keys or cloud credentials. Scripts read secrets from environment variables only.
+不要提交 API key 或云服务凭证。脚本只能从环境变量或本地 `.env.local` 读取密钥。
 
+## 语言规则
+
+从 2026-06-08 起，Launch OS 记录、看板、复盘和决策日志默认使用中文；只有广告文案、搜索词、产品对外英文表达等必须保留英文原文的地方才使用英文。

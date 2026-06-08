@@ -1,7 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
-import { buildKeywordOverviewURL, redactURLForLog, requireSemrushApiKey } from './semrush-client.mjs';
+import {
+  buildKeywordOverviewURL,
+  parseEnvFile,
+  redactURLForLog,
+  requireSemrushApiKey,
+} from './semrush-client.mjs';
 
 test('buildKeywordOverviewURL includes database phrase key columns and display limit', () => {
   const url = buildKeywordOverviewURL({
@@ -33,6 +38,17 @@ test('redactURLForLog removes API key value', () => {
 });
 
 test('requireSemrushApiKey rejects missing keys', () => {
-  assert.throws(() => requireSemrushApiKey({}), /SEMRUSH_API_KEY/);
+  assert.throws(() => requireSemrushApiKey({}, { loadLocalEnv: false }), /SEMRUSH_API_KEY/);
   assert.equal(requireSemrushApiKey({ SEMRUSH_API_KEY: 'abc123' }), 'abc123');
+});
+
+test('parseEnvFile reads launch local env syntax without exposing secrets', () => {
+  const values = parseEnvFile(`
+    # local only
+    SEMRUSH_API_KEY="secret-key"
+    EMPTY_VALUE=
+  `);
+
+  assert.equal(values.SEMRUSH_API_KEY, 'secret-key');
+  assert.equal(values.EMPTY_VALUE, '');
 });

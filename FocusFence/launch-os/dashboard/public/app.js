@@ -26,7 +26,7 @@ function listItems(values = []) {
 
 function renderDaily(record) {
   if (!record) {
-    html('latestDaily', '<p class="muted">No daily review yet.</p>');
+    html('latestDaily', '<p class="muted">还没有每日记录。</p>');
     return;
   }
   text('latestDate', record.date);
@@ -35,7 +35,7 @@ function renderDaily(record) {
     `
       <div class="daily-block">
         <h4>目标</h4>
-        <p>${escapeHTML(record.sections.Goal || '')}</p>
+        <p>${escapeHTML(record.goal || '')}</p>
       </div>
       <div class="daily-block">
         <h4>完成</h4>
@@ -43,7 +43,7 @@ function renderDaily(record) {
       </div>
       <div class="daily-block">
         <h4>错误 / 修正</h4>
-        <p>${escapeHTML(record.sections['Mistakes Or Corrections'] || '暂无')}</p>
+        <p>${escapeHTML(record.corrections || '暂无')}</p>
       </div>
     `,
   );
@@ -108,7 +108,7 @@ function renderClusters(clusters = []) {
         (cluster) => `
           <div class="cluster">
             <strong>${escapeHTML(cluster.name)}</strong>
-            <span>${cluster.keywords.length} seed keywords</span>
+            <span>${cluster.keywords.length} 个种子词</span>
           </div>
         `,
       )
@@ -118,7 +118,7 @@ function renderClusters(clusters = []) {
 
 try {
   const state = await loadState();
-  text('generatedAt', `Generated ${new Date(state.status.generatedAt).toLocaleString()}`);
+  text('generatedAt', `生成时间 ${new Date(state.status.generatedAt).toLocaleString()}`);
   text('target', state.status.target);
   text('stage', state.status.currentStage);
   text('price', state.project.price);
@@ -127,7 +127,7 @@ try {
   text('costNote', state.project.costNote);
   text('decisionCount', String(state.decisions.length));
   text('dailyCount', String(state.daily.length));
-  text('keywordRows', `${state.semrush.keywordRows} rows`);
+  text('keywordRows', `${state.semrush.keywordRows} 行`);
   renderDaily(state.daily.at(-1));
   renderNextActions(state.nextActions);
   renderDecisions(state.decisions);

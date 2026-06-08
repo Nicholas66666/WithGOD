@@ -36,6 +36,13 @@ function parseBullets(text = '') {
     .filter(Boolean);
 }
 
+function firstSection(sections, names, fallback = '') {
+  for (const name of names) {
+    if (sections[name]) return sections[name];
+  }
+  return fallback;
+}
+
 async function readMarkdownFiles(dir) {
   let names = [];
   try {
@@ -84,9 +91,13 @@ export async function buildDashboardState({ root = process.cwd(), now = new Date
       date,
       title: parseTitle(file.markdown, `Daily Review: ${date}`),
       sections,
-      completed: parseBullets(sections.Completed),
-      tomorrow: parseBullets(sections.Tomorrow),
-      openQuestions: parseBullets(sections['Open Questions']),
+      goal: firstSection(sections, ['目标', 'Goal']),
+      completed: parseBullets(firstSection(sections, ['完成', 'Completed'])),
+      dataFindings: firstSection(sections, ['数据发现', 'Data Findings']),
+      decisionsMade: firstSection(sections, ['已做决策', 'Decisions Made']),
+      corrections: firstSection(sections, ['错误或修正', 'Mistakes Or Corrections']),
+      tomorrow: parseBullets(firstSection(sections, ['明日事项', 'Tomorrow'])),
+      openQuestions: parseBullets(firstSection(sections, ['待确认问题', 'Open Questions'])),
     };
   });
 
@@ -95,9 +106,9 @@ export async function buildDashboardState({ root = process.cwd(), now = new Date
     return {
       id: basename(file.name, '.md'),
       title: parseTitle(file.markdown, basename(file.name, '.md')),
-      decision: sections.Decision || '',
-      evidence: parseBullets(sections.Evidence),
-      reversalCriteria: sections['Reversal Criteria'] || '',
+      decision: firstSection(sections, ['决策', 'Decision']),
+      evidence: parseBullets(firstSection(sections, ['证据', 'Evidence'])),
+      reversalCriteria: firstSection(sections, ['推翻条件', 'Reversal Criteria']),
     };
   });
 
@@ -106,10 +117,10 @@ export async function buildDashboardState({ root = process.cwd(), now = new Date
     return {
       id: basename(file.name, '.md'),
       title: parseTitle(file.markdown, basename(file.name, '.md')),
-      summary: sections.Summary || '',
-      resources: parseBullets(sections.Resources),
-      cost: sections.Cost || '',
-      verification: parseBullets(sections.Verification),
+      summary: firstSection(sections, ['摘要', 'Summary']),
+      resources: parseBullets(firstSection(sections, ['资源', 'Resources'])),
+      cost: firstSection(sections, ['成本', 'Cost']),
+      verification: parseBullets(firstSection(sections, ['验证', 'Verification'])),
     };
   });
 
@@ -118,8 +129,8 @@ export async function buildDashboardState({ root = process.cwd(), now = new Date
     project,
     status: {
       generatedAt: now,
-      currentStage: project.currentChannel || 'Launch OS setup and SEMrush research preparation',
-      target: `First real ${project.price || '$149'} US order for the Scripture companion wearable`,
+      currentStage: project.currentChannel || 'Launch OS 已上线，准备 SEMrush 数据研究',
+      target: `拿到第一笔美国市场 ${project.price || '$149'} 圣经智能手表真实订单`,
     },
     daily,
     decisions,

@@ -1,8 +1,7 @@
 {
-  "product": "One-button Scripture companion wearable",
+  "product": "一键圣经智能手表",
   "price": "$149",
   "publicUrl": "http://124.174.96.149:8798/",
-  "currentChannel": "Launch OS live; SEMrush research preparation",
-  "costNote": "No new server was created for Launch OS Day 1. The dashboard reuses the existing postpaid Volcengine ECS instance drs-test-ecs and its 5 Mbps EIP. Actual ongoing cloud cost must be verified in the Volcengine billing console."
+  "currentChannel": "Launch OS 已公网运行；SEMrush 关键词和竞品数据研究准备中",
+  "costNote": "Launch OS Day 1 没有新建服务器。看板复用现有后付费火山引擎 ECS drs-test-ecs 和 5 Mbps EIP。实际持续云成本必须以火山引擎账单控制台为准。"
 }
-

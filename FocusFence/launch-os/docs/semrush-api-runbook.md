@@ -1,57 +1,53 @@
-# SEMrush API Runbook
+# SEMrush API 操作手册
 
-## Secret Setup
+## 密钥设置
 
-Do not paste the key into committed files. Add it to `.env.local`:
+不要把 key 粘贴到会被提交的文件里。当前推荐放在：
 
-```bash
+```text
+launch-os/.env.local
+```
+
+格式：
+
+```text
 SEMRUSH_API_KEY=...
 ```
 
-Then load it before running scripts:
+脚本会自动读取 `launch-os/.env.local`。如果进程环境变量里已经有 `SEMRUSH_API_KEY`，则优先使用进程环境变量。
 
-```bash
-set -a
-source .env.local
-set +a
-```
+## 种子关键词
 
-## Seed Keywords
+种子词簇存放在 `launch-os/config/seed-keywords.json`。
 
-Seed clusters live in:
-
-```text
-launch-os/config/seed-keywords.json
-```
-
-Current clusters:
+当前词簇：
 
 - `anxiety-worry`
 - `anger-reaction`
 - `overwhelmed-peace`
 - `conflict-relationships`
 
-## Preview Requests Without Pulling
+## 预览请求，不拉取数据
 
 ```bash
 node launch-os/scripts/semrush/fetch-seed-keywords.mjs
 ```
 
-This prints redacted API URLs and does not expose the API key.
+这个命令只打印脱敏 API URL，不暴露 API key。
 
-## Pull One Keyword
+## 拉取单个关键词
 
 ```bash
 node launch-os/scripts/semrush/fetch-keyword-overview.mjs --phrase="bible verses for anxiety"
 ```
 
-Raw CSV is written to:
+原始 CSV 写入：
 
 ```text
 launch-os/data/raw/semrush/
 ```
 
-## Normalize
+## 标准化
 
 ```bash
 npm run launch:semrush:normalize
@@ -59,19 +55,18 @@ npm run launch:dashboard:build
 npm run launch:verify
 ```
 
-Processed keyword rows are written to:
+处理后的关键词行写入：
 
 ```text
 launch-os/data/processed/semrush-keywords.json
 ```
 
-## Analysis Questions
+## 分析问题
 
-After the first pull, answer:
+第一批数据拉取后必须回答：
 
-- Which demand clusters have real US volume?
-- Which terms have CPC high enough to imply commercial competition?
-- Which terms look like pure free-content intent and should be avoided or handled carefully?
-- Which negative keywords should be added?
-- Which landing page type should each ad group use?
-
+- 哪些需求词簇在美国有真实搜索量？
+- 哪些词的 CPC 足以说明有商业竞争？
+- 哪些词更像纯免费内容意图，应该避免或谨慎处理？
+- 第一批否定关键词应该是什么？
+- 每个广告组应该对应什么类型的落地页？

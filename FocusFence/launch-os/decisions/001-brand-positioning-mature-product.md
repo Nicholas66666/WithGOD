@@ -1,24 +1,24 @@
-# Decision 001: Mature Product Positioning
+# 决策 001：成熟产品定位
 
-## Decision
+## 决策
 
-Use mature-brand product positioning. Do not lead with Founder Batch, first production run, or early-device framing.
+使用成熟品牌、正式销售的产品定位。不要主打 Founder Batch、first production run 或早期设备叙事。
 
-## Options Considered
+## 考虑选项
 
-- Mature product launch.
-- Founder Batch / early limited release.
-- Waitlist or deposit-first validation.
+- 成熟产品正式上线。
+- Founder Batch / 早期限量发售。
+- Waitlist 或先收订金验证。
 
-## Evidence
+## 证据
 
-- The product can ship in 14-21 days.
-- The user wants cold-traffic paid conversion, not community crowdfunding.
-- AI + faith + wearable creates enough trust burden already; early-stage language can increase perceived risk.
+- 产品 14-21 天内可以真实发货。
+- 当前目标是冷流量付费转化，不是社区众筹。
+- AI + 信仰 + 可穿戴本身已经带来足够信任负担，早期产品语言会增加感知风险。
 
-## Final Choice
+## 最终选择
 
-Present the product as a mature, orderable $149 wearable:
+把产品呈现为成熟、可直接下单的 $149 可穿戴设备：
 
 ```text
 Press once. Return before you react.
@@ -27,7 +27,6 @@ Ships in 14-21 days.
 No cellular plan required.
 ```
 
-## Reversal Criteria
+## 推翻条件
 
-Revisit if cold traffic shows low trust despite strong click intent, or if fulfillment constraints force a preorder/deposit model.
-
+如果冷流量点击意图强但信任明显不足，或者履约条件迫使我们改成预售/订金模式，再重新评估。

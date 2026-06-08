@@ -1,23 +1,23 @@
-# Public Deployment: 2026-06-08
+# 公网部署：2026-06-08
 
-## Public URL
+## 公网地址
 
 ```text
 http://124.174.96.149:8798/
 ```
 
-## Server
+## 服务器
 
-- Provider: Volcengine ECS
-- Instance: `drs-test-ecs`
-- EIP: `124.174.96.149`
-- Service: `launch-os`
-- Port: `8798`
-- Existing DeepResponse port `8797` was not changed.
+- 云服务商：火山引擎 ECS
+- 实例：`drs-test-ecs`
+- EIP：`124.174.96.149`
+- 服务：`launch-os`
+- 端口：`8798`
+- 没有改动现有 DeepResponse 端口 `8797`。
 
-## Deployment Shape
+## 部署形态
 
-The Day 1 deployment uses a zero-dependency Node static server:
+Day 1 部署使用零依赖 Node 静态服务：
 
 ```text
 /opt/launch-os/launch-os
@@ -26,48 +26,47 @@ The Day 1 deployment uses a zero-dependency Node static server:
   -> launch-os/data/processed/dashboard-state.json
 ```
 
-systemd service:
+systemd 服务：
 
 ```text
 /etc/systemd/system/launch-os.service
 ```
 
-## Security Group Change
+## 安全组变更
 
-Added one ingress rule to security group `sg-2f8f59lo5jp4w4f4pzyq8cq72`:
+为安全组 `sg-2f8f59lo5jp4w4f4pzyq8cq72` 新增一条入站规则：
 
 ```text
 tcp 8798 0.0.0.0/0 accept Launch OS dashboard
 ```
 
-This was required because requests to port `8798` did not reach the ECS before the rule was added. OS firewall was inactive and local `127.0.0.1:8798` worked before the security group change.
+新增规则前，公网请求无法到达 ECS 的 `8798` 端口。操作系统防火墙处于 inactive，且本机 `127.0.0.1:8798` 已经可用，因此问题定位为安全组入站限制。
 
-## Verification
+## 验证
 
-Public HTML:
+公网 HTML：
 
 ```bash
 curl -sS -m 10 -i http://124.174.96.149:8798/ | head -40
 ```
 
-Public dashboard data:
+公网看板数据：
 
 ```bash
 curl -sS -m 10 http://124.174.96.149:8798/data/processed/dashboard-state.json
 ```
 
-Expected data includes:
+期望数据包含：
 
 ```text
-First real $149 US order for the Scripture companion wearable
+拿到第一笔美国市场 $149 圣经智能手表真实订单
 decisions=3
 daily=1
 ```
 
-## Next Hardening
+## 后续加固
 
-- Add a domain and HTTPS reverse proxy.
-- Replace port-based public access with `https://<domain>/`.
-- Add automated deployment once the launch branch is pushed to GitHub.
-- Add SEMrush data refresh jobs after the API key is wired into the server environment.
-
+- 增加域名和 HTTPS 反向代理。
+- 用 `https://<domain>/` 替代端口访问。
+- 上线分支推送到 GitHub 后增加自动部署。
+- SEMrush API key 接入服务端环境后，增加数据刷新任务。

@@ -1,120 +1,128 @@
 {
   "project": {
-    "product": "One-button Scripture companion wearable",
+    "product": "一键圣经智能手表",
     "price": "$149",
     "publicUrl": "http://124.174.96.149:8798/",
-    "currentChannel": "Launch OS live; SEMrush research preparation",
-    "costNote": "No new server was created for Launch OS Day 1. The dashboard reuses the existing postpaid Volcengine ECS instance drs-test-ecs and its 5 Mbps EIP. Actual ongoing cloud cost must be verified in the Volcengine billing console."
+    "currentChannel": "Launch OS 已公网运行；SEMrush 关键词和竞品数据研究准备中",
+    "costNote": "Launch OS Day 1 没有新建服务器。看板复用现有后付费火山引擎 ECS drs-test-ecs 和 5 Mbps EIP。实际持续云成本必须以火山引擎账单控制台为准。"
   },
   "status": {
-    "generatedAt": "2026-06-08T11:58:24.066Z",
-    "currentStage": "Launch OS live; SEMrush research preparation",
-    "target": "First real $149 US order for the Scripture companion wearable"
+    "generatedAt": "2026-06-08T12:12:55.014Z",
+    "currentStage": "Launch OS 已公网运行；SEMrush 关键词和竞品数据研究准备中",
+    "target": "拿到第一笔美国市场 $149 圣经智能手表真实订单"
   },
   "daily": [
     {
       "date": "2026-06-08",
-      "title": "Daily Review: 2026-06-08",
+      "title": "每日复盘：2026-06-08",
       "sections": {
-        "Goal": "Create the Day 1 launch operating system and prepare SEMrush-driven paid-search research.",
-        "Completed": "- Confirmed product can ship in 14-21 days.\n- Chose mature-brand positioning instead of Founder Batch framing.\n- Chose $149 as the initial hardware price.\n- Selected SEMrush as the first research API source.\n- Started Launch OS planning and version control.\n- Created the Launch OS local workspace, dashboard, data scripts, templates, and deployment scaffold.\n- Deployed the first public Launch OS dashboard to `http://124.174.96.149:8798/`.\n- Added a Volcengine security group rule for `tcp/8798` after confirming requests did not reach the ECS.\n- Upgraded the public dashboard into a project cockpit with overview, daily review, decisions, operations, cost notes, SEMrush readiness, and next actions.\n- Created local Codex Skill `focusfence-launch-os` so future sessions read Launch OS records before acting.\n- Added SEMrush runbook and seed keyword preview script.",
-        "Data Findings": "- SEMrush is expected to support paid-search competitor, ad copy, keyword, and landing-page research.\n- Google Keyword Planner should be used later to validate final keyword volume, bid ranges, and forecasts.",
-        "Decisions Made": "- See `decisions/001-brand-positioning-mature-product.md`.\n- See `decisions/002-price-149.md`.\n- See `decisions/003-data-source-semrush-first.md`.",
-        "Mistakes Or Corrections": "- Earlier channel thinking over-weighted Meta and under-specified SEM demand-keyword strategy.\n- Earlier brand framing over-emphasized Founder Batch/first production run; the current direction is mature product launch.",
-        "Tomorrow": "- Pull SEMrush keyword and advertising data.\n- Build the first keyword clusters and negative keyword list.\n- Inspect content-to-product landing-page patterns.\n- Decide the first Google Search campaign structure from data.\n- Add domain/HTTPS or decide whether port-based access is acceptable for internal launch work.\n- Add `SEMRUSH_API_KEY` to `.env.local` and pull the first keyword data.",
-        "Open Questions": "- Exact brand/domain to use publicly.\n- Return window and customer support policy.\n- US shipping method and cost."
+        "目标": "建立 Day 1 上线操作系统，并准备基于 SEMrush 的付费搜索研究。",
+        "完成": "- 确认产品 14-21 天内可以真实发货。\n- 选择成熟品牌定位，不使用 Founder Batch 叙事。\n- 选择 $149 作为首个硬件公开售价。\n- 选择 SEMrush 作为第一个研究 API 数据源。\n- 启动 Launch OS 规划和 git 版本管理。\n- 创建 Launch OS 本地工作区、看板、数据脚本、模板和部署脚手架。\n- 把第一版公网 Launch OS 看板部署到 `http://124.174.96.149:8798/`。\n- 确认请求无法到达 ECS 后，为火山引擎安全组新增 `tcp/8798` 入站规则。\n- 将公网看板升级为项目 cockpit，包含总览、每日复盘、决策、操作、成本说明、SEMrush 准备状态和下一步。\n- 创建本地 Codex Skill `focusfence-launch-os`，让未来会话先读 Launch OS 记录再行动。\n- 添加 SEMrush 操作手册和种子关键词预览脚本。\n- 用户已把 `SEMRUSH_API_KEY` 写入 `launch-os/.env.local`。\n- 确认 Launch OS 记录、看板、复盘和决策日志以后默认使用中文。\n- 调整 SEMrush 脚本，让它能自动读取 `launch-os/.env.local`，避免每次手动导出环境变量。\n- 完成第一条 SEMrush 真实 API 调用：`bible verses for anxiety`，原始文件保存为 `data/raw/semrush/us-bible-verses-for-anxiety.csv`。",
+        "数据发现": "- SEMrush 预计可以支持付费搜索竞品、广告文案、关键词和落地页研究。\n- Google Keyword Planner 后续应用来校验最终关键词量级、出价区间和 forecast。\n- `bible verses for anxiety` 在美国的 SEMrush 数据显示月搜索量约 14,800，CPC 约 0.02，竞争度约 0.46。这个词有真实需求量，但 CPC 很低，说明它可能偏免费内容消费意图，不能直接假设适合硬件购买转化。",
+        "已做决策": "- 见 `decisions/001-brand-positioning-mature-product.md`。\n- 见 `decisions/002-price-149.md`。\n- 见 `decisions/003-data-source-semrush-first.md`。\n- 见 `decisions/004-continuity-skill-and-records.md`。",
+        "错误或修正": "- 早期渠道判断过度偏向 Meta，且对 SEM 需求关键词策略定义不够。\n- 早期品牌表述过度强调 Founder Batch / first production run；当前方向是成熟产品正式销售。\n- 早期 Launch OS 记录中仍有较多英文系统文本；已开始改为中文，并把中文记录规则写入项目和 Skill。",
+        "明日事项": "- 拉取 SEMrush 关键词和广告数据。\n- 建立第一版关键词词簇和否定关键词列表。\n- 检查“内容解决方案到产品转化”的落地页模式。\n- 基于数据决定第一版 Google Search 广告结构。\n- 增加域名/HTTPS，或决定内部上线阶段是否接受端口访问。\n- 拉取第一批 SEMrush 关键词数据，并把结果沉淀进看板。",
+        "待确认问题": "- 对外使用的准确品牌名和域名。\n- 退货周期和客服政策。\n- 美国发货方式和运费。"
       },
+      "goal": "建立 Day 1 上线操作系统，并准备基于 SEMrush 的付费搜索研究。",
       "completed": [
-        "Confirmed product can ship in 14-21 days.",
-        "Chose mature-brand positioning instead of Founder Batch framing.",
-        "Chose $149 as the initial hardware price.",
-        "Selected SEMrush as the first research API source.",
-        "Started Launch OS planning and version control.",
-        "Created the Launch OS local workspace, dashboard, data scripts, templates, and deployment scaffold.",
-        "Deployed the first public Launch OS dashboard to `http://124.174.96.149:8798/`.",
-        "Added a Volcengine security group rule for `tcp/8798` after confirming requests did not reach the ECS.",
-        "Upgraded the public dashboard into a project cockpit with overview, daily review, decisions, operations, cost notes, SEMrush readiness, and next actions.",
-        "Created local Codex Skill `focusfence-launch-os` so future sessions read Launch OS records before acting.",
-        "Added SEMrush runbook and seed keyword preview script."
+        "确认产品 14-21 天内可以真实发货。",
+        "选择成熟品牌定位，不使用 Founder Batch 叙事。",
+        "选择 $149 作为首个硬件公开售价。",
+        "选择 SEMrush 作为第一个研究 API 数据源。",
+        "启动 Launch OS 规划和 git 版本管理。",
+        "创建 Launch OS 本地工作区、看板、数据脚本、模板和部署脚手架。",
+        "把第一版公网 Launch OS 看板部署到 `http://124.174.96.149:8798/`。",
+        "确认请求无法到达 ECS 后，为火山引擎安全组新增 `tcp/8798` 入站规则。",
+        "将公网看板升级为项目 cockpit，包含总览、每日复盘、决策、操作、成本说明、SEMrush 准备状态和下一步。",
+        "创建本地 Codex Skill `focusfence-launch-os`，让未来会话先读 Launch OS 记录再行动。",
+        "添加 SEMrush 操作手册和种子关键词预览脚本。",
+        "用户已把 `SEMRUSH_API_KEY` 写入 `launch-os/.env.local`。",
+        "确认 Launch OS 记录、看板、复盘和决策日志以后默认使用中文。",
+        "调整 SEMrush 脚本，让它能自动读取 `launch-os/.env.local`，避免每次手动导出环境变量。",
+        "完成第一条 SEMrush 真实 API 调用：`bible verses for anxiety`，原始文件保存为 `data/raw/semrush/us-bible-verses-for-anxiety.csv`。"
       ],
+      "dataFindings": "- SEMrush 预计可以支持付费搜索竞品、广告文案、关键词和落地页研究。\n- Google Keyword Planner 后续应用来校验最终关键词量级、出价区间和 forecast。\n- `bible verses for anxiety` 在美国的 SEMrush 数据显示月搜索量约 14,800，CPC 约 0.02，竞争度约 0.46。这个词有真实需求量，但 CPC 很低，说明它可能偏免费内容消费意图，不能直接假设适合硬件购买转化。",
+      "decisionsMade": "- 见 `decisions/001-brand-positioning-mature-product.md`。\n- 见 `decisions/002-price-149.md`。\n- 见 `decisions/003-data-source-semrush-first.md`。\n- 见 `decisions/004-continuity-skill-and-records.md`。",
+      "corrections": "- 早期渠道判断过度偏向 Meta，且对 SEM 需求关键词策略定义不够。\n- 早期品牌表述过度强调 Founder Batch / first production run；当前方向是成熟产品正式销售。\n- 早期 Launch OS 记录中仍有较多英文系统文本；已开始改为中文，并把中文记录规则写入项目和 Skill。",
       "tomorrow": [
-        "Pull SEMrush keyword and advertising data.",
-        "Build the first keyword clusters and negative keyword list.",
-        "Inspect content-to-product landing-page patterns.",
-        "Decide the first Google Search campaign structure from data.",
-        "Add domain/HTTPS or decide whether port-based access is acceptable for internal launch work.",
-        "Add `SEMRUSH_API_KEY` to `.env.local` and pull the first keyword data."
+        "拉取 SEMrush 关键词和广告数据。",
+        "建立第一版关键词词簇和否定关键词列表。",
+        "检查“内容解决方案到产品转化”的落地页模式。",
+        "基于数据决定第一版 Google Search 广告结构。",
+        "增加域名/HTTPS，或决定内部上线阶段是否接受端口访问。",
+        "拉取第一批 SEMrush 关键词数据，并把结果沉淀进看板。"
       ],
       "openQuestions": [
-        "Exact brand/domain to use publicly.",
-        "Return window and customer support policy.",
-        "US shipping method and cost."
+        "对外使用的准确品牌名和域名。",
+        "退货周期和客服政策。",
+        "美国发货方式和运费。"
       ]
     }
   ],
   "decisions": [
     {
       "id": "001-brand-positioning-mature-product",
-      "title": "Decision 001: Mature Product Positioning",
-      "decision": "Use mature-brand product positioning. Do not lead with Founder Batch, first production run, or early-device framing.",
+      "title": "决策 001：成熟产品定位",
+      "decision": "使用成熟品牌、正式销售的产品定位。不要主打 Founder Batch、first production run 或早期设备叙事。",
       "evidence": [
-        "The product can ship in 14-21 days.",
-        "The user wants cold-traffic paid conversion, not community crowdfunding.",
-        "AI + faith + wearable creates enough trust burden already; early-stage language can increase perceived risk."
+        "产品 14-21 天内可以真实发货。",
+        "当前目标是冷流量付费转化，不是社区众筹。",
+        "AI + 信仰 + 可穿戴本身已经带来足够信任负担，早期产品语言会增加感知风险。"
       ],
-      "reversalCriteria": "Revisit if cold traffic shows low trust despite strong click intent, or if fulfillment constraints force a preorder/deposit model."
+      "reversalCriteria": "如果冷流量点击意图强但信任明显不足，或者履约条件迫使我们改成预售/订金模式，再重新评估。"
     },
     {
       "id": "002-price-149",
-      "title": "Decision 002: Initial Price $149",
-      "decision": "Set the first public hardware price at $149.",
+      "title": "决策 002：首发价格 $149",
+      "decision": "首个公开硬件售价设为 $149。",
       "evidence": [
-        "Product visuals support a premium black-and-gold faith wearable.",
-        "The product includes hardware plus a companion software experience.",
-        "$149 keeps the product below mainstream premium wearable pricing while staying meaningfully above app-only subscriptions."
+        "产品视觉支持黑金高端信仰可穿戴设备定位。",
+        "产品包含硬件和配套软件体验。",
+        "$149 低于主流高端智能手表价格，同时明显高于纯 App 订阅。"
       ],
-      "reversalCriteria": "Revisit if high-intent Search traffic reaches checkout but fails to convert because of price or shipping trust concerns."
+      "reversalCriteria": "如果高意图搜索流量进入结账页后因为价格或发货信任问题无法转化，再重新评估。"
     },
     {
       "id": "003-data-source-semrush-first",
-      "title": "Decision 003: SEMrush First For Research",
-      "decision": "Use SEMrush API as the first data source for paid-search strategy research.",
+      "title": "决策 003：优先使用 SEMrush 做研究",
+      "decision": "把 SEMrush API 作为付费搜索策略研究的第一个数据源。",
       "evidence": [
-        "SEMrush is better suited to competitor paid-search, ad copy, paid keyword, and landing-page discovery.",
-        "Google Keyword Planner is better as a final validation source for search volume, bid ranges, and forecasts.",
-        "Ahrefs is useful for organic/SERP/content research, but less directly aligned with the first SEM strategy question."
+        "SEMrush 更适合做竞品付费搜索、广告文案、付费关键词和落地页发现。",
+        "Google Keyword Planner 更适合作为最终关键词量级、出价区间和 forecast 校验来源。",
+        "Ahrefs 对 SEO、SERP 和内容研究有价值，但与第一阶段 SEM 策略问题不如 SEMrush 直接。"
       ],
-      "reversalCriteria": "Revisit if SEMrush data lacks paid-search coverage for relevant Christian, Scripture, prayer, anxiety, anger, and stress keyword clusters."
+      "reversalCriteria": "如果 SEMrush 对 Christian、Scripture、prayer、anxiety、anger、stress 等相关关键词簇的付费搜索覆盖不足，再重新评估。"
     },
     {
       "id": "004-continuity-skill-and-records",
-      "title": "Decision 004: Continuity Through Skill And Records",
-      "decision": "Use both repository records and a local Codex Skill to preserve Launch OS continuity across sessions.",
+      "title": "决策 004：用 Skill 和仓库记录保持连续性",
+      "decision": "同时使用仓库记录和本地 Codex Skill，保证 Launch OS 在跨会话时不依赖聊天记忆。",
       "evidence": [
-        "Chat history can be compacted or lost.",
-        "Repository files are versioned and auditable.",
-        "A Skill can force future sessions to read Launch OS records before acting."
+        "聊天历史可能被压缩或丢失。",
+        "仓库文件可版本管理、可审计。",
+        "Skill 可以提示未来会话先读取 Launch OS 记录再行动。"
       ],
-      "reversalCriteria": "Revisit if the Skill does not trigger reliably in future sessions or if another project-level instruction mechanism becomes more reliable."
+      "reversalCriteria": "如果未来会话中 Skill 触发不稳定，或出现更可靠的项目级指令机制，再重新评估。"
     }
   ],
   "operations": [
     {
       "id": "2026-06-08-launch-os-bootstrap",
-      "title": "Operation: Launch OS Bootstrap",
-      "summary": "Created the first Launch OS project system, deployed it publicly, and committed the Day 1 implementation.",
+      "title": "操作记录：Launch OS 启动",
+      "summary": "创建第一版 Launch OS 项目系统，完成公网部署，并提交 Day 1 实现。",
       "resources": [
-        "Reused existing Volcengine ECS instance `drs-test-ecs`.",
-        "Reused existing EIP `124.174.96.149`.",
-        "Added a new systemd service named `launch-os`.",
-        "Added a zero-dependency Node static server on port `8798`.",
-        "Added one security group ingress rule for `tcp/8798` from `0.0.0.0/0`.",
-        "Did not change the existing DeepResponse service on port `8797`.",
-        "Did not create a new ECS server.",
-        "Did not install Docker on the ECS.",
-        "Did not commit cloud or API secrets."
+        "复用现有火山引擎 ECS 实例 `drs-test-ecs`。",
+        "复用现有 EIP `124.174.96.149`。",
+        "新增 systemd 服务 `launch-os`。",
+        "新增零依赖 Node 静态服务，监听端口 `8798`。",
+        "为安全组新增一条 `tcp/8798`、来源 `0.0.0.0/0` 的入站规则。",
+        "没有改动现有 `8797` 端口上的 DeepResponse 服务。",
+        "没有新建 ECS 服务器。",
+        "没有在 ECS 上安装 Docker。",
+        "没有提交云服务或 API 密钥。"
       ],
-      "cost": "No new server was created during this operation. The public dashboard currently runs on the already-existing postpaid Volcengine ECS instance `ecs.g4i.large` with a 5 Mbps EIP. The incremental Launch OS cost is expected to be negligible while it shares the existing instance, but the actual cloud bill must be verified in the Volcengine billing console because postpaid ECS, bandwidth, storage, and traffic are account-level charges.",
+      "cost": "这次操作没有新建服务器。公网看板目前运行在已经存在的后付费火山引擎 ECS 实例 `ecs.g4i.large` 和 5 Mbps EIP 上。Launch OS 复用现有实例时增量成本预计很低，但实际云账单必须以火山引擎账单控制台为准，因为后付费 ECS、带宽、存储和流量都是账户级计费项。",
       "verification": [
         "`npm run test:node` passed with 301 tests.",
         "`npm run launch:verify` passed with 5 Launch OS tests.",
@@ -125,7 +133,7 @@
     }
   ],
   "semrush": {
-    "keywordRows": 0,
+    "keywordRows": 1,
     "clusters": {
       "database": "us",
       "clusters": [
@@ -168,11 +176,11 @@
     }
   },
   "nextActions": [
-    "Pull SEMrush keyword and advertising data.",
-    "Build the first keyword clusters and negative keyword list.",
-    "Inspect content-to-product landing-page patterns.",
-    "Decide the first Google Search campaign structure from data.",
-    "Add domain/HTTPS or decide whether port-based access is acceptable for internal launch work.",
-    "Add `SEMRUSH_API_KEY` to `.env.local` and pull the first keyword data."
+    "拉取 SEMrush 关键词和广告数据。",
+    "建立第一版关键词词簇和否定关键词列表。",
+    "检查“内容解决方案到产品转化”的落地页模式。",
+    "基于数据决定第一版 Google Search 广告结构。",
+    "增加域名/HTTPS，或决定内部上线阶段是否接受端口访问。",
+    "拉取第一批 SEMrush 关键词数据，并把结果沉淀进看板。"
   ]
 }

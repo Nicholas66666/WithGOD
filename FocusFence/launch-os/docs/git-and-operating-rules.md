@@ -1,41 +1,40 @@
-# Git And Operating Rules
+# Git 与操作规则
 
-## Branches
+## 分支
 
-- Use `codex/` branches for implementation.
-- Keep launch-system work isolated from app feature work when possible.
-- Do not commit secrets, raw credentials, or personal tokens.
+- 实现工作默认使用 `codex/` 分支。
+- 尽量把 Launch OS 工作和 App 功能开发隔离。
+- 不提交密钥、原始凭证或个人 token。
 
-## Commit Cadence
+## 提交节奏
 
-Commit after each coherent unit:
+每完成一个内聚单元就提交：
 
-- process templates
-- dashboard renderer
-- SEMrush scripts
-- deployment scaffold
-- verification scripts
+- 流程模板
+- 看板渲染器
+- SEMrush 脚本
+- 部署脚手架
+- 验证脚本
 
-## Decision Hygiene
+## 决策纪律
 
-Every commercial decision should include:
+每个商业决策都要包含：
 
-- the question
-- options considered
-- evidence
-- final choice
-- reversal criteria
+- 问题
+- 考虑过的选项
+- 证据
+- 最终选择
+- 推翻条件
 
-## Data Hygiene
+## 数据纪律
 
-- Raw API files go under `data/raw/`.
-- Processed data goes under `data/processed/`.
-- Decisions cite processed outputs and source files.
-- If a number cannot be traced, it should not drive spending.
+- 原始 API 文件放在 `data/raw/`。
+- 处理后数据放在 `data/processed/`。
+- 决策要引用处理结果和源文件。
+- 不能追溯来源的数字，不应用来指导花钱。
 
-## Deployment Hygiene
+## 部署纪律
 
-- Production secrets live on the server or in a secret manager, not git.
-- Deployment scripts must avoid printing secret values.
-- Rollback steps should be documented before public launch.
-
+- 生产密钥放在服务器或密钥管理系统，不放进 git。
+- 部署脚本必须避免打印密钥值。
+- 正式公开上线前要记录回滚步骤。

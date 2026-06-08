@@ -1,20 +1,20 @@
-# Volcengine Deployment Scaffold
+# 火山引擎部署脚手架
 
-## Recommended Day 1 Shape
+## Day 1 推荐形态
 
-Use the existing Volcengine ECS instance with a zero-dependency Node static server for Day 1.
+Day 1 使用现有火山引擎 ECS 实例和零依赖 Node 静态服务。
 
-This keeps the public demo simple:
+这样可以让公网 demo 保持简单：
 
-- Node serves the dashboard and processed data.
-- systemd owns service lifecycle.
-- The first public demo uses port `8798` to avoid disturbing the existing DeepResponse service on `8797`.
-- Docker Compose and Caddy can be added later when a domain and HTTPS cutover are ready.
-- SEMrush and dashboard scripts run from the repo or a scheduled job later.
+- Node 负责提供看板和处理后数据。
+- systemd 负责服务生命周期。
+- 第一版公网 demo 使用端口 `8798`，避免影响 `8797` 上的现有 DeepResponse 服务。
+- 域名和 HTTPS 准备好后，再加入 Docker Compose 和 Caddy。
+- SEMrush 和看板脚本后续可从仓库或定时任务运行。
 
-## Required Environment Variables
+## 所需环境变量
 
-Set these on your local machine or ECS host. Do not commit real values.
+在本机或 ECS 主机设置这些变量。不要提交真实值。
 
 ```bash
 export VOLCENGINE_ACCESS_KEY_ID=...
@@ -24,19 +24,19 @@ export LAUNCH_OS_PUBLIC_HOST=launch.example.com
 export LAUNCH_OS_PUBLIC_EMAIL=ops@example.com
 ```
 
-## Manual ECS Setup
+## 手动 ECS 设置
 
-1. Create a small ECS instance in the configured Volcengine region.
-2. Allow inbound ports `80` and `443`.
-3. Install Node.js 22+ on the instance.
-4. Clone or copy this repository to `/opt/launch-os`.
-5. Build dashboard state locally or on the host:
+1. 在配置好的火山引擎区域创建小型 ECS 实例。
+2. 放行入站端口 `80` 和 `443`。
+3. 在实例上安装 Node.js 22+。
+4. 将本仓库 clone 或复制到 `/opt/launch-os`。
+5. 在本地或主机上构建看板状态：
 
 ```bash
 node launch-os/scripts/dashboard/build-dashboard-state.mjs
 ```
 
-6. Start the public dashboard:
+6. 启动公网看板：
 
 ```bash
 sudo cp launch-os/infra/volcengine/systemd/launch-os.service /etc/systemd/system/launch-os.service
@@ -46,9 +46,9 @@ sudo systemctl enable --now launch-os
 
 ## DNS
 
-Point the selected domain to the ECS public IP. After the domain is ready, put Caddy or another reverse proxy in front of port `8798` for HTTPS.
+将选定域名指向 ECS 公网 IP。域名准备好后，用 Caddy 或其他反向代理把 HTTPS 接到 `8798`。
 
-## Rollback
+## 回滚
 
 ```bash
 cd /opt/launch-os
@@ -58,9 +58,9 @@ node launch-os/scripts/dashboard/build-dashboard-state.mjs
 sudo systemctl restart launch-os
 ```
 
-## Security Notes
+## 安全说明
 
-- Do not print Volcengine AK/SK in scripts.
-- Do not commit `.env.local`.
-- Keep SSH access limited to trusted keys.
-- Rotate keys if any secret is accidentally exposed.
+- 不要在脚本里打印火山引擎 AK/SK。
+- 不要提交 `.env.local`。
+- SSH 访问限制在可信 key 范围内。
+- 如果任何密钥意外暴露，立即轮换。
