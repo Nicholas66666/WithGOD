@@ -7,7 +7,7 @@
     "costNote": "Launch OS Day 1 没有新建服务器。看板复用现有后付费火山引擎 ECS drs-test-ecs 和 5 Mbps EIP。实际持续云成本必须以火山引擎账单控制台为准。"
   },
   "status": {
-    "generatedAt": "2026-06-08T12:22:43.976Z",
+    "generatedAt": "2026-06-08T12:25:52.051Z",
     "currentStage": "Launch OS 已公网运行；SEMrush 关键词和竞品数据研究准备中",
     "target": "拿到第一笔美国市场 $149 圣经智能手表真实订单"
   },
@@ -17,10 +17,10 @@
       "title": "每日复盘：2026-06-08",
       "sections": {
         "目标": "建立 Day 1 上线操作系统，并准备基于 SEMrush 的付费搜索研究。",
-        "完成": "- 确认产品 14-21 天内可以真实发货。\n- 选择成熟品牌定位，不使用 Founder Batch 叙事。\n- 选择 $149 作为首个硬件公开售价。\n- 选择 SEMrush 作为第一个研究 API 数据源。\n- 启动 Launch OS 规划和 git 版本管理。\n- 创建 Launch OS 本地工作区、看板、数据脚本、模板和部署脚手架。\n- 把第一版公网 Launch OS 看板部署到 `http://124.174.96.149:8798/`。\n- 确认请求无法到达 ECS 后，为火山引擎安全组新增 `tcp/8798` 入站规则。\n- 将公网看板升级为项目 cockpit，包含总览、每日复盘、决策、操作、成本说明、SEMrush 准备状态和下一步。\n- 创建本地 Codex Skill `focusfence-launch-os`，让未来会话先读 Launch OS 记录再行动。\n- 添加 SEMrush 操作手册和种子关键词预览脚本。\n- 用户已把 `SEMRUSH_API_KEY` 写入 `launch-os/.env.local`。\n- 确认 Launch OS 记录、看板、复盘和决策日志以后默认使用中文。\n- 调整 SEMrush 脚本，让它能自动读取 `launch-os/.env.local`，避免每次手动导出环境变量。\n- 完成第一条 SEMrush 真实 API 调用：`bible verses for anxiety`，原始文件保存为 `data/raw/semrush/us-bible-verses-for-anxiety.csv`。\n- 创建并安装个人 Codex 插件 `focusfence-launch-os@personal`，把 Launch OS 启动规则、中文记录规则、SEMrush/Google Ads/火山看板上下文打包成可在 Codex UI 中显式选择的插件入口。",
-        "数据发现": "- SEMrush 预计可以支持付费搜索竞品、广告文案、关键词和落地页研究。\n- Google Keyword Planner 后续应用来校验最终关键词量级、出价区间和 forecast。\n- `bible verses for anxiety` 在美国的 SEMrush 数据显示月搜索量约 14,800，CPC 约 0.02，竞争度约 0.46。这个词有真实需求量，但 CPC 很低，说明它可能偏免费内容消费意图，不能直接假设适合硬件购买转化。",
+        "完成": "- 确认产品 14-21 天内可以真实发货。\n- 选择成熟品牌定位，不使用 Founder Batch 叙事。\n- 选择 $149 作为首个硬件公开售价。\n- 选择 SEMrush 作为第一个研究 API 数据源。\n- 启动 Launch OS 规划和 git 版本管理。\n- 创建 Launch OS 本地工作区、看板、数据脚本、模板和部署脚手架。\n- 把第一版公网 Launch OS 看板部署到 `http://124.174.96.149:8798/`。\n- 确认请求无法到达 ECS 后，为火山引擎安全组新增 `tcp/8798` 入站规则。\n- 将公网看板升级为项目 cockpit，包含总览、每日复盘、决策、操作、成本说明、SEMrush 准备状态和下一步。\n- 创建本地 Codex Skill `focusfence-launch-os`，让未来会话先读 Launch OS 记录再行动。\n- 添加 SEMrush 操作手册和种子关键词预览脚本。\n- 用户已把 `SEMRUSH_API_KEY` 写入 `launch-os/.env.local`。\n- 确认 Launch OS 记录、看板、复盘和决策日志以后默认使用中文。\n- 调整 SEMrush 脚本，让它能自动读取 `launch-os/.env.local`，避免每次手动导出环境变量。\n- 完成第一条 SEMrush 真实 API 调用：`bible verses for anxiety`，原始文件保存为 `data/raw/semrush/us-bible-verses-for-anxiety.csv`。\n- 创建并安装个人 Codex 插件 `focusfence-launch-os@personal`，把 Launch OS 启动规则、中文记录规则、SEMrush/Google Ads/火山看板上下文打包成可在 Codex UI 中显式选择的插件入口。\n- 修正 SEMrush 标准化脚本字段映射，避免完整列名返回时丢失 `Competition`、`Number of Results` 和 `Trends`。",
+        "数据发现": "- SEMrush 预计可以支持付费搜索竞品、广告文案、关键词和落地页研究。\n- Google Keyword Planner 后续应用来校验最终关键词量级、出价区间和 forecast。\n- `bible verses for anxiety` 在美国的 SEMrush 数据显示月搜索量约 14,800，CPC 约 0.02，竞争度约 0.46。这个词有真实需求量，但 CPC 很低，说明它可能偏免费内容消费意图，不能直接假设适合硬件购买转化。\n- 标准化后的 `bible verses for anxiety` 数据为：月搜索量 14,800，CPC 0.02，竞争度 0.46，结果数 130，12 个月趋势为 `0.54,0.54,0.54,0.54,0.66,0.54,0.54,0.44,0.44,0.54,0.44,0.36`。",
         "已做决策": "- 见 `decisions/001-brand-positioning-mature-product.md`。\n- 见 `decisions/002-price-149.md`。\n- 见 `decisions/003-data-source-semrush-first.md`。\n- 见 `decisions/004-continuity-skill-and-records.md`。\n- 见 `decisions/005-plugin-backed-continuity.md`。",
-        "错误或修正": "- 早期渠道判断过度偏向 Meta，且对 SEM 需求关键词策略定义不够。\n- 早期品牌表述过度强调 Founder Batch / first production run；当前方向是成熟产品正式销售。\n- 早期 Launch OS 记录中仍有较多英文系统文本；已开始改为中文，并把中文记录规则写入项目和 Skill。",
+        "错误或修正": "- 早期渠道判断过度偏向 Meta，且对 SEM 需求关键词策略定义不够。\n- 早期品牌表述过度强调 Founder Batch / first production run；当前方向是成熟产品正式销售。\n- 早期 Launch OS 记录中仍有较多英文系统文本；已开始改为中文，并把中文记录规则写入项目和 Skill。\n- SEMrush 标准化脚本最初只兼容部分缩写字段，导致处理后 JSON 中竞争度、结果数和趋势丢失；已修正并通过验证。",
         "明日事项": "- 拉取 SEMrush 关键词和广告数据。\n- 建立第一版关键词词簇和否定关键词列表。\n- 检查“内容解决方案到产品转化”的落地页模式。\n- 基于数据决定第一版 Google Search 广告结构。\n- 增加域名/HTTPS，或决定内部上线阶段是否接受端口访问。\n- 拉取第一批 SEMrush 关键词数据，并把结果沉淀进看板。",
         "待确认问题": "- 对外使用的准确品牌名和域名。\n- 退货周期和客服政策。\n- 美国发货方式和运费。"
       },
@@ -41,11 +41,12 @@
         "确认 Launch OS 记录、看板、复盘和决策日志以后默认使用中文。",
         "调整 SEMrush 脚本，让它能自动读取 `launch-os/.env.local`，避免每次手动导出环境变量。",
         "完成第一条 SEMrush 真实 API 调用：`bible verses for anxiety`，原始文件保存为 `data/raw/semrush/us-bible-verses-for-anxiety.csv`。",
-        "创建并安装个人 Codex 插件 `focusfence-launch-os@personal`，把 Launch OS 启动规则、中文记录规则、SEMrush/Google Ads/火山看板上下文打包成可在 Codex UI 中显式选择的插件入口。"
+        "创建并安装个人 Codex 插件 `focusfence-launch-os@personal`，把 Launch OS 启动规则、中文记录规则、SEMrush/Google Ads/火山看板上下文打包成可在 Codex UI 中显式选择的插件入口。",
+        "修正 SEMrush 标准化脚本字段映射，避免完整列名返回时丢失 `Competition`、`Number of Results` 和 `Trends`。"
       ],
-      "dataFindings": "- SEMrush 预计可以支持付费搜索竞品、广告文案、关键词和落地页研究。\n- Google Keyword Planner 后续应用来校验最终关键词量级、出价区间和 forecast。\n- `bible verses for anxiety` 在美国的 SEMrush 数据显示月搜索量约 14,800，CPC 约 0.02，竞争度约 0.46。这个词有真实需求量，但 CPC 很低，说明它可能偏免费内容消费意图，不能直接假设适合硬件购买转化。",
+      "dataFindings": "- SEMrush 预计可以支持付费搜索竞品、广告文案、关键词和落地页研究。\n- Google Keyword Planner 后续应用来校验最终关键词量级、出价区间和 forecast。\n- `bible verses for anxiety` 在美国的 SEMrush 数据显示月搜索量约 14,800，CPC 约 0.02，竞争度约 0.46。这个词有真实需求量，但 CPC 很低，说明它可能偏免费内容消费意图，不能直接假设适合硬件购买转化。\n- 标准化后的 `bible verses for anxiety` 数据为：月搜索量 14,800，CPC 0.02，竞争度 0.46，结果数 130，12 个月趋势为 `0.54,0.54,0.54,0.54,0.66,0.54,0.54,0.44,0.44,0.54,0.44,0.36`。",
       "decisionsMade": "- 见 `decisions/001-brand-positioning-mature-product.md`。\n- 见 `decisions/002-price-149.md`。\n- 见 `decisions/003-data-source-semrush-first.md`。\n- 见 `decisions/004-continuity-skill-and-records.md`。\n- 见 `decisions/005-plugin-backed-continuity.md`。",
-      "corrections": "- 早期渠道判断过度偏向 Meta，且对 SEM 需求关键词策略定义不够。\n- 早期品牌表述过度强调 Founder Batch / first production run；当前方向是成熟产品正式销售。\n- 早期 Launch OS 记录中仍有较多英文系统文本；已开始改为中文，并把中文记录规则写入项目和 Skill。",
+      "corrections": "- 早期渠道判断过度偏向 Meta，且对 SEM 需求关键词策略定义不够。\n- 早期品牌表述过度强调 Founder Batch / first production run；当前方向是成熟产品正式销售。\n- 早期 Launch OS 记录中仍有较多英文系统文本；已开始改为中文，并把中文记录规则写入项目和 Skill。\n- SEMrush 标准化脚本最初只兼容部分缩写字段，导致处理后 JSON 中竞争度、结果数和趋势丢失；已修正并通过验证。",
       "tomorrow": [
         "拉取 SEMrush 关键词和广告数据。",
         "建立第一版关键词词簇和否定关键词列表。",

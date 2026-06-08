@@ -24,9 +24,9 @@ for (const name of names.filter((value) => value.endsWith('.csv')).sort()) {
       keyword: row.Keyword || row.Ph || '',
       search_volume: Number(row['Search Volume'] || row.Nq || 0),
       cpc: Number(row.CPC || row.Cp || 0),
-      competition: Number(row.Com || row.Co || 0),
-      results: Number(row.Results || row.Nr || 0),
-      trend: row.Trend || row.Td || '',
+      competition: Number(row.Competition || row.Com || row.Co || 0),
+      results: Number(row['Number of Results'] || row.Results || row.Nr || 0),
+      trend: row.Trends || row.Trend || row.Td || '',
     });
   }
 }
@@ -34,4 +34,3 @@ for (const name of names.filter((value) => value.endsWith('.csv')).sort()) {
 await mkdir(outDir, { recursive: true });
 await writeFile(join(outDir, 'semrush-keywords.json'), `${JSON.stringify(rows, null, 2)}\n`);
 console.log(`Normalized ${rows.length} keyword rows`);
-
