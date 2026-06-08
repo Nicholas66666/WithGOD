@@ -116,6 +116,22 @@ function renderClusters(clusters = []) {
   );
 }
 
+function renderActionSummary(values = []) {
+  html(
+    'actionSummary',
+    values
+      .map(
+        (item) => `
+          <div class="cluster">
+            <strong>${escapeHTML(item.action)}</strong>
+            <span>${escapeHTML(item.count)} 个</span>
+          </div>
+        `,
+      )
+      .join(''),
+  );
+}
+
 try {
   const state = await loadState();
   text('generatedAt', `生成时间 ${new Date(state.status.generatedAt).toLocaleString()}`);
@@ -128,11 +144,13 @@ try {
   text('decisionCount', String(state.decisions.length));
   text('dailyCount', String(state.daily.length));
   text('keywordRows', `${state.semrush.keywordRows} 行`);
+  text('uniqueKeywords', String(state.semrush.uniqueKeywords || 0));
   renderDaily(state.daily.at(-1));
   renderNextActions(state.nextActions);
   renderDecisions(state.decisions);
   renderOperations(state.operations);
   renderClusters(state.semrush.clusters.clusters || []);
+  renderActionSummary(state.semrush.actionSummary || []);
 } catch (error) {
   text('stage', error.message);
 }

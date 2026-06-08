@@ -83,6 +83,7 @@ export async function buildDashboardState({ root = process.cwd(), now = new Date
   const decisionFiles = await readMarkdownFiles(join(root, 'decisions'));
   const operationFiles = await readMarkdownFiles(join(root, 'ops'));
   const semrushKeywords = await readJSON(join(root, 'data/processed/semrush-keywords.json'), []);
+  const semrushUniverse = await readJSON(join(root, 'data/processed/semrush-keyword-universe.json'), []);
 
   const daily = dailyFiles.map((file) => {
     const sections = parseSections(file.markdown);
@@ -137,6 +138,21 @@ export async function buildDashboardState({ root = process.cwd(), now = new Date
     operations,
     semrush: {
       keywordRows: semrushKeywords.length,
+      uniqueKeywords: semrushUniverse.length,
+      actionSummary: Object.entries(
+        semrushUniverse.reduce((summary, row) => {
+          const action = row.recommended_action || '未分类';
+          summary[action] = (summary[action] || 0) + 1;
+          return summary;
+        }, {}),
+      ).map(([action, count]) => ({ action, count })),
+      clusterSummary: Object.entries(
+        semrushUniverse.reduce((summary, row) => {
+          const cluster = row.cluster || '未分类';
+          summary[cluster] = (summary[cluster] || 0) + 1;
+          return summary;
+        }, {}),
+      ).map(([cluster, count]) => ({ cluster, count })),
       clusters: await readJSON(join(root, 'config/seed-keywords.json'), { clusters: [] }),
     },
     nextActions: latestDaily?.tomorrow || [],

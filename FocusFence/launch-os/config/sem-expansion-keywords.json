@@ -1,0 +1,42 @@
+{
+  "database": "us",
+  "clusters": [
+    {
+      "name": "conflict-relationships-expanded",
+      "keywords": [
+        "bible verses about arguing",
+        "bible verses about conflict resolution",
+        "prayer for marriage problems",
+        "prayer for relationship problems",
+        "bible verses about forgiveness in relationships",
+        "prayer before confrontation",
+        "bible verses about difficult people",
+        "how to stop reacting in anger christian"
+      ]
+    },
+    {
+      "name": "commercial-solution-expanded",
+      "keywords": [
+        "christian counseling anxiety",
+        "christian therapy anxiety",
+        "christian mental health app",
+        "christian meditation app",
+        "prayer app",
+        "bible app for anxiety",
+        "christian devotional app",
+        "ai bible app",
+        "ai prayer app"
+      ]
+    },
+    {
+      "name": "faith-wearable-expanded",
+      "keywords": [
+        "christian smart ring",
+        "christian wearable",
+        "prayer wearable",
+        "christian habit tracker",
+        "faith based wearable"
+      ]
+    }
+  ]
+}

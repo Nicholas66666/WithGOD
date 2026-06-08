@@ -57,6 +57,30 @@ export function buildKeywordOverviewURL({
   return url;
 }
 
+export function buildKeywordReportURL({
+  apiKey,
+  type,
+  phrase,
+  database = 'us',
+  displayLimit = 50,
+  displaySort = 'nq_desc',
+  exportColumns = 'Ph,Nq,Cp,Co,Nr,Td',
+} = {}) {
+  if (!apiKey) throw new Error('apiKey is required');
+  if (!type) throw new Error('type is required');
+  if (!phrase) throw new Error('phrase is required');
+
+  const url = new URL('https://api.semrush.com/');
+  url.searchParams.set('type', type);
+  url.searchParams.set('key', apiKey);
+  url.searchParams.set('phrase', phrase);
+  url.searchParams.set('database', database);
+  url.searchParams.set('display_limit', String(displayLimit));
+  url.searchParams.set('display_sort', displaySort);
+  url.searchParams.set('export_columns', exportColumns);
+  return url;
+}
+
 export function redactURLForLog(url) {
   const copy = new URL(url.toString());
   if (copy.searchParams.has('key')) copy.searchParams.set('key', 'REDACTED');
