@@ -182,6 +182,7 @@ try {
   text('keywordRows', `${state.semrush.keywordRows} 行`);
   text('uniqueKeywords', String(state.semrush.uniqueKeywords || 0));
   text('paidDomains', String(state.semrush.paidDomains || 0));
+  text('adCopyRows', String(state.semrush.adCopyRows || 0));
   text('priorityKeywords', String(state.semrush.priorityKeywords || 0));
   text('negativeKeywords', String(state.semrush.negativeKeywords || 0));
   renderDaily(state.daily.at(-1));

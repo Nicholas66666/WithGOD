@@ -7,7 +7,7 @@
     "costNote": "Launch OS Day 1 没有新建服务器。看板复用现有后付费火山引擎 ECS drs-test-ecs 和 5 Mbps EIP。实际持续云成本必须以火山引擎账单控制台为准。"
   },
   "status": {
-    "generatedAt": "2026-06-08T12:58:50.604Z",
+    "generatedAt": "2026-06-08T13:09:41.791Z",
     "currentStage": "Launch OS 已公网运行；SEMrush 关键词和竞品数据研究准备中",
     "target": "拿到第一笔美国市场 $149 圣经智能手表真实订单"
   },
@@ -17,11 +17,11 @@
       "title": "每日复盘：2026-06-08",
       "sections": {
         "目标": "建立 Day 1 上线操作系统，并准备基于 SEMrush 的付费搜索研究。",
-        "完成": "- 确认产品 14-21 天内可以真实发货。\n- 选择成熟品牌定位，不使用 Founder Batch 叙事。\n- 选择 $149 作为首个硬件公开售价。\n- 选择 SEMrush 作为第一个研究 API 数据源。\n- 启动 Launch OS 规划和 git 版本管理。\n- 创建 Launch OS 本地工作区、看板、数据脚本、模板和部署脚手架。\n- 把第一版公网 Launch OS 看板部署到 `http://124.174.96.149:8798/`。\n- 确认请求无法到达 ECS 后，为火山引擎安全组新增 `tcp/8798` 入站规则。\n- 将公网看板升级为项目 cockpit，包含总览、每日复盘、决策、操作、成本说明、SEMrush 准备状态和下一步。\n- 创建本地 Codex Skill `focusfence-launch-os`，让未来会话先读 Launch OS 记录再行动。\n- 添加 SEMrush 操作手册和种子关键词预览脚本。\n- 用户已把 `SEMRUSH_API_KEY` 写入 `launch-os/.env.local`。\n- 确认 Launch OS 记录、看板、复盘和决策日志以后默认使用中文。\n- 调整 SEMrush 脚本，让它能自动读取 `launch-os/.env.local`，避免每次手动导出环境变量。\n- 完成第一条 SEMrush 真实 API 调用：`bible verses for anxiety`，原始文件保存为 `data/raw/semrush/us-bible-verses-for-anxiety.csv`。\n- 创建并安装个人 Codex 插件 `focusfence-launch-os@personal`，把 Launch OS 启动规则、中文记录规则、SEMrush/Google Ads/火山看板上下文打包成可在 Codex UI 中显式选择的插件入口。\n- 修正 SEMrush 标准化脚本字段映射，避免完整列名返回时丢失 `Competition`、`Number of Results` 和 `Trends`。\n- 拉取 15 个核心种子词的 SEMrush overview、related keywords 和 question keywords。\n- 新增 `sem-expansion-keywords.json`，补充冲突/关系、商业解决方案和 faith wearable 方向的扩展词。\n- 拉取 22 个扩展词的 SEMrush overview 和 related keywords。\n- 构建 `semrush-keyword-universe.json`，当前包含 1161 行原始/扩展记录、922 个唯一候选关键词。\n- 建立 SEM 策略工作台文档 `research/sem/2026-06-08-sem-strategy-workbench.md`。\n- 拉取 35 个代表关键词的 SEMrush paid results，识别真实付费域名、付费落地页和无广告结果词。\n- 新增 paid results 脚本：`fetch-paid-results.mjs`、`normalize-paid-results.mjs`。\n- 新增 SEM 优先级脚本 `build-sem-priority.mjs`，从 922 个唯一关键词生成 220 个首轮候选词、44 个否定关键词和 6 个广告组摘要。\n- 生成结构化数据：`semrush-keyword-priority.json`、`semrush-negative-keywords.json`、`semrush-sem-plan-summary.json`。\n- 更新 Launch OS 看板，让看板展示 paid domains、SEM 候选词、否定关键词和广告组摘要。\n- 建立可执行策略包 `research/sem/2026-06-08-sem-strategy-package.md`。\n- 新增决策 `decisions/006-google-search-content-bridge-test.md`：Google Search 只做内容桥接小预算验证，不作为未验证前的大规模主渠道。",
-        "数据发现": "- SEMrush 预计可以支持付费搜索竞品、广告文案、关键词和落地页研究。\n- Google Keyword Planner 后续应用来校验最终关键词量级、出价区间和 forecast。\n- `bible verses for anxiety` 在美国的 SEMrush 数据显示月搜索量约 14,800，CPC 约 0.02，竞争度约 0.46。这个词有真实需求量，但 CPC 很低，说明它可能偏免费内容消费意图，不能直接假设适合硬件购买转化。\n- 标准化后的 `bible verses for anxiety` 数据为：月搜索量 14,800，CPC 0.02，竞争度 0.46，结果数 130，12 个月趋势为 `0.54,0.54,0.54,0.54,0.66,0.54,0.54,0.44,0.44,0.54,0.44,0.36`。\n- 第一版关键词宇宙显示：焦虑、经文、祷告、压力相关词量大，但多数更像内容消费；商业意图更强的词集中在 anger management、prayer app、Hallow app、Bible app 等方向。\n- 冲突/关系种子词原本很弱，扩展后出现 marriage prayer、relationship prayer、forgiveness、marriage restoration、arguing with a fool 等更贴近真实搜索语言的方向。\n- Paid results 第一轮显示：35 个代表词中有 39 行 paid result、22 个付费域名、24 个配置词没有 paid result。\n- 高频 paid domains：`courseforanger.com`、`worshipcenter.org`、`angermasters.com`、`courseable.com`、`forbes.com`、`hallow.com`。\n- 焦虑经文/祷告词有真实广告结果，但主要是教会内容页，证明内容需求真实，不证明硬件可直接转化。\n- `anger management classes/course` 有强广告主和高 CPC，但页面集中在 court/course/certificate/requirement，首轮应作为否定方向，而不是主力词。\n- `christian smart ring`、`christian wearable`、`prayer app`、`christian prayer app`、`ai bible app`、`ai prayer app` 本轮没有 paid results，不能直接假设这些泛词已有稳定付费市场。\n- 220 个候选词中，焦虑/平安 47 个、愤怒/反应前暂停 31 个、压力/崩溃 68 个、冲突/关系 19 个，四个核心场景均已覆盖。",
+        "完成": "- 确认产品 14-21 天内可以真实发货。\n- 选择成熟品牌定位，不使用 Founder Batch 叙事。\n- 选择 $149 作为首个硬件公开售价。\n- 选择 SEMrush 作为第一个研究 API 数据源。\n- 启动 Launch OS 规划和 git 版本管理。\n- 创建 Launch OS 本地工作区、看板、数据脚本、模板和部署脚手架。\n- 把第一版公网 Launch OS 看板部署到 `http://124.174.96.149:8798/`。\n- 确认请求无法到达 ECS 后，为火山引擎安全组新增 `tcp/8798` 入站规则。\n- 将公网看板升级为项目 cockpit，包含总览、每日复盘、决策、操作、成本说明、SEMrush 准备状态和下一步。\n- 创建本地 Codex Skill `focusfence-launch-os`，让未来会话先读 Launch OS 记录再行动。\n- 添加 SEMrush 操作手册和种子关键词预览脚本。\n- 用户已把 `SEMRUSH_API_KEY` 写入 `launch-os/.env.local`。\n- 确认 Launch OS 记录、看板、复盘和决策日志以后默认使用中文。\n- 调整 SEMrush 脚本，让它能自动读取 `launch-os/.env.local`，避免每次手动导出环境变量。\n- 完成第一条 SEMrush 真实 API 调用：`bible verses for anxiety`，原始文件保存为 `data/raw/semrush/us-bible-verses-for-anxiety.csv`。\n- 创建并安装个人 Codex 插件 `focusfence-launch-os@personal`，把 Launch OS 启动规则、中文记录规则、SEMrush/Google Ads/火山看板上下文打包成可在 Codex UI 中显式选择的插件入口。\n- 修正 SEMrush 标准化脚本字段映射，避免完整列名返回时丢失 `Competition`、`Number of Results` 和 `Trends`。\n- 拉取 15 个核心种子词的 SEMrush overview、related keywords 和 question keywords。\n- 新增 `sem-expansion-keywords.json`，补充冲突/关系、商业解决方案和 faith wearable 方向的扩展词。\n- 拉取 22 个扩展词的 SEMrush overview 和 related keywords。\n- 构建 `semrush-keyword-universe.json`，当前包含 1161 行原始/扩展记录、922 个唯一候选关键词。\n- 建立 SEM 策略工作台文档 `research/sem/2026-06-08-sem-strategy-workbench.md`。\n- 拉取 35 个代表关键词的 SEMrush paid results，识别真实付费域名、付费落地页和无广告结果词。\n- 新增 paid results 脚本：`fetch-paid-results.mjs`、`normalize-paid-results.mjs`。\n- 新增 SEM 优先级脚本 `build-sem-priority.mjs`，从 922 个唯一关键词生成 220 个首轮候选词、44 个否定关键词和 6 个广告组摘要。\n- 生成结构化数据：`semrush-keyword-priority.json`、`semrush-negative-keywords.json`、`semrush-sem-plan-summary.json`。\n- 更新 Launch OS 看板，让看板展示 paid domains、SEM 候选词、否定关键词和广告组摘要。\n- 建立可执行策略包 `research/sem/2026-06-08-sem-strategy-package.md`。\n- 新增决策 `decisions/006-google-search-content-bridge-test.md`：Google Search 只做内容桥接小预算验证，不作为未验证前的大规模主渠道。\n- 小范围拉取 6 个参考域名的 SEMrush ads copies，每个 5 条，得到 30 条广告文案样本。\n- 新增 ads copies 脚本：`fetch-ad-copies.mjs`、`normalize-ad-copies.mjs`。\n- 新增参考拆解文档 `research/sem/2026-06-08-reference-teardowns.md`，覆盖 14 个参考产品、页面或广告模式。\n- 新增首轮 Campaign 执行清单 `research/sem/2026-06-08-campaign-execution-plan.md`，包含关键词、匹配类型、RSA 标题/描述、落地页方向、否定词和预算节奏。\n- 更新看板状态，让公网 Launch OS 展示广告文案样本数。\n- 新增完成审计 `research/sem/2026-06-08-sem-completion-audit.md`，逐项对照目标要求和当前证据。",
+        "数据发现": "- SEMrush 预计可以支持付费搜索竞品、广告文案、关键词和落地页研究。\n- Google Keyword Planner 后续应用来校验最终关键词量级、出价区间和 forecast。\n- `bible verses for anxiety` 在美国的 SEMrush 数据显示月搜索量约 14,800，CPC 约 0.02，竞争度约 0.46。这个词有真实需求量，但 CPC 很低，说明它可能偏免费内容消费意图，不能直接假设适合硬件购买转化。\n- 标准化后的 `bible verses for anxiety` 数据为：月搜索量 14,800，CPC 0.02，竞争度 0.46，结果数 130，12 个月趋势为 `0.54,0.54,0.54,0.54,0.66,0.54,0.54,0.44,0.44,0.54,0.44,0.36`。\n- 第一版关键词宇宙显示：焦虑、经文、祷告、压力相关词量大，但多数更像内容消费；商业意图更强的词集中在 anger management、prayer app、Hallow app、Bible app 等方向。\n- 冲突/关系种子词原本很弱，扩展后出现 marriage prayer、relationship prayer、forgiveness、marriage restoration、arguing with a fool 等更贴近真实搜索语言的方向。\n- Paid results 第一轮显示：35 个代表词中有 39 行 paid result、22 个付费域名、24 个配置词没有 paid result。\n- 高频 paid domains：`courseforanger.com`、`worshipcenter.org`、`angermasters.com`、`courseable.com`、`forbes.com`、`hallow.com`。\n- 焦虑经文/祷告词有真实广告结果，但主要是教会内容页，证明内容需求真实，不证明硬件可直接转化。\n- `anger management classes/course` 有强广告主和高 CPC，但页面集中在 court/course/certificate/requirement，首轮应作为否定方向，而不是主力词。\n- `christian smart ring`、`christian wearable`、`prayer app`、`christian prayer app`、`ai bible app`、`ai prayer app` 本轮没有 paid results，不能直接假设这些泛词已有稳定付费市场。\n- 220 个候选词中，焦虑/平安 47 个、愤怒/反应前暂停 31 个、压力/崩溃 68 个、冲突/关系 19 个，四个核心场景均已覆盖。\n- SEMrush ads copies 显示，CourseForAnger / AngerMasters / Courseable 的广告文案高度集中在 court-approved、certificate、$25、online class、guarantee，进一步证明 anger management 课程词应否定。\n- Hallow ads copies 高度集中在 prayer app、guided prayer、Try Hallow Free、名人/节期活动，说明 faith app 搜索承接靠低摩擦 free trial；我们的硬件不能直接照搬。\n- Worship Center ads copies 直接把 `10 Verses to Pray When You're Fighting Anxiety` 作为标题，进一步支持内容词先交付经文/祷告。\n- BetterFaith、My Christian Counseling 等 faith/counseling 页面都明确处理 therapy / crisis / clinical 边界；我们的焦虑、愤怒、关系页面也必须明确不是治疗、咨询或紧急支持。",
         "已做决策": "- 见 `decisions/001-brand-positioning-mature-product.md`。\n- 见 `decisions/002-price-149.md`。\n- 见 `decisions/003-data-source-semrush-first.md`。\n- 见 `decisions/004-continuity-skill-and-records.md`。\n- 见 `decisions/005-plugin-backed-continuity.md`。\n- 见 `decisions/006-google-search-content-bridge-test.md`。",
         "错误或修正": "- 早期渠道判断过度偏向 Meta，且对 SEM 需求关键词策略定义不够。\n- 早期品牌表述过度强调 Founder Batch / first production run；当前方向是成熟产品正式销售。\n- 早期 Launch OS 记录中仍有较多英文系统文本；已开始改为中文，并把中文记录规则写入项目和 Skill。\n- SEMrush 标准化脚本最初只兼容部分缩写字段，导致处理后 JSON 中竞争度、结果数和趋势丢失；已修正并通过验证。\n- 第一版 SEM 优先级脚本曾漏掉 `courses` / `programs` 这类复数课程词，导致部分 anger management 课程意图进入候选池；已修正为否定方向。",
-        "明日事项": "- 用 Google Keyword Planner / Google Ads forecast 复核策略包列出的核心 exact/phrase 词。\n- 为 `Bible Verses for Anxiety`、`Prayer Before You React`、`Scripture Companion Wearable` 写第一版落地页信息架构和英文首屏文案。\n- 从 220 个候选词中人工收窄首轮真正投放的 20-40 个 exact/phrase 词。\n- 若准备真实投放，先配置 GA4/Pixel/转化事件、加购、结账、购买和搜索词报告检查流程。\n- 确认对外品牌名、域名、退货周期、客服政策、美国运费和隐私表达。",
+        "明日事项": "- 用 Google Keyword Planner / Google Ads forecast 复核策略包列出的核心 exact/phrase 词。\n- 基于 Campaign 执行清单，为 `Bible Verses for Anxiety`、`Prayer Before You React`、`Scripture Companion Wearable` 写第一版真实落地页内容稿。\n- 从 220 个候选词中最终确认首轮真实投放的 20-40 个 exact/phrase 词，并导出可上传 Google Ads Editor 的 CSV。\n- 若准备真实投放，先配置 GA4/Pixel/转化事件、加购、结账、购买和搜索词报告检查流程。\n- 确认对外品牌名、域名、退货周期、客服政策、美国运费和隐私表达。",
         "待确认问题": "- 对外使用的准确品牌名和域名。\n- 退货周期和客服政策。\n- 美国发货方式和运费。"
       },
       "goal": "建立 Day 1 上线操作系统，并准备基于 SEMrush 的付费搜索研究。",
@@ -54,15 +54,21 @@
         "生成结构化数据：`semrush-keyword-priority.json`、`semrush-negative-keywords.json`、`semrush-sem-plan-summary.json`。",
         "更新 Launch OS 看板，让看板展示 paid domains、SEM 候选词、否定关键词和广告组摘要。",
         "建立可执行策略包 `research/sem/2026-06-08-sem-strategy-package.md`。",
-        "新增决策 `decisions/006-google-search-content-bridge-test.md`：Google Search 只做内容桥接小预算验证，不作为未验证前的大规模主渠道。"
+        "新增决策 `decisions/006-google-search-content-bridge-test.md`：Google Search 只做内容桥接小预算验证，不作为未验证前的大规模主渠道。",
+        "小范围拉取 6 个参考域名的 SEMrush ads copies，每个 5 条，得到 30 条广告文案样本。",
+        "新增 ads copies 脚本：`fetch-ad-copies.mjs`、`normalize-ad-copies.mjs`。",
+        "新增参考拆解文档 `research/sem/2026-06-08-reference-teardowns.md`，覆盖 14 个参考产品、页面或广告模式。",
+        "新增首轮 Campaign 执行清单 `research/sem/2026-06-08-campaign-execution-plan.md`，包含关键词、匹配类型、RSA 标题/描述、落地页方向、否定词和预算节奏。",
+        "更新看板状态，让公网 Launch OS 展示广告文案样本数。",
+        "新增完成审计 `research/sem/2026-06-08-sem-completion-audit.md`，逐项对照目标要求和当前证据。"
       ],
-      "dataFindings": "- SEMrush 预计可以支持付费搜索竞品、广告文案、关键词和落地页研究。\n- Google Keyword Planner 后续应用来校验最终关键词量级、出价区间和 forecast。\n- `bible verses for anxiety` 在美国的 SEMrush 数据显示月搜索量约 14,800，CPC 约 0.02，竞争度约 0.46。这个词有真实需求量，但 CPC 很低，说明它可能偏免费内容消费意图，不能直接假设适合硬件购买转化。\n- 标准化后的 `bible verses for anxiety` 数据为：月搜索量 14,800，CPC 0.02，竞争度 0.46，结果数 130，12 个月趋势为 `0.54,0.54,0.54,0.54,0.66,0.54,0.54,0.44,0.44,0.54,0.44,0.36`。\n- 第一版关键词宇宙显示：焦虑、经文、祷告、压力相关词量大，但多数更像内容消费；商业意图更强的词集中在 anger management、prayer app、Hallow app、Bible app 等方向。\n- 冲突/关系种子词原本很弱，扩展后出现 marriage prayer、relationship prayer、forgiveness、marriage restoration、arguing with a fool 等更贴近真实搜索语言的方向。\n- Paid results 第一轮显示：35 个代表词中有 39 行 paid result、22 个付费域名、24 个配置词没有 paid result。\n- 高频 paid domains：`courseforanger.com`、`worshipcenter.org`、`angermasters.com`、`courseable.com`、`forbes.com`、`hallow.com`。\n- 焦虑经文/祷告词有真实广告结果，但主要是教会内容页，证明内容需求真实，不证明硬件可直接转化。\n- `anger management classes/course` 有强广告主和高 CPC，但页面集中在 court/course/certificate/requirement，首轮应作为否定方向，而不是主力词。\n- `christian smart ring`、`christian wearable`、`prayer app`、`christian prayer app`、`ai bible app`、`ai prayer app` 本轮没有 paid results，不能直接假设这些泛词已有稳定付费市场。\n- 220 个候选词中，焦虑/平安 47 个、愤怒/反应前暂停 31 个、压力/崩溃 68 个、冲突/关系 19 个，四个核心场景均已覆盖。",
+      "dataFindings": "- SEMrush 预计可以支持付费搜索竞品、广告文案、关键词和落地页研究。\n- Google Keyword Planner 后续应用来校验最终关键词量级、出价区间和 forecast。\n- `bible verses for anxiety` 在美国的 SEMrush 数据显示月搜索量约 14,800，CPC 约 0.02，竞争度约 0.46。这个词有真实需求量，但 CPC 很低，说明它可能偏免费内容消费意图，不能直接假设适合硬件购买转化。\n- 标准化后的 `bible verses for anxiety` 数据为：月搜索量 14,800，CPC 0.02，竞争度 0.46，结果数 130，12 个月趋势为 `0.54,0.54,0.54,0.54,0.66,0.54,0.54,0.44,0.44,0.54,0.44,0.36`。\n- 第一版关键词宇宙显示：焦虑、经文、祷告、压力相关词量大，但多数更像内容消费；商业意图更强的词集中在 anger management、prayer app、Hallow app、Bible app 等方向。\n- 冲突/关系种子词原本很弱，扩展后出现 marriage prayer、relationship prayer、forgiveness、marriage restoration、arguing with a fool 等更贴近真实搜索语言的方向。\n- Paid results 第一轮显示：35 个代表词中有 39 行 paid result、22 个付费域名、24 个配置词没有 paid result。\n- 高频 paid domains：`courseforanger.com`、`worshipcenter.org`、`angermasters.com`、`courseable.com`、`forbes.com`、`hallow.com`。\n- 焦虑经文/祷告词有真实广告结果，但主要是教会内容页，证明内容需求真实，不证明硬件可直接转化。\n- `anger management classes/course` 有强广告主和高 CPC，但页面集中在 court/course/certificate/requirement，首轮应作为否定方向，而不是主力词。\n- `christian smart ring`、`christian wearable`、`prayer app`、`christian prayer app`、`ai bible app`、`ai prayer app` 本轮没有 paid results，不能直接假设这些泛词已有稳定付费市场。\n- 220 个候选词中，焦虑/平安 47 个、愤怒/反应前暂停 31 个、压力/崩溃 68 个、冲突/关系 19 个，四个核心场景均已覆盖。\n- SEMrush ads copies 显示，CourseForAnger / AngerMasters / Courseable 的广告文案高度集中在 court-approved、certificate、$25、online class、guarantee，进一步证明 anger management 课程词应否定。\n- Hallow ads copies 高度集中在 prayer app、guided prayer、Try Hallow Free、名人/节期活动，说明 faith app 搜索承接靠低摩擦 free trial；我们的硬件不能直接照搬。\n- Worship Center ads copies 直接把 `10 Verses to Pray When You're Fighting Anxiety` 作为标题，进一步支持内容词先交付经文/祷告。\n- BetterFaith、My Christian Counseling 等 faith/counseling 页面都明确处理 therapy / crisis / clinical 边界；我们的焦虑、愤怒、关系页面也必须明确不是治疗、咨询或紧急支持。",
       "decisionsMade": "- 见 `decisions/001-brand-positioning-mature-product.md`。\n- 见 `decisions/002-price-149.md`。\n- 见 `decisions/003-data-source-semrush-first.md`。\n- 见 `decisions/004-continuity-skill-and-records.md`。\n- 见 `decisions/005-plugin-backed-continuity.md`。\n- 见 `decisions/006-google-search-content-bridge-test.md`。",
       "corrections": "- 早期渠道判断过度偏向 Meta，且对 SEM 需求关键词策略定义不够。\n- 早期品牌表述过度强调 Founder Batch / first production run；当前方向是成熟产品正式销售。\n- 早期 Launch OS 记录中仍有较多英文系统文本；已开始改为中文，并把中文记录规则写入项目和 Skill。\n- SEMrush 标准化脚本最初只兼容部分缩写字段，导致处理后 JSON 中竞争度、结果数和趋势丢失；已修正并通过验证。\n- 第一版 SEM 优先级脚本曾漏掉 `courses` / `programs` 这类复数课程词，导致部分 anger management 课程意图进入候选池；已修正为否定方向。",
       "tomorrow": [
         "用 Google Keyword Planner / Google Ads forecast 复核策略包列出的核心 exact/phrase 词。",
-        "为 `Bible Verses for Anxiety`、`Prayer Before You React`、`Scripture Companion Wearable` 写第一版落地页信息架构和英文首屏文案。",
-        "从 220 个候选词中人工收窄首轮真正投放的 20-40 个 exact/phrase 词。",
+        "基于 Campaign 执行清单，为 `Bible Verses for Anxiety`、`Prayer Before You React`、`Scripture Companion Wearable` 写第一版真实落地页内容稿。",
+        "从 220 个候选词中最终确认首轮真实投放的 20-40 个 exact/phrase 词，并导出可上传 Google Ads Editor 的 CSV。",
         "若准备真实投放，先配置 GA4/Pixel/转化事件、加购、结账、购买和搜索词报告检查流程。",
         "确认对外品牌名、域名、退货周期、客服政策、美国运费和隐私表达。"
       ],
@@ -324,6 +330,136 @@
         ]
       }
     ],
+    "adCopyRows": 30,
+    "adCopyDomains": 6,
+    "topAdCopyDomains": [
+      {
+        "domain": "angermasters.com",
+        "copy_count": 5,
+        "sample_titles": [
+          "Anger Management Courses - Free Certificate",
+          "Court Approved Anger Management Classes | AngerMasters",
+          "Free Anger Management Courses - Free Certificate of Completion",
+          "Online Anger Management Class - Completely Online",
+          "US Recognized Program | Court-Approved Online Classes"
+        ],
+        "sample_descriptions": [
+          "Court-approved online anger management courses. Get Expert Anger Management Training. Free Online Course. View Pricing. Sign Up Online. Register Online. Types: 16-Hour Anger Management Course, 12-Hour Anger Management Course...",
+          "AngerMasters provides access to online court approved anger management classes with durability from 1 up to 52 hrs/weeks and a free, instant certificate.",
+          "Provides free, instant letter of enrollment and free certificate of completion. Offers completely online anger management course with lowest price guaranteed.",
+          "Provides free, instant letter of enrollment and free certificate of completion.",
+          "Court-approved online anger management courses. Comprehensive, court-approved online anger management classes designed to empower you. View Pricing. Register Online. Sign Up Online. Types: 16-Hour Anger Management Course, 12-Hour Anger Management Course."
+        ],
+        "urls": [
+          "https://angermasters.com/",
+          "https://angermasters.com/court"
+        ]
+      },
+      {
+        "domain": "betterhelp.com",
+        "copy_count": 5,
+        "sample_titles": [
+          "BetterHelp Online Therapy"
+        ],
+        "sample_descriptions": [
+          "Average Session Rating: 4.9/5 — Therapy To Help You Feel Your Best. Take The First Step Towards Happiness With BetterHelp.",
+          "Average Session Rating: 4.9/5 — 69% Of BetterHelp Members Use 1 Or More Self Care Features In Between Therapy Sessions. Therapy To Help You Feel Your Best. Take The First Step Towards Happiness With BetterHelp.",
+          "Average Session Rating: 4.9/5 — 100% Online Therapy With More Than 5 Million Clients Helped Worldwide. 69% Of BetterHelp Members Use 1 Or More Self Care Features In Between Therapy Sessions. Get Happy, Start Therapy.",
+          "Average Session Rating: 4.9/5 — 100% Online Therapy With More Than 5 Million Clients Helped Worldwide. 69% Of BetterHelp...",
+          "Average Session Rating: 4.9/5 — 69% Of BetterHelp Members Use 1 Or More Self Care Features In Between Therapy Sessions."
+        ],
+        "urls": [
+          "https://www.betterhelp.com/get-started/"
+        ]
+      },
+      {
+        "domain": "courseable.com",
+        "copy_count": 5,
+        "sample_titles": [
+          "Court-Ordered Alcohol Class | Fulfill DUI/DWI Requirement",
+          "Court‑Approved Anger Class | Court Approved Online Class",
+          "Court Approved Anger Management Class",
+          "Court Approved Anger Management",
+          "Court-Approved Online Course - Approved by All Courts"
+        ],
+        "sample_descriptions": [
+          "A court-friendly program that's guaranteed to be accepted. Or your money back. Satisfy court orders with our accepted online class. Get your certificate instantly. Certified Programs. Instant Certificate. Chat Support Available.",
+          "Meet your requirement with a court‑friendly online class—certificate same day. Probation Officer and Case‑manager‑ready docs and proof of completion included. Case-Manager Docs. Certificate Today.",
+          "4, 8, 12 & 16-Hour Options — Self‑paced: choose 4, 8, 12 or 16‑hour classes. Proof of completion included. Self-paced, online class accessible on any device. 4, 8, 12hr classes. Starting at $25. Case-Manager Docs.",
+          "Court Approved Online Course — Self‑paced: choose 4, 8, 12 or 16‑hour classes. Proof of completion included. Court‑friendly anger management you can take online. Download your certificate today. Case-Manager Docs.",
+          "Take court approved anger classes completely online. Money back guarantee included. Take court-ordered classes online from the comfort of your own home. Digital certificate. Court-Friendly."
+        ],
+        "urls": [
+          "https://courseable.com/subject/alcohol-awareness-course/",
+          "https://courseable.com/subject/anger-management-course/"
+        ]
+      },
+      {
+        "domain": "courseforanger.com",
+        "copy_count": 5,
+        "sample_titles": [
+          "Anger Management Class",
+          "Anger Management Course",
+          "Courseforanger.com | Only $25. 100% Online. 24/7",
+          "$25 Anger Management Class | Guaranteed Court Acceptance",
+          "$25 Anger Management Class"
+        ],
+        "sample_descriptions": [
+          "Certified. Nationally Accepted — 100% Online & Available 24/7. Simple. No Tests - You Can't Fail. Instant, Free Certificate. Take the Online Anger Management Class and Get Your Certificate of Completion Today! $25. Court Accepted.",
+          "Courseforanger — Take the Online Anger Management Class and Get Your Certificate of Completion Today! $25. $25. You Can't Fail. Court Accepted. Instant Certificate. 100% Online. Available 24/7. 4, 8, 12, or 16 Hours.",
+          "Court Acceptance Guarantee. Simple. You Can't Fail. Free, Instant Certificate. Start Now! Take the Online Anger Management Class and Get Your Certificate of Completion Today! 4, 8, 12, or 16 Hours.",
+          "100% Online & Available 24/7. No Tests. Instant, Free Certificate. Certified Instructor. Take the Online Anger Management Class and Get Your Certificate of Completion Today! NAMA Member. 4, 8, 12, or 16 Hours. Certified (CAMS-1) Price Matching. Free Instant Certificate. 100% Online. No Tests.",
+          "Guaranteed Court Acceptance — 100% Online & Available 24/7. No Tests. Instant, Free Certificate. Certified Instructor. Take the Online Anger Management Class and Get Your Certificate of Completion Today! 4, 8, 12, or 16 Hours."
+        ],
+        "urls": [
+          "https://courseforanger.com/"
+        ]
+      },
+      {
+        "domain": "hallow.com",
+        "copy_count": 5,
+        "sample_titles": [
+          "Hallow Prayer App",
+          "Hallow Prayer App | Guided Prayer | Pray a Scriptural Rosary",
+          "Hallow"
+        ],
+        "sample_descriptions": [
+          "Easter Prayer App — Journey through Lent with Jonathan Roumie, Mark Wahlberg and Chris Pratt. Try Hallow Free. Join Millions Of Christians In Prayer This Easter On Hallow, #1 Christian Prayer App. Novenas. Meditation.",
+          "Pray the Rosary with Mark Wahlberg or Listen to a Bible Story from Jonathan Roumie. Journey through Lent with Jonathan Roumie, Mark Wahlberg and Chris Pratt. Try Hallow Free. Daily Lenten Reflections. Daily Prayers. Prayers for Sleep.",
+          "Grow Closer to God — Journey through Lent with Jonathan Roumie, Mark Wahlberg and Chris Pratt. Try Hallow Free. Join...",
+          "Hallow Prayer App — Journey through Lent with Jonathan Roumie, Mark Wahlberg and Chris Pratt. Try Hallow Free.",
+          "Hallow: Prayer & Meditation — Hallow Helps You Grow In Your Faith Through Prayer, Meditation, and Sleep. Meditate, Pray..."
+        ],
+        "urls": [
+          "https://try.hallow.com/easter",
+          "https://try.hallow.com/prayer?referrer=googleNBsearch",
+          "https://try.hallow.com/"
+        ]
+      },
+      {
+        "domain": "worshipcenter.org",
+        "copy_count": 5,
+        "sample_titles": [
+          "10 Verses to Pray When You're Fighting Anxiety",
+          "10 Verses to Pray When You're Fighting Anxiety - 10 Verses to Pray",
+          "What Does the Bible Say About Drugs & Alcohol?",
+          "8 Signs of The End and What To Do About It - 8 Signs of The End",
+          "What Did Jesus Teach About Lust, Divorce, and Adultery?"
+        ],
+        "sample_descriptions": [
+          "10 Verses to Pray When You're Fighting Anxiety | Worship Center",
+          "Why are humans vulnerable to substances like this? What does the Bible say about it?",
+          "8 Signs of The End and What To Do About It | Worship Center",
+          "What Did Jesus Teach About Lust, Divorce, and Adultery? | Worship Center"
+        ],
+        "urls": [
+          "https://www.worshipcenter.org/blog/10-verses-to-pray-when-youre-fighting-anxiety",
+          "https://www.worshipcenter.org/blog/what-does-the-bible-say-about-drugs-alcohol",
+          "https://www.worshipcenter.org/blog/8-signs-of-the-end-and-what-to-do-about-it",
+          "https://www.worshipcenter.org/episode/what-did-jesus-teach-about-lust-divorce-and-adultery"
+        ]
+      }
+    ],
     "priorityKeywords": 220,
     "negativeKeywords": 44,
     "semPlanSummary": {
@@ -524,8 +660,8 @@
   },
   "nextActions": [
     "用 Google Keyword Planner / Google Ads forecast 复核策略包列出的核心 exact/phrase 词。",
-    "为 `Bible Verses for Anxiety`、`Prayer Before You React`、`Scripture Companion Wearable` 写第一版落地页信息架构和英文首屏文案。",
-    "从 220 个候选词中人工收窄首轮真正投放的 20-40 个 exact/phrase 词。",
+    "基于 Campaign 执行清单，为 `Bible Verses for Anxiety`、`Prayer Before You React`、`Scripture Companion Wearable` 写第一版真实落地页内容稿。",
+    "从 220 个候选词中最终确认首轮真实投放的 20-40 个 exact/phrase 词，并导出可上传 Google Ads Editor 的 CSV。",
     "若准备真实投放，先配置 GA4/Pixel/转化事件、加购、结账、购买和搜索词报告检查流程。",
     "确认对外品牌名、域名、退货周期、客服政策、美国运费和隐私表达。"
   ]

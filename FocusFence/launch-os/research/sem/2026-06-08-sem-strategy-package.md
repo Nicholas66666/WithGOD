@@ -24,7 +24,17 @@
 - SEM 计划摘要：`launch-os/data/processed/semrush-sem-plan-summary.json`
 - Paid results：`launch-os/data/processed/semrush-paid-results.json`
 - Paid domain summary：`launch-os/data/processed/semrush-paid-domain-summary.json`
+- Ads copies：`launch-os/data/processed/semrush-ad-copies.json`
+- Ads copies domain summary：`launch-os/data/processed/semrush-ad-copy-domain-summary.json`
 - 原始 API 文件：`launch-os/data/raw/semrush/` 与 `launch-os/data/raw/semrush-paid/`
+- 参考案例拆解：`launch-os/research/sem/2026-06-08-reference-teardowns.md`
+- Campaign 执行清单：`launch-os/research/sem/2026-06-08-campaign-execution-plan.md`
+
+补充数据：
+
+- SEMrush Ads Copies 小范围拉取 6 个参考域名，每个 5 条，得到 30 条广告文案样本。
+- Ads Copies 来源域名：`worshipcenter.org`、`courseforanger.com`、`angermasters.com`、`courseable.com`、`hallow.com`、`betterhelp.com`。
+- Ads Copies 用途：学习广告表达和商业意图，不视为实时 Google 搜索页截图。
 
 ## 关键词优先级摘要
 
@@ -175,6 +185,8 @@
 
 ## 参考产品和页面拆解
 
+详细拆解见：`research/sem/2026-06-08-reference-teardowns.md`。
+
 | 对象 | 来源 | 观察 | 对我们的启发 |
 |---|---|---|---|
 | Worship Center anxiety page | SEMrush paid result + 页面 | `bible verses for anxiety` 等词导向教会内容页，页面先给经文和祷告 | 焦虑词必须先满足内容需求，不宜直接硬卖 |
@@ -187,6 +199,39 @@
 | Bible Chat | 公开页面 | AI trained on Scripture，pastors/theologians guidance，prayer/journal/verse generator | AI faith 产品要处理神学可信度和“不是随便 AI”的信任问题 |
 | BM Bible & AI | 公开页面 | anxiety/fear/relationships/purpose，AI chat、guided prayers、streak、mood tracking | App 功能可作为软件侧参考，但硬件要突出一键入口 |
 | BibleScroll | 公开页面 | “Scroll the Word, Not the World”，用 stress 示例、mood search、habit 替代 doom scrolling | 我们可以学习“减少手机干扰”的反向手机叙事 |
+| YouVersion | 公开页面 | 免费 Scripture、daily rhythm、巨大安装量和 Bible Plans | 不能卖“经文本身”，必须卖关键时刻的低摩擦入口 |
+| BetterFaith | 公开页面 | Spiritual care / biblical counseling，清楚标注非 therapy / clinical treatment | 宗教 + 情绪场景必须明确边界 |
+| My Christian Counseling | 公开页面 | faith-based counseling，使用 discovery call、matching、pricing、FAQ、crisis boundary | 我们不能用 healing/clinical/counseling 承诺，但应学习边界和信任说明 |
+
+## 首轮广告资产
+
+完整可执行清单见：`research/sem/2026-06-08-campaign-execution-plan.md`。
+
+推荐只创建 3 个 Search campaigns / ad groups 组合：
+
+1. `Scripture Reset - Anxiety & Peace`
+   - Ad groups：`Anxiety Scripture`、`Peace / Strength Scripture`
+   - Landing pages：`/bible-verses-for-anxiety`、`/scripture-for-peace`
+   - Match：phrase / exact
+   - 首轮目标：验证内容页 CTA 是否能引出产品兴趣。
+
+2. `Prayer Before You React`
+   - Ad group：`Anger Scripture Reset`
+   - Landing page：`/prayer-before-you-react`
+   - Match：exact / phrase
+   - 首轮目标：验证硬件“一键反应前暂停”的最强差异化场景。
+
+3. `Marriage / Relationship Prayer`
+   - Ad group：`Relationship Prayer`
+   - Landing page：`/prayer-for-relationship-conflict`
+   - Match：exact / phrase
+   - 首轮目标：低预算探索，不作为主预算。
+
+暂不建议首轮投放：
+
+- `hallow app` / `hallow app cost`：高 CPC、竞品品牌风险，需要先 forecast。
+- `prayer app` / `christian prayer app` / `ai bible app`：本轮 paid results 无广告结果，泛词市场未被证明。
+- `christian smart ring` / `christian wearable`：faith wearable 叙事存在，但 paid results 未证明 Search 需求。
 
 ## 7 天小预算测试方案
 

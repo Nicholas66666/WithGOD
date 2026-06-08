@@ -1,0 +1,30 @@
+{
+  "database": "us",
+  "displayLimit": 5,
+  "domains": [
+    {
+      "group": "焦虑经文 paid content",
+      "domain": "worshipcenter.org"
+    },
+    {
+      "group": "anger course paid benchmark",
+      "domain": "courseforanger.com"
+    },
+    {
+      "group": "anger course paid benchmark",
+      "domain": "angermasters.com"
+    },
+    {
+      "group": "anger course paid benchmark",
+      "domain": "courseable.com"
+    },
+    {
+      "group": "faith app benchmark",
+      "domain": "hallow.com"
+    },
+    {
+      "group": "mental health paid benchmark",
+      "domain": "betterhelp.com"
+    }
+  ]
+}

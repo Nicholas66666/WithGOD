@@ -87,6 +87,8 @@ export async function buildDashboardState({ root = process.cwd(), now = new Date
   const semrushPaidResults = await readJSON(join(root, 'data/processed/semrush-paid-results.json'), []);
   const semrushPaidDomains = await readJSON(join(root, 'data/processed/semrush-paid-domain-summary.json'), []);
   const semrushNoPaid = await readJSON(join(root, 'data/processed/semrush-paid-no-results.json'), []);
+  const semrushAdCopies = await readJSON(join(root, 'data/processed/semrush-ad-copies.json'), []);
+  const semrushAdCopyDomains = await readJSON(join(root, 'data/processed/semrush-ad-copy-domain-summary.json'), []);
   const semrushPriority = await readJSON(join(root, 'data/processed/semrush-keyword-priority.json'), []);
   const semrushNegatives = await readJSON(join(root, 'data/processed/semrush-negative-keywords.json'), []);
   const semrushPlanSummary = await readJSON(join(root, 'data/processed/semrush-sem-plan-summary.json'), null);
@@ -163,6 +165,9 @@ export async function buildDashboardState({ root = process.cwd(), now = new Date
       paidDomains: semrushPaidDomains.length,
       noPaidKeywords: semrushNoPaid.length,
       topPaidDomains: semrushPaidDomains.slice(0, 8),
+      adCopyRows: semrushAdCopies.length,
+      adCopyDomains: semrushAdCopyDomains.length,
+      topAdCopyDomains: semrushAdCopyDomains.slice(0, 8),
       priorityKeywords: semrushPriority.length,
       negativeKeywords: semrushNegatives.length,
       semPlanSummary: semrushPlanSummary,

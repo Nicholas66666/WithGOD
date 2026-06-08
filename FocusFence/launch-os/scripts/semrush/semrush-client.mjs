@@ -81,6 +81,30 @@ export function buildKeywordReportURL({
   return url;
 }
 
+export function buildDomainReportURL({
+  apiKey,
+  type,
+  domain,
+  database = 'us',
+  displayLimit = 10,
+  displaySort = undefined,
+  exportColumns = undefined,
+} = {}) {
+  if (!apiKey) throw new Error('apiKey is required');
+  if (!type) throw new Error('type is required');
+  if (!domain) throw new Error('domain is required');
+
+  const url = new URL('https://api.semrush.com/');
+  url.searchParams.set('type', type);
+  url.searchParams.set('key', apiKey);
+  url.searchParams.set('domain', domain);
+  url.searchParams.set('database', database);
+  url.searchParams.set('display_limit', String(displayLimit));
+  if (displaySort) url.searchParams.set('display_sort', displaySort);
+  if (exportColumns) url.searchParams.set('export_columns', exportColumns);
+  return url;
+}
+
 export function redactURLForLog(url) {
   const copy = new URL(url.toString());
   if (copy.searchParams.has('key')) copy.searchParams.set('key', 'REDACTED');

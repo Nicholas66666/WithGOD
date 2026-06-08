@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 
 import {
+  buildDomainReportURL,
   buildKeywordOverviewURL,
   parseEnvFile,
   redactURLForLog,
@@ -35,6 +36,25 @@ test('redactURLForLog removes API key value', () => {
 
   assert.match(redacted, /key=REDACTED/);
   assert.doesNotMatch(redacted, /secret-key/);
+});
+
+test('buildDomainReportURL includes domain report controls', () => {
+  const url = buildDomainReportURL({
+    apiKey: 'secret-key',
+    type: 'domain_adwords_unique',
+    domain: 'hallow.com',
+    database: 'us',
+    displayLimit: 5,
+    exportColumns: 'Tt,Ds,Vu,Ur',
+  });
+
+  assert.equal(url.hostname, 'api.semrush.com');
+  assert.equal(url.searchParams.get('type'), 'domain_adwords_unique');
+  assert.equal(url.searchParams.get('key'), 'secret-key');
+  assert.equal(url.searchParams.get('domain'), 'hallow.com');
+  assert.equal(url.searchParams.get('database'), 'us');
+  assert.equal(url.searchParams.get('display_limit'), '5');
+  assert.equal(url.searchParams.get('export_columns'), 'Tt,Ds,Vu,Ur');
 });
 
 test('requireSemrushApiKey rejects missing keys', () => {
