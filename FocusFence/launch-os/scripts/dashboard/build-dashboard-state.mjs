@@ -55,9 +55,27 @@ async function readMarkdownFiles(dir) {
   return records;
 }
 
+async function readJSON(path, fallback) {
+  try {
+    return JSON.parse(await readFile(path, 'utf8'));
+  } catch (error) {
+    if (error.code === 'ENOENT') return fallback;
+    throw error;
+  }
+}
+
 export async function buildDashboardState({ root = process.cwd(), now = new Date().toISOString() } = {}) {
+  const project = await readJSON(join(root, 'config/project.json'), {
+    product: 'Scripture companion wearable',
+    price: '$149',
+    publicUrl: '',
+    currentChannel: 'SEMrush research preparation',
+    costNote: 'Cost not recorded yet.',
+  });
   const dailyFiles = await readMarkdownFiles(join(root, 'daily'));
   const decisionFiles = await readMarkdownFiles(join(root, 'decisions'));
+  const operationFiles = await readMarkdownFiles(join(root, 'ops'));
+  const semrushKeywords = await readJSON(join(root, 'data/processed/semrush-keywords.json'), []);
 
   const daily = dailyFiles.map((file) => {
     const sections = parseSections(file.markdown);
@@ -83,15 +101,33 @@ export async function buildDashboardState({ root = process.cwd(), now = new Date
     };
   });
 
+  const operations = operationFiles.map((file) => {
+    const sections = parseSections(file.markdown);
+    return {
+      id: basename(file.name, '.md'),
+      title: parseTitle(file.markdown, basename(file.name, '.md')),
+      summary: sections.Summary || '',
+      resources: parseBullets(sections.Resources),
+      cost: sections.Cost || '',
+      verification: parseBullets(sections.Verification),
+    };
+  });
+
   const latestDaily = daily.at(-1);
   const state = {
+    project,
     status: {
       generatedAt: now,
-      currentStage: 'Launch OS setup and SEMrush research preparation',
-      target: 'First real $149 US order for the Scripture companion wearable',
+      currentStage: project.currentChannel || 'Launch OS setup and SEMrush research preparation',
+      target: `First real ${project.price || '$149'} US order for the Scripture companion wearable`,
     },
     daily,
     decisions,
+    operations,
+    semrush: {
+      keywordRows: semrushKeywords.length,
+      clusters: await readJSON(join(root, 'config/seed-keywords.json'), { clusters: [] }),
+    },
     nextActions: latestDaily?.tomorrow || [],
   };
 
@@ -108,4 +144,3 @@ async function main() {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   await main();
 }
-

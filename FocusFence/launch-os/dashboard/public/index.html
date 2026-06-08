@@ -7,40 +7,147 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">Scripture Companion Launch</p>
-        <h1>Launch OS</h1>
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="mark">✚</span>
+        <div>
+          <p class="eyebrow">FocusFence</p>
+          <h1>Launch OS</h1>
+        </div>
       </div>
-      <span id="generatedAt" class="pill">Loading</span>
-    </header>
+      <nav>
+        <a href="#overview">总览</a>
+        <a href="#today">今日</a>
+        <a href="#decisions">决策</a>
+        <a href="#ops">操作</a>
+        <a href="#data">数据</a>
+      </nav>
+      <div class="sidebar-note">
+        <span>Public</span>
+        <strong id="publicUrl">Loading</strong>
+      </div>
+    </aside>
 
     <main>
-      <section class="hero">
+      <section id="overview" class="hero">
         <div>
-          <h2 id="target">First real order</h2>
-          <p id="stage">Preparing launch system</p>
+          <p class="eyebrow">Scripture Companion Launch</p>
+          <h2 id="target">Loading</h2>
+          <p id="stage" class="hero-copy">Loading</p>
+        </div>
+        <div class="hero-metrics">
+          <div>
+            <span>Price</span>
+            <strong id="price">$149</strong>
+          </div>
+          <div>
+            <span>Decisions</span>
+            <strong id="decisionCount">0</strong>
+          </div>
+          <div>
+            <span>Daily Logs</span>
+            <strong id="dailyCount">0</strong>
+          </div>
         </div>
       </section>
 
-      <section class="grid">
-        <article>
-          <h3>Next Actions</h3>
-          <ul id="nextActions"></ul>
+      <section class="grid cards-4">
+        <article class="panel">
+          <p class="label">Product</p>
+          <h3 id="product">One-button wearable</h3>
+          <p>成熟品牌正式销售，不用 Founder Batch / first production run 叙事。</p>
         </article>
-        <article>
-          <h3>Latest Daily Review</h3>
-          <div id="latestDaily"></div>
+        <article class="panel">
+          <p class="label">Channel</p>
+          <h3>SEMrush → Google Search</h3>
+          <p>先用 SEMrush 做需求词、竞品广告和落地页研究，再用 Google Keyword Planner 校验。</p>
+        </article>
+        <article class="panel">
+          <p class="label">Cloud</p>
+          <h3>Volcengine ECS</h3>
+          <p>复用现有 ECS，新增 `launch-os` 服务，公网端口 `8798`。</p>
+        </article>
+        <article class="panel">
+          <p class="label">Cost</p>
+          <h3>未新建服务器</h3>
+          <p id="costNote">Loading</p>
         </article>
       </section>
 
-      <section>
-        <h3>Decisions</h3>
-        <div id="decisions" class="decision-list"></div>
+      <section id="today" class="grid main-grid">
+        <article class="panel">
+          <div class="section-head">
+            <div>
+              <p class="label">Daily Review</p>
+              <h3>每日记录</h3>
+            </div>
+            <span id="latestDate" class="pill">Loading</span>
+          </div>
+          <div id="latestDaily"></div>
+        </article>
+        <article class="panel accent-panel">
+          <div class="section-head">
+            <div>
+              <p class="label">Next</p>
+              <h3>下一步</h3>
+            </div>
+          </div>
+          <ol id="nextActions"></ol>
+        </article>
       </section>
+
+      <section id="data" class="grid main-grid">
+        <article class="panel">
+          <div class="section-head">
+            <div>
+              <p class="label">SEMrush</p>
+              <h3>数据准备</h3>
+            </div>
+            <span id="keywordRows" class="pill">0 rows</span>
+          </div>
+          <div id="keywordClusters" class="cluster-list"></div>
+        </article>
+        <article class="panel">
+          <div class="section-head">
+            <div>
+              <p class="label">Records</p>
+              <h3>留存机制</h3>
+            </div>
+          </div>
+          <ul class="compact">
+            <li>仓库记录：`launch-os/`</li>
+            <li>跨会话 Skill：`focusfence-launch-os`</li>
+            <li>每次重大动作更新 daily / decisions / ops</li>
+            <li>看板由 `dashboard-state.json` 驱动</li>
+          </ul>
+        </article>
+      </section>
+
+      <section id="decisions" class="panel">
+        <div class="section-head">
+          <div>
+            <p class="label">Decision Log</p>
+            <h3>关键决策</h3>
+          </div>
+        </div>
+        <div id="decisionList" class="timeline"></div>
+      </section>
+
+      <section id="ops" class="panel">
+        <div class="section-head">
+          <div>
+            <p class="label">Operations</p>
+            <h3>操作与云资源记录</h3>
+          </div>
+        </div>
+        <div id="operationList" class="timeline"></div>
+      </section>
+
+      <footer>
+        <span id="generatedAt">Loading</span>
+      </footer>
     </main>
 
     <script src="./app.js" type="module"></script>
   </body>
 </html>
-

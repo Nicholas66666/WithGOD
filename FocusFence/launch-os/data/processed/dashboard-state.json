@@ -1,7 +1,14 @@
 {
+  "project": {
+    "product": "One-button Scripture companion wearable",
+    "price": "$149",
+    "publicUrl": "http://124.174.96.149:8798/",
+    "currentChannel": "Launch OS live; SEMrush research preparation",
+    "costNote": "No new server was created for Launch OS Day 1. The dashboard reuses the existing postpaid Volcengine ECS instance drs-test-ecs and its 5 Mbps EIP. Actual ongoing cloud cost must be verified in the Volcengine billing console."
+  },
   "status": {
-    "generatedAt": "2026-06-08T11:46:31.919Z",
-    "currentStage": "Launch OS setup and SEMrush research preparation",
+    "generatedAt": "2026-06-08T11:58:24.066Z",
+    "currentStage": "Launch OS live; SEMrush research preparation",
     "target": "First real $149 US order for the Scripture companion wearable"
   },
   "daily": [
@@ -10,11 +17,11 @@
       "title": "Daily Review: 2026-06-08",
       "sections": {
         "Goal": "Create the Day 1 launch operating system and prepare SEMrush-driven paid-search research.",
-        "Completed": "- Confirmed product can ship in 14-21 days.\n- Chose mature-brand positioning instead of Founder Batch framing.\n- Chose $149 as the initial hardware price.\n- Selected SEMrush as the first research API source.\n- Started Launch OS planning and version control.\n- Created the Launch OS local workspace, dashboard, data scripts, templates, and deployment scaffold.\n- Deployed the first public Launch OS dashboard to `http://124.174.96.149:8798/`.\n- Added a Volcengine security group rule for `tcp/8798` after confirming requests did not reach the ECS.",
+        "Completed": "- Confirmed product can ship in 14-21 days.\n- Chose mature-brand positioning instead of Founder Batch framing.\n- Chose $149 as the initial hardware price.\n- Selected SEMrush as the first research API source.\n- Started Launch OS planning and version control.\n- Created the Launch OS local workspace, dashboard, data scripts, templates, and deployment scaffold.\n- Deployed the first public Launch OS dashboard to `http://124.174.96.149:8798/`.\n- Added a Volcengine security group rule for `tcp/8798` after confirming requests did not reach the ECS.\n- Upgraded the public dashboard into a project cockpit with overview, daily review, decisions, operations, cost notes, SEMrush readiness, and next actions.\n- Created local Codex Skill `focusfence-launch-os` so future sessions read Launch OS records before acting.\n- Added SEMrush runbook and seed keyword preview script.",
         "Data Findings": "- SEMrush is expected to support paid-search competitor, ad copy, keyword, and landing-page research.\n- Google Keyword Planner should be used later to validate final keyword volume, bid ranges, and forecasts.",
         "Decisions Made": "- See `decisions/001-brand-positioning-mature-product.md`.\n- See `decisions/002-price-149.md`.\n- See `decisions/003-data-source-semrush-first.md`.",
         "Mistakes Or Corrections": "- Earlier channel thinking over-weighted Meta and under-specified SEM demand-keyword strategy.\n- Earlier brand framing over-emphasized Founder Batch/first production run; the current direction is mature product launch.",
-        "Tomorrow": "- Pull SEMrush keyword and advertising data.\n- Build the first keyword clusters and negative keyword list.\n- Inspect content-to-product landing-page patterns.\n- Decide the first Google Search campaign structure from data.\n- Add domain/HTTPS or decide whether port-based access is acceptable for internal launch work.",
+        "Tomorrow": "- Pull SEMrush keyword and advertising data.\n- Build the first keyword clusters and negative keyword list.\n- Inspect content-to-product landing-page patterns.\n- Decide the first Google Search campaign structure from data.\n- Add domain/HTTPS or decide whether port-based access is acceptable for internal launch work.\n- Add `SEMRUSH_API_KEY` to `.env.local` and pull the first keyword data.",
         "Open Questions": "- Exact brand/domain to use publicly.\n- Return window and customer support policy.\n- US shipping method and cost."
       },
       "completed": [
@@ -25,14 +32,18 @@
         "Started Launch OS planning and version control.",
         "Created the Launch OS local workspace, dashboard, data scripts, templates, and deployment scaffold.",
         "Deployed the first public Launch OS dashboard to `http://124.174.96.149:8798/`.",
-        "Added a Volcengine security group rule for `tcp/8798` after confirming requests did not reach the ECS."
+        "Added a Volcengine security group rule for `tcp/8798` after confirming requests did not reach the ECS.",
+        "Upgraded the public dashboard into a project cockpit with overview, daily review, decisions, operations, cost notes, SEMrush readiness, and next actions.",
+        "Created local Codex Skill `focusfence-launch-os` so future sessions read Launch OS records before acting.",
+        "Added SEMrush runbook and seed keyword preview script."
       ],
       "tomorrow": [
         "Pull SEMrush keyword and advertising data.",
         "Build the first keyword clusters and negative keyword list.",
         "Inspect content-to-product landing-page patterns.",
         "Decide the first Google Search campaign structure from data.",
-        "Add domain/HTTPS or decide whether port-based access is acceptable for internal launch work."
+        "Add domain/HTTPS or decide whether port-based access is acceptable for internal launch work.",
+        "Add `SEMRUSH_API_KEY` to `.env.local` and pull the first keyword data."
       ],
       "openQuestions": [
         "Exact brand/domain to use publicly.",
@@ -74,13 +85,94 @@
         "Ahrefs is useful for organic/SERP/content research, but less directly aligned with the first SEM strategy question."
       ],
       "reversalCriteria": "Revisit if SEMrush data lacks paid-search coverage for relevant Christian, Scripture, prayer, anxiety, anger, and stress keyword clusters."
+    },
+    {
+      "id": "004-continuity-skill-and-records",
+      "title": "Decision 004: Continuity Through Skill And Records",
+      "decision": "Use both repository records and a local Codex Skill to preserve Launch OS continuity across sessions.",
+      "evidence": [
+        "Chat history can be compacted or lost.",
+        "Repository files are versioned and auditable.",
+        "A Skill can force future sessions to read Launch OS records before acting."
+      ],
+      "reversalCriteria": "Revisit if the Skill does not trigger reliably in future sessions or if another project-level instruction mechanism becomes more reliable."
     }
   ],
+  "operations": [
+    {
+      "id": "2026-06-08-launch-os-bootstrap",
+      "title": "Operation: Launch OS Bootstrap",
+      "summary": "Created the first Launch OS project system, deployed it publicly, and committed the Day 1 implementation.",
+      "resources": [
+        "Reused existing Volcengine ECS instance `drs-test-ecs`.",
+        "Reused existing EIP `124.174.96.149`.",
+        "Added a new systemd service named `launch-os`.",
+        "Added a zero-dependency Node static server on port `8798`.",
+        "Added one security group ingress rule for `tcp/8798` from `0.0.0.0/0`.",
+        "Did not change the existing DeepResponse service on port `8797`.",
+        "Did not create a new ECS server.",
+        "Did not install Docker on the ECS.",
+        "Did not commit cloud or API secrets."
+      ],
+      "cost": "No new server was created during this operation. The public dashboard currently runs on the already-existing postpaid Volcengine ECS instance `ecs.g4i.large` with a 5 Mbps EIP. The incremental Launch OS cost is expected to be negligible while it shares the existing instance, but the actual cloud bill must be verified in the Volcengine billing console because postpaid ECS, bandwidth, storage, and traffic are account-level charges.",
+      "verification": [
+        "`npm run test:node` passed with 301 tests.",
+        "`npm run launch:verify` passed with 5 Launch OS tests.",
+        "`curl http://124.174.96.149:8798/` returned HTTP 200.",
+        "`curl http://124.174.96.149:8798/data/processed/dashboard-state.json` returned dashboard JSON.",
+        "`systemctl is-active launch-os` returned `active`."
+      ]
+    }
+  ],
+  "semrush": {
+    "keywordRows": 0,
+    "clusters": {
+      "database": "us",
+      "clusters": [
+        {
+          "name": "anxiety-worry",
+          "keywords": [
+            "bible verses for anxiety",
+            "prayer for anxiety",
+            "scripture for anxiety",
+            "bible verses for worry"
+          ]
+        },
+        {
+          "name": "anger-reaction",
+          "keywords": [
+            "bible verses about anger",
+            "scripture for anger",
+            "prayer for anger",
+            "christian anger management"
+          ]
+        },
+        {
+          "name": "overwhelmed-peace",
+          "keywords": [
+            "prayer when overwhelmed",
+            "bible verses for peace",
+            "scripture for stress",
+            "bible verses for emotional strength"
+          ]
+        },
+        {
+          "name": "conflict-relationships",
+          "keywords": [
+            "bible verses for conflict",
+            "scripture about being slow to anger",
+            "prayer before difficult conversation"
+          ]
+        }
+      ]
+    }
+  },
   "nextActions": [
     "Pull SEMrush keyword and advertising data.",
     "Build the first keyword clusters and negative keyword list.",
     "Inspect content-to-product landing-page patterns.",
     "Decide the first Google Search campaign structure from data.",
-    "Add domain/HTTPS or decide whether port-based access is acceptable for internal launch work."
+    "Add domain/HTTPS or decide whether port-based access is acceptable for internal launch work.",
+    "Add `SEMRUSH_API_KEY` to `.env.local` and pull the first keyword data."
   ]
 }

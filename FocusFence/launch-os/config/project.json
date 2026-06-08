@@ -1,0 +1,8 @@
+{
+  "product": "One-button Scripture companion wearable",
+  "price": "$149",
+  "publicUrl": "http://124.174.96.149:8798/",
+  "currentChannel": "Launch OS live; SEMrush research preparation",
+  "costNote": "No new server was created for Launch OS Day 1. The dashboard reuses the existing postpaid Volcengine ECS instance drs-test-ecs and its 5 Mbps EIP. Actual ongoing cloud cost must be verified in the Volcengine billing console."
+}
+

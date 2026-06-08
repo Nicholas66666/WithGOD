@@ -1,60 +1,138 @@
 async function loadState() {
-  const response = await fetch('../../data/processed/dashboard-state.json');
+  const response = await fetch('/data/processed/dashboard-state.json');
   if (!response.ok) throw new Error(`Failed to load dashboard state: ${response.status}`);
   return response.json();
 }
 
-function setText(id, value) {
+function text(id, value) {
   document.getElementById(id).textContent = value;
 }
 
-function renderList(id, values) {
-  const list = document.getElementById(id);
-  list.innerHTML = '';
-  for (const value of values) {
-    const item = document.createElement('li');
-    item.textContent = value;
-    list.append(item);
-  }
+function html(id, value) {
+  document.getElementById(id).innerHTML = value;
+}
+
+function escapeHTML(value = '') {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;');
+}
+
+function listItems(values = []) {
+  return values.map((value) => `<li>${escapeHTML(value)}</li>`).join('');
 }
 
 function renderDaily(record) {
-  const target = document.getElementById('latestDaily');
   if (!record) {
-    target.innerHTML = '<p class="muted">No daily review yet.</p>';
+    html('latestDaily', '<p class="muted">No daily review yet.</p>');
     return;
   }
-  target.innerHTML = `
-    <p><strong>${record.date}</strong></p>
-    <p>${record.sections.Goal || ''}</p>
-    <p class="muted">${record.completed.length} completed item(s), ${record.openQuestions.length} open question(s)</p>
-  `;
+  text('latestDate', record.date);
+  html(
+    'latestDaily',
+    `
+      <div class="daily-block">
+        <h4>目标</h4>
+        <p>${escapeHTML(record.sections.Goal || '')}</p>
+      </div>
+      <div class="daily-block">
+        <h4>完成</h4>
+        <ul>${listItems(record.completed)}</ul>
+      </div>
+      <div class="daily-block">
+        <h4>错误 / 修正</h4>
+        <p>${escapeHTML(record.sections['Mistakes Or Corrections'] || '暂无')}</p>
+      </div>
+    `,
+  );
 }
 
-function renderDecisions(records) {
-  const target = document.getElementById('decisions');
-  target.innerHTML = '';
-  for (const record of records) {
-    const item = document.createElement('div');
-    item.className = 'decision';
-    item.innerHTML = `
-      <h4>${record.title}</h4>
-      <p>${record.decision}</p>
-      <p class="muted">Reversal: ${record.reversalCriteria}</p>
-    `;
-    target.append(item);
-  }
+function renderNextActions(values = []) {
+  html('nextActions', listItems(values));
+}
+
+function renderDecisions(records = []) {
+  html(
+    'decisionList',
+    records
+      .map(
+        (record) => `
+          <div class="timeline-item">
+            <h4>${escapeHTML(record.title)}</h4>
+            <p>${escapeHTML(record.decision)}</p>
+            <p class="muted">推翻条件：${escapeHTML(record.reversalCriteria || '未设置')}</p>
+          </div>
+        `,
+      )
+      .join(''),
+  );
+}
+
+function renderOperations(records = []) {
+  html(
+    'operationList',
+    records
+      .map(
+        (record) => `
+          <div class="timeline-item">
+            <h4>${escapeHTML(record.title)}</h4>
+            <p>${escapeHTML(record.summary)}</p>
+            <div class="subgrid">
+              <div>
+                <strong>资源</strong>
+                <ul>${listItems(record.resources)}</ul>
+              </div>
+              <div>
+                <strong>成本</strong>
+                <p>${escapeHTML(record.cost)}</p>
+              </div>
+              <div>
+                <strong>验证</strong>
+                <ul>${listItems(record.verification)}</ul>
+              </div>
+            </div>
+          </div>
+        `,
+      )
+      .join(''),
+  );
+}
+
+function renderClusters(clusters = []) {
+  html(
+    'keywordClusters',
+    clusters
+      .map(
+        (cluster) => `
+          <div class="cluster">
+            <strong>${escapeHTML(cluster.name)}</strong>
+            <span>${cluster.keywords.length} seed keywords</span>
+          </div>
+        `,
+      )
+      .join(''),
+  );
 }
 
 try {
   const state = await loadState();
-  setText('generatedAt', new Date(state.status.generatedAt).toLocaleString());
-  setText('target', state.status.target);
-  setText('stage', state.status.currentStage);
-  renderList('nextActions', state.nextActions);
+  text('generatedAt', `Generated ${new Date(state.status.generatedAt).toLocaleString()}`);
+  text('target', state.status.target);
+  text('stage', state.status.currentStage);
+  text('price', state.project.price);
+  text('product', state.project.product);
+  text('publicUrl', state.project.publicUrl);
+  text('costNote', state.project.costNote);
+  text('decisionCount', String(state.decisions.length));
+  text('dailyCount', String(state.daily.length));
+  text('keywordRows', `${state.semrush.keywordRows} rows`);
   renderDaily(state.daily.at(-1));
+  renderNextActions(state.nextActions);
   renderDecisions(state.decisions);
+  renderOperations(state.operations);
+  renderClusters(state.semrush.clusters.clusters || []);
 } catch (error) {
-  setText('stage', error.message);
+  text('stage', error.message);
 }
-
