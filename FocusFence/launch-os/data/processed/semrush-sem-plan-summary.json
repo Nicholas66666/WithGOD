@@ -1,0 +1,155 @@
+{
+  "generated_at": "2026-06-08T12:55:25.206Z",
+  "universe_count": 922,
+  "priority_count": 220,
+  "negative_count": 44,
+  "action_summary": [
+    {
+      "action": "适合内容页承接后转产品",
+      "count": 178
+    },
+    {
+      "action": "需要 Google Keyword Planner 复核",
+      "count": 38
+    },
+    {
+      "action": "适合 SEO/内容沉淀",
+      "count": 4
+    }
+  ],
+  "ad_groups": [
+    {
+      "ad_group": "A01 焦虑经文与祷告",
+      "keyword_count": 47,
+      "total_volume": 150930,
+      "top_keywords": [
+        "anxiety biblical verses",
+        "bible verses for anxiety",
+        "prayer for anxiety",
+        "bible verses about anxiety",
+        "scripture for anxiety",
+        "prayers for anxiety",
+        "bible verse for anxiety",
+        "scripture anxiety fear",
+        "verses for anxiety",
+        "bible verse about anxiety",
+        "bible verses anxiety fear",
+        "anxiety bible verses"
+      ],
+      "landing_page_types": [
+        "待人工复核页面",
+        "焦虑经文/祷告内容页 -> 一键焦虑 reset CTA",
+        "问题型内容页/SEO，付费前需复核"
+      ]
+    },
+    {
+      "ad_group": "A02 反应前暂停与愤怒 reset",
+      "keyword_count": 31,
+      "total_volume": 41180,
+      "top_keywords": [
+        "bible verses about anger",
+        "anger bible scriptures",
+        "bible anger scriptures",
+        "verse about anger",
+        "scriptures on anger",
+        "be slow to anger bible verse",
+        "sin anger",
+        "bible verses on anger",
+        "verses about anger",
+        "bible verse about anger",
+        "scripture about anger",
+        "bible verses for anger"
+      ],
+      "landing_page_types": [
+        "反应前暂停/Christian Anger Reset 页",
+        "待人工复核页面",
+        "问题型内容页/SEO，付费前需复核"
+      ]
+    },
+    {
+      "ad_group": "A03 压力崩溃与平安",
+      "keyword_count": 68,
+      "total_volume": 191180,
+      "top_keywords": [
+        "bible verses for strength",
+        "bible verses about peace",
+        "bible verse for strength",
+        "scriptures on peace",
+        "bible verse of the day about strength",
+        "peace and bible",
+        "scriptures about peace",
+        "prayer for strength and peace",
+        "prayer for peace and comfort",
+        "stress and bible verses",
+        "bible verses about peace and comfort",
+        "bible verses on peace"
+      ],
+      "landing_page_types": [
+        "压力/平安 Scripture Reset 内容页",
+        "待人工复核页面"
+      ]
+    },
+    {
+      "ad_group": "A04 冲突关系与婚姻祷告",
+      "keyword_count": 19,
+      "total_volume": 15360,
+      "top_keywords": [
+        "marriage blessing prayer",
+        "marriage prayer",
+        "prayer for my relationship",
+        "prayer for marriage",
+        "prayer for relationship",
+        "prayer for relationship restoration",
+        "scripture about forgive",
+        "prayer for my marriage",
+        "bible verses on marriage problems",
+        "reconciliation scripture passages",
+        "prayers for marriage",
+        "prayer for our marriage"
+      ],
+      "landing_page_types": [
+        "关系/冲突祷告内容页 -> 反应前暂停 CTA"
+      ]
+    },
+    {
+      "ad_group": "A05 Prayer/Bible App 替代需求",
+      "keyword_count": 7,
+      "total_volume": 122400,
+      "top_keywords": [
+        "hallow",
+        "hallow app",
+        "abide",
+        "meditation mobile app",
+        "halo app",
+        "hallow app cost",
+        "what is hallow"
+      ],
+      "landing_page_types": [
+        "AI Scripture Companion / 产品教育页"
+      ]
+    },
+    {
+      "ad_group": "R01 待复核长尾",
+      "keyword_count": 48,
+      "total_volume": 680720,
+      "top_keywords": [
+        "encouraging bible verses",
+        "bible verses for encouragement",
+        "bible verses about fear",
+        "do not fear bible verse",
+        "inspirational bible verses",
+        "uplifting bible verses",
+        "faith over fear bible verse",
+        "scripture",
+        "scripture for encouragement",
+        "daily prayer",
+        "scriptures on fear",
+        "best bible verses"
+      ],
+      "landing_page_types": [
+        "泛经文/祷告内容页",
+        "待人工复核页面"
+      ]
+    }
+  ]
+}

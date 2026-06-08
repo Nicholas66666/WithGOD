@@ -132,6 +132,42 @@ function renderActionSummary(values = []) {
   );
 }
 
+function renderPaidDomainSummary(values = []) {
+  html(
+    'paidDomainSummary',
+    values
+      .map(
+        (item) => `
+          <div class="cluster">
+            <strong>${escapeHTML(item.domain)}</strong>
+            <span>${escapeHTML(item.keyword_count)} 个词</span>
+          </div>
+        `,
+      )
+      .join(''),
+  );
+}
+
+function renderSemPlanSummary(summary) {
+  if (!summary) {
+    html('semPlanSummary', '');
+    return;
+  }
+  html(
+    'semPlanSummary',
+    (summary.ad_groups || [])
+      .map(
+        (item) => `
+          <div class="cluster">
+            <strong>${escapeHTML(item.ad_group)}</strong>
+            <span>${escapeHTML(item.keyword_count)} 个词 / ${escapeHTML(item.total_volume)} 量</span>
+          </div>
+        `,
+      )
+      .join(''),
+  );
+}
+
 try {
   const state = await loadState();
   text('generatedAt', `生成时间 ${new Date(state.status.generatedAt).toLocaleString()}`);
@@ -145,12 +181,17 @@ try {
   text('dailyCount', String(state.daily.length));
   text('keywordRows', `${state.semrush.keywordRows} 行`);
   text('uniqueKeywords', String(state.semrush.uniqueKeywords || 0));
+  text('paidDomains', String(state.semrush.paidDomains || 0));
+  text('priorityKeywords', String(state.semrush.priorityKeywords || 0));
+  text('negativeKeywords', String(state.semrush.negativeKeywords || 0));
   renderDaily(state.daily.at(-1));
   renderNextActions(state.nextActions);
   renderDecisions(state.decisions);
   renderOperations(state.operations);
   renderClusters(state.semrush.clusters.clusters || []);
   renderActionSummary(state.semrush.actionSummary || []);
+  renderSemPlanSummary(state.semrush.semPlanSummary);
+  renderPaidDomainSummary(state.semrush.topPaidDomains || []);
 } catch (error) {
   text('stage', error.message);
 }

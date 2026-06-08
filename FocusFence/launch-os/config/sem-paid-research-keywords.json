@@ -1,0 +1,71 @@
+{
+  "database": "us",
+  "displayLimit": 10,
+  "keywords": [
+    {
+      "cluster": "焦虑/内容承接",
+      "keywords": [
+        "bible verses for anxiety",
+        "prayer for anxiety",
+        "scripture for anxiety",
+        "bible verses for worry",
+        "what is a good prayer for anxiety"
+      ]
+    },
+    {
+      "cluster": "愤怒/解决方案",
+      "keywords": [
+        "christian anger management",
+        "anger management classes",
+        "anger management classes online",
+        "anger management course",
+        "anger management programs online",
+        "prayer for anger",
+        "bible verses about anger"
+      ]
+    },
+    {
+      "cluster": "压力/平安",
+      "keywords": [
+        "bible verses for peace",
+        "scripture for stress",
+        "prayer when overwhelmed",
+        "bible verses for strength",
+        "bible verses about peace"
+      ]
+    },
+    {
+      "cluster": "冲突/关系",
+      "keywords": [
+        "prayer for marriage",
+        "marriage prayer",
+        "prayer for relationship",
+        "marriage trouble bible",
+        "bible verses on marriage problems",
+        "prayer for marriage restoration"
+      ]
+    },
+    {
+      "cluster": "参考产品/App 商业词",
+      "keywords": [
+        "hallow app",
+        "hallow app cost",
+        "hallow prayer app",
+        "prayer app",
+        "christian prayer app",
+        "christian meditation app",
+        "daily devotional app",
+        "bible study app",
+        "ai bible app",
+        "ai prayer app"
+      ]
+    },
+    {
+      "cluster": "faith wearable",
+      "keywords": [
+        "christian smart ring",
+        "christian wearable"
+      ]
+    }
+  ]
+}

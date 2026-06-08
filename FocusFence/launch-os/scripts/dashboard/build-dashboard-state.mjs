@@ -84,6 +84,12 @@ export async function buildDashboardState({ root = process.cwd(), now = new Date
   const operationFiles = await readMarkdownFiles(join(root, 'ops'));
   const semrushKeywords = await readJSON(join(root, 'data/processed/semrush-keywords.json'), []);
   const semrushUniverse = await readJSON(join(root, 'data/processed/semrush-keyword-universe.json'), []);
+  const semrushPaidResults = await readJSON(join(root, 'data/processed/semrush-paid-results.json'), []);
+  const semrushPaidDomains = await readJSON(join(root, 'data/processed/semrush-paid-domain-summary.json'), []);
+  const semrushNoPaid = await readJSON(join(root, 'data/processed/semrush-paid-no-results.json'), []);
+  const semrushPriority = await readJSON(join(root, 'data/processed/semrush-keyword-priority.json'), []);
+  const semrushNegatives = await readJSON(join(root, 'data/processed/semrush-negative-keywords.json'), []);
+  const semrushPlanSummary = await readJSON(join(root, 'data/processed/semrush-sem-plan-summary.json'), null);
 
   const daily = dailyFiles.map((file) => {
     const sections = parseSections(file.markdown);
@@ -153,6 +159,13 @@ export async function buildDashboardState({ root = process.cwd(), now = new Date
           return summary;
         }, {}),
       ).map(([cluster, count]) => ({ cluster, count })),
+      paidRows: semrushPaidResults.length,
+      paidDomains: semrushPaidDomains.length,
+      noPaidKeywords: semrushNoPaid.length,
+      topPaidDomains: semrushPaidDomains.slice(0, 8),
+      priorityKeywords: semrushPriority.length,
+      negativeKeywords: semrushNegatives.length,
+      semPlanSummary: semrushPlanSummary,
       clusters: await readJSON(join(root, 'config/seed-keywords.json'), { clusters: [] }),
     },
     nextActions: latestDaily?.tomorrow || [],
