@@ -1,0 +1,41 @@
+{
+  "database": "us",
+  "clusters": [
+    {
+      "name": "anxiety-worry",
+      "keywords": [
+        "bible verses for anxiety",
+        "prayer for anxiety",
+        "scripture for anxiety",
+        "bible verses for worry"
+      ]
+    },
+    {
+      "name": "anger-reaction",
+      "keywords": [
+        "bible verses about anger",
+        "scripture for anger",
+        "prayer for anger",
+        "christian anger management"
+      ]
+    },
+    {
+      "name": "overwhelmed-peace",
+      "keywords": [
+        "prayer when overwhelmed",
+        "bible verses for peace",
+        "scripture for stress",
+        "bible verses for emotional strength"
+      ]
+    },
+    {
+      "name": "conflict-relationships",
+      "keywords": [
+        "bible verses for conflict",
+        "scripture about being slow to anger",
+        "prayer before difficult conversation"
+      ]
+    }
+  ]
+}
+

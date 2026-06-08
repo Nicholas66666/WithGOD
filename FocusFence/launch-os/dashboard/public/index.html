@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Launch OS</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Scripture Companion Launch</p>
+        <h1>Launch OS</h1>
+      </div>
+      <span id="generatedAt" class="pill">Loading</span>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div>
+          <h2 id="target">First real order</h2>
+          <p id="stage">Preparing launch system</p>
+        </div>
+      </section>
+
+      <section class="grid">
+        <article>
+          <h3>Next Actions</h3>
+          <ul id="nextActions"></ul>
+        </article>
+        <article>
+          <h3>Latest Daily Review</h3>
+          <div id="latestDaily"></div>
+        </article>
+      </section>
+
+      <section>
+        <h3>Decisions</h3>
+        <div id="decisions" class="decision-list"></div>
+      </section>
+    </main>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
+

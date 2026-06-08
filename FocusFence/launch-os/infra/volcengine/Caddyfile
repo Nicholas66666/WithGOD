@@ -1,0 +1,11 @@
+{$LAUNCH_OS_PUBLIC_HOST:localhost} {
+  root * /srv/dashboard
+  encode zstd gzip
+  file_server
+
+  handle /data/* {
+    root * /srv
+    file_server
+  }
+}
+

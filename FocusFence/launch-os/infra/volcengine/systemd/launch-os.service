@@ -1,0 +1,15 @@
+[Unit]
+Description=Launch OS dashboard
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/launch-os
+Environment=LAUNCH_OS_HOST=0.0.0.0
+Environment=LAUNCH_OS_PORT=8798
+ExecStart=/usr/bin/node launch-os/scripts/server/static-server.mjs
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=multi-user.target

@@ -5,6 +5,7 @@ build/
 xcuserdata/
 *.xcuserdatad/
 .DS_Store
+node_modules/
 .env.local
 .volcengine/
 supabase/.env.local
