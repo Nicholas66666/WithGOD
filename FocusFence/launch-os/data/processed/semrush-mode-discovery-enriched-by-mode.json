@@ -1,0 +1,653 @@
+[
+  {
+    "mode": "relationship/family course/service",
+    "keywords": 5,
+    "with_paid": 3,
+    "total_paid": 8,
+    "total_volume": 5340,
+    "avg_cpc_num": 55.84,
+    "avg_cpc_den": 5,
+    "max_cpc": 20.5,
+    "examples": [
+      {
+        "keyword": "marriage communication course",
+        "volume": 20,
+        "cpc": 4.73,
+        "competition": 0.64,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "online marriage counseling",
+        "volume": 4400,
+        "cpc": 20.5,
+        "competition": 0.4,
+        "paid_count": 5,
+        "domains": [
+          "ourritual.com",
+          "lsptherapy.com",
+          "forbes.com"
+        ]
+      },
+      {
+        "keyword": "christian marriage counseling online",
+        "volume": 390,
+        "cpc": 11.94,
+        "competition": 0.67,
+        "paid_count": 1,
+        "domains": [
+          "forbes.com"
+        ]
+      },
+      {
+        "keyword": "couples therapy app",
+        "volume": 390,
+        "cpc": 7.62,
+        "competition": 0.43,
+        "paid_count": 2,
+        "domains": [
+          "forbes.com",
+          "ourritual.com"
+        ]
+      },
+      {
+        "keyword": "relationship coaching online",
+        "volume": 140,
+        "cpc": 11.05,
+        "competition": 0.34,
+        "paid_count": 0,
+        "domains": []
+      }
+    ],
+    "avg_cpc": 11.17
+  },
+  {
+    "mode": "faith/general commercial adjacent",
+    "keywords": 5,
+    "with_paid": 1,
+    "total_paid": 3,
+    "total_volume": 18310,
+    "avg_cpc_num": 2.77,
+    "avg_cpc_den": 4,
+    "max_cpc": 1.35,
+    "examples": [
+      {
+        "keyword": "daily devotional for women",
+        "volume": 9900,
+        "cpc": 0.59,
+        "competition": 0.99,
+        "paid_count": 3,
+        "domains": [
+          "reviveourhearts.com",
+          "walkingwithpurpose.com",
+          "heritageky.org"
+        ]
+      },
+      {
+        "keyword": "christian devotional for anxiety",
+        "volume": 0,
+        "cpc": 0,
+        "competition": 0,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "prayer journal",
+        "volume": 6600,
+        "cpc": 0.43,
+        "competition": 1,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "bible study journal",
+        "volume": 1600,
+        "cpc": 0.4,
+        "competition": 1,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "christian meditation for anxiety",
+        "volume": 210,
+        "cpc": 1.35,
+        "competition": 0.27,
+        "paid_count": 0,
+        "domains": []
+      }
+    ],
+    "avg_cpc": 0.69
+  },
+  {
+    "mode": "quiz/diagnostic to plan",
+    "keywords": 5,
+    "with_paid": 1,
+    "total_paid": 1,
+    "total_volume": 2250,
+    "avg_cpc_num": 7.710000000000001,
+    "avg_cpc_den": 4,
+    "max_cpc": 3.39,
+    "examples": [
+      {
+        "keyword": "sleep quiz",
+        "volume": 880,
+        "cpc": 1.06,
+        "competition": 0.58,
+        "paid_count": 1,
+        "domains": [
+          "risescience.com"
+        ]
+      },
+      {
+        "keyword": "hair loss quiz",
+        "volume": 40,
+        "cpc": 3.39,
+        "competition": 0.66,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "skin care quiz",
+        "volume": 1000,
+        "cpc": 1.82,
+        "competition": 0.76,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "find my mattress quiz",
+        "volume": 10,
+        "cpc": 0,
+        "competition": 0,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "stress quiz",
+        "volume": 320,
+        "cpc": 1.44,
+        "competition": 0.32,
+        "paid_count": 0,
+        "domains": []
+      }
+    ],
+    "avg_cpc": 1.93
+  },
+  {
+    "mode": "review/comparison to product",
+    "keywords": 5,
+    "with_paid": 0,
+    "total_paid": 0,
+    "total_volume": 8610,
+    "avg_cpc_num": 3.99,
+    "avg_cpc_den": 5,
+    "max_cpc": 1.43,
+    "examples": [
+      {
+        "keyword": "best weighted blanket for anxiety",
+        "volume": 210,
+        "cpc": 1.43,
+        "competition": 1,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "best light therapy lamp",
+        "volume": 880,
+        "cpc": 0.59,
+        "competition": 1,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "best posture corrector",
+        "volume": 3600,
+        "cpc": 0.89,
+        "competition": 0.96,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "best white noise machine for sleep",
+        "volume": 320,
+        "cpc": 0.64,
+        "competition": 1,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "best sunrise alarm clock",
+        "volume": 3600,
+        "cpc": 0.44,
+        "competition": 1,
+        "paid_count": 0,
+        "domains": []
+      }
+    ],
+    "avg_cpc": 0.8
+  },
+  {
+    "mode": "routine/challenge to subscription/product",
+    "keywords": 5,
+    "with_paid": 0,
+    "total_paid": 0,
+    "total_volume": 5130,
+    "avg_cpc_num": 3.45,
+    "avg_cpc_den": 4,
+    "max_cpc": 1.21,
+    "examples": [
+      {
+        "keyword": "morning routine for anxiety",
+        "volume": 20,
+        "cpc": 0,
+        "competition": 0,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "daily gratitude journal",
+        "volume": 590,
+        "cpc": 0.59,
+        "competition": 1,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "guided journal for anxiety",
+        "volume": 40,
+        "cpc": 0.6,
+        "competition": 0.77,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "habit tracker app",
+        "volume": 3600,
+        "cpc": 1.05,
+        "competition": 0.27,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "self care checklist",
+        "volume": 880,
+        "cpc": 1.21,
+        "competition": 1,
+        "paid_count": 0,
+        "domains": []
+      }
+    ],
+    "avg_cpc": 0.86
+  },
+  {
+    "mode": "physical anchor/reminder product",
+    "keywords": 5,
+    "with_paid": 0,
+    "total_paid": 0,
+    "total_volume": 2850,
+    "avg_cpc_num": 2.4899999999999998,
+    "avg_cpc_den": 4,
+    "max_cpc": 0.8,
+    "examples": [
+      {
+        "keyword": "prayer bracelet",
+        "volume": 1300,
+        "cpc": 0.57,
+        "competition": 1,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "anxiety bracelet",
+        "volume": 1300,
+        "cpc": 0.48,
+        "competition": 1,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "mindfulness bracelet",
+        "volume": 210,
+        "cpc": 0.8,
+        "competition": 0.99,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "habit tracking bracelet",
+        "volume": 20,
+        "cpc": 0,
+        "competition": 1,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "wearable reminder device",
+        "volume": 20,
+        "cpc": 0.64,
+        "competition": 0.88,
+        "paid_count": 0,
+        "domains": []
+      }
+    ],
+    "avg_cpc": 0.62
+  },
+  {
+    "mode": "bad habit reduction product",
+    "keywords": 5,
+    "with_paid": 0,
+    "total_paid": 0,
+    "total_volume": 2470,
+    "avg_cpc_num": 2.6900000000000004,
+    "avg_cpc_den": 5,
+    "max_cpc": 1.32,
+    "examples": [
+      {
+        "keyword": "stop nail biting",
+        "volume": 590,
+        "cpc": 0.2,
+        "competition": 1,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "nail biting treatment",
+        "volume": 1000,
+        "cpc": 0.32,
+        "competition": 0.5,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "stop smoking aid",
+        "volume": 480,
+        "cpc": 1.32,
+        "competition": 0.69,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "fidget ring for anxiety",
+        "volume": 390,
+        "cpc": 0.59,
+        "competition": 1,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "anxiety fidget toy",
+        "volume": 10,
+        "cpc": 0.26,
+        "competition": 0.34,
+        "paid_count": 0,
+        "domains": []
+      }
+    ],
+    "avg_cpc": 0.54
+  },
+  {
+    "mode": "gift/problem recipient",
+    "keywords": 5,
+    "with_paid": 0,
+    "total_paid": 0,
+    "total_volume": 2270,
+    "avg_cpc_num": 2.1300000000000003,
+    "avg_cpc_den": 4,
+    "max_cpc": 0.68,
+    "examples": [
+      {
+        "keyword": "christian gifts for men",
+        "volume": 1900,
+        "cpc": 0.56,
+        "competition": 1,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "gifts for anxious people",
+        "volume": 140,
+        "cpc": 0.35,
+        "competition": 1,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "spiritual gifts for women",
+        "volume": 210,
+        "cpc": 0.54,
+        "competition": 1,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "gifts for someone going through hard times",
+        "volume": 0,
+        "cpc": 0,
+        "competition": 0,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "encouragement gifts for women",
+        "volume": 20,
+        "cpc": 0.68,
+        "competition": 1,
+        "paid_count": 0,
+        "domains": []
+      }
+    ],
+    "avg_cpc": 0.53
+  },
+  {
+    "mode": "moment intervention tool",
+    "keywords": 5,
+    "with_paid": 0,
+    "total_paid": 0,
+    "total_volume": 1750,
+    "avg_cpc_num": 1.75,
+    "avg_cpc_den": 2,
+    "max_cpc": 0.89,
+    "examples": [
+      {
+        "keyword": "panic attack help now",
+        "volume": 10,
+        "cpc": 0,
+        "competition": 0,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "calm down from anxiety attack",
+        "volume": 0,
+        "cpc": 0,
+        "competition": 0,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "anger control techniques",
+        "volume": 50,
+        "cpc": 0.89,
+        "competition": 0.6,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "how to calm down when angry",
+        "volume": 1600,
+        "cpc": 0.86,
+        "competition": 0.21,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "breathing device for anxiety",
+        "volume": 90,
+        "cpc": 0,
+        "competition": 0,
+        "paid_count": 0,
+        "domains": []
+      }
+    ],
+    "avg_cpc": 0.88
+  },
+  {
+    "mode": "scripts/templates to product/service",
+    "keywords": 5,
+    "with_paid": 0,
+    "total_paid": 0,
+    "total_volume": 1530,
+    "avg_cpc_num": 2.4400000000000004,
+    "avg_cpc_den": 3,
+    "max_cpc": 1.03,
+    "examples": [
+      {
+        "keyword": "what to say during conflict",
+        "volume": 0,
+        "cpc": 0,
+        "competition": 0,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "how to apologize to your wife",
+        "volume": 170,
+        "cpc": 0.61,
+        "competition": 0.1,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "difficult conversation script",
+        "volume": 0,
+        "cpc": 0,
+        "competition": 0,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "couples communication exercises",
+        "volume": 480,
+        "cpc": 1.03,
+        "competition": 0.71,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "marriage counseling questions",
+        "volume": 880,
+        "cpc": 0.8,
+        "competition": 0.4,
+        "paid_count": 0,
+        "domains": []
+      }
+    ],
+    "avg_cpc": 0.81
+  },
+  {
+    "mode": "alternative to habit/app",
+    "keywords": 5,
+    "with_paid": 0,
+    "total_paid": 0,
+    "total_volume": 570,
+    "avg_cpc_num": 5.12,
+    "avg_cpc_den": 3,
+    "max_cpc": 1.91,
+    "examples": [
+      {
+        "keyword": "screen time alternative",
+        "volume": 20,
+        "cpc": 1.53,
+        "competition": 0.12,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "doom scrolling alternative",
+        "volume": 20,
+        "cpc": 1.91,
+        "competition": 0.56,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "phone addiction app",
+        "volume": 110,
+        "cpc": 1.68,
+        "competition": 0.2,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "reduce screen time",
+        "volume": 390,
+        "cpc": 0,
+        "competition": 0,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "digital detox tools",
+        "volume": 30,
+        "cpc": 0,
+        "competition": 0.33,
+        "paid_count": 0,
+        "domains": []
+      }
+    ],
+    "avg_cpc": 1.71
+  },
+  {
+    "mode": "decision/moment faith content",
+    "keywords": 5,
+    "with_paid": 0,
+    "total_paid": 0,
+    "total_volume": 320,
+    "avg_cpc_num": 0.16,
+    "avg_cpc_den": 2,
+    "max_cpc": 0.15,
+    "examples": [
+      {
+        "keyword": "prayer before making a decision",
+        "volume": 20,
+        "cpc": 0,
+        "competition": 0.33,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "bible verses before making a decision",
+        "volume": 0,
+        "cpc": 0,
+        "competition": 0,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "prayer before difficult conversation",
+        "volume": 0,
+        "cpc": 0,
+        "competition": 0,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "bible verses when overwhelmed",
+        "volume": 210,
+        "cpc": 0.01,
+        "competition": 0.35,
+        "paid_count": 0,
+        "domains": []
+      },
+      {
+        "keyword": "prayer when overwhelmed",
+        "volume": 90,
+        "cpc": 0.15,
+        "competition": 0.2,
+        "paid_count": 0,
+        "domains": []
+      }
+    ],
+    "avg_cpc": 0.08
+  }
+]

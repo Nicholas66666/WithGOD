@@ -1,0 +1,694 @@
+[
+  {
+    "mode": "review/comparison to product",
+    "keyword": "best weighted blanket for anxiety",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 210,
+    "cpc": 1.43,
+    "competition": 1,
+    "trend": "0.11,0.04,0.07,0.04,0.11,0.13,0.16,0.20,0.25,0.11,0.11,0.31"
+  },
+  {
+    "mode": "review/comparison to product",
+    "keyword": "best light therapy lamp",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 880,
+    "cpc": 0.59,
+    "competition": 1,
+    "trend": "0.11,0.16,0.08,0.11,0.13,0.08,0.24,0.82,0.55,0.82,0.13,0.04"
+  },
+  {
+    "mode": "review/comparison to product",
+    "keyword": "best posture corrector",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 3600,
+    "cpc": 0.89,
+    "competition": 0.96,
+    "trend": "0.66,0.66,0.66,0.66,0.54,0.54,0.43,0.43,0.43,0.36,0.43,0.54"
+  },
+  {
+    "mode": "review/comparison to product",
+    "keyword": "best white noise machine for sleep",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 320,
+    "cpc": 0.64,
+    "competition": 1,
+    "trend": "0.21,0.26,0.39,0.26,0.39,0.39,0.48,0.39,0.39,0.32,0.26,1.00"
+  },
+  {
+    "mode": "review/comparison to product",
+    "keyword": "best sunrise alarm clock",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 3600,
+    "cpc": 0.44,
+    "competition": 1,
+    "trend": "0.36,0.28,0.24,0.36,0.43,0.43,0.66,1.00,0.81,0.54,0.43,0.36"
+  },
+  {
+    "mode": "quiz/diagnostic to plan",
+    "keyword": "sleep quiz",
+    "paid_count": 1,
+    "domains": [
+      "risescience.com"
+    ],
+    "urls": [
+      "https://onboarding.risescience.com/"
+    ],
+    "search_volume": 880,
+    "cpc": 1.06,
+    "competition": 0.58,
+    "trend": "0.55,0.55,0.45,0.76,0.76,0.76,1.00,0.76,0.67,1.00,0.76,0.76"
+  },
+  {
+    "mode": "quiz/diagnostic to plan",
+    "keyword": "hair loss quiz",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 40,
+    "cpc": 3.39,
+    "competition": 0.66,
+    "trend": "0.41,0.11,0.29,0.11,0.29,0.29,0.23,0.11,0.29,0.52,0.23,0.29"
+  },
+  {
+    "mode": "quiz/diagnostic to plan",
+    "keyword": "skin care quiz",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 1000,
+    "cpc": 1.82,
+    "competition": 0.76,
+    "trend": "0.22,0.22,0.20,0.22,0.22,0.20,0.22,0.22,0.22,0.29,0.16,0.16"
+  },
+  {
+    "mode": "quiz/diagnostic to plan",
+    "keyword": "find my mattress quiz",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 10,
+    "cpc": 0,
+    "competition": 0,
+    "trend": "0.00,0.50,0.50,0.50,1.00"
+  },
+  {
+    "mode": "quiz/diagnostic to plan",
+    "keyword": "stress quiz",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 320,
+    "cpc": 1.44,
+    "competition": 0.32,
+    "trend": "0.48,0.39,0.26,0.26,0.26,0.32,0.39,0.32,0.21,0.26,0.32,0.39"
+  },
+  {
+    "mode": "alternative to habit/app",
+    "keyword": "screen time alternative",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 20,
+    "cpc": 1.53,
+    "competition": 0.12,
+    "trend": "0.11,0.11,0.11,0.11,0.11,0.11,0.11,0.11,0.11,0.11,0.11,0.11"
+  },
+  {
+    "mode": "alternative to habit/app",
+    "keyword": "doom scrolling alternative",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 20,
+    "cpc": 1.91,
+    "competition": 0.56,
+    "trend": "0.66,0.66,0.66,0.66,0.66,0.66,0.66,0.66,0.66,0.66,0.66,0.66"
+  },
+  {
+    "mode": "alternative to habit/app",
+    "keyword": "phone addiction app",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 110,
+    "cpc": 1.68,
+    "competition": 0.2,
+    "trend": "0.19,0.42,0.19,0.42,0.53,0.53,1.00,0.65,1.00,1.00,0.34,0.53"
+  },
+  {
+    "mode": "alternative to habit/app",
+    "keyword": "reduce screen time",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 390,
+    "cpc": 0,
+    "competition": 0,
+    "trend": "0.44,0.44,0.36,0.44,0.44,0.54,0.54,0.44,0.36,1.00,0.36,0.54"
+  },
+  {
+    "mode": "alternative to habit/app",
+    "keyword": "digital detox tools",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 30,
+    "cpc": 0,
+    "competition": 0.33,
+    "trend": "0.18,0.18,0.18,0.18,0.18,0.18,0.18,0.18,0.18,0.18,0.18,1.00"
+  },
+  {
+    "mode": "bad habit reduction product",
+    "keyword": "stop nail biting",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 590,
+    "cpc": 0.2,
+    "competition": 1,
+    "trend": "0.13,0.08,0.05,0.10,0.07,0.05,0.07,0.07,0.15,0.05,0.10,0.07"
+  },
+  {
+    "mode": "bad habit reduction product",
+    "keyword": "nail biting treatment",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 1000,
+    "cpc": 0.32,
+    "competition": 0.5,
+    "trend": "0.52,0.52,0.52,0.52,1.00,0.31,0.37,1.00,0.37,0.37,0.25,0.37"
+  },
+  {
+    "mode": "bad habit reduction product",
+    "keyword": "stop smoking aid",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 480,
+    "cpc": 1.32,
+    "competition": 0.69,
+    "trend": "0.20,0.16,0.46,0.31,0.46,0.20,0.16,0.31,0.20,0.46,1.00,0.37"
+  },
+  {
+    "mode": "bad habit reduction product",
+    "keyword": "fidget ring for anxiety",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 390,
+    "cpc": 0.59,
+    "competition": 1,
+    "trend": "0.30,0.30,0.30,0.45,0.30,0.30,0.20,0.30,0.45,0.10,0.20,0.20"
+  },
+  {
+    "mode": "bad habit reduction product",
+    "keyword": "anxiety fidget toy",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 10,
+    "cpc": 0.26,
+    "competition": 0.34,
+    "trend": "0.00,0.00,0.00,0.50,0.50,0.50,0.50,1.00,1.00,0.00,0.00,0.50"
+  },
+  {
+    "mode": "moment intervention tool",
+    "keyword": "panic attack help now",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 10,
+    "cpc": 0,
+    "competition": 0,
+    "trend": "0.05,0.00,0.00,0.00,0.23,0.05,0.00,0.00,0.00,0.00,0.00,0.00"
+  },
+  {
+    "mode": "moment intervention tool",
+    "keyword": "calm down from anxiety attack",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 0,
+    "cpc": 0,
+    "competition": 0,
+    "trend": "0.00,0.20,0.20,0.20,0.00,0.20,0.00,0.00,0.00,0.00,0.00,0.00"
+  },
+  {
+    "mode": "moment intervention tool",
+    "keyword": "anger control techniques",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 50,
+    "cpc": 0.89,
+    "competition": 0.6,
+    "trend": "0.44,0.44,0.55,1.00,0.77,0.77,0.55,0.22,0.33,0.44,0.44,0.44"
+  },
+  {
+    "mode": "moment intervention tool",
+    "keyword": "how to calm down when angry",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 1600,
+    "cpc": 0.86,
+    "competition": 0.21,
+    "trend": "1.00,0.79,0.66,0.54,0.54,0.54,0.54,0.41,0.41,0.41,0.54,1.00"
+  },
+  {
+    "mode": "moment intervention tool",
+    "keyword": "breathing device for anxiety",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 90,
+    "cpc": 0,
+    "competition": 0,
+    "trend": "0.23,0.52,0.42,0.42,0.52,0.33,0.42,0.52,0.52,0.52,0.42,0.33"
+  },
+  {
+    "mode": "scripts/templates to product/service",
+    "keyword": "what to say during conflict",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 0,
+    "cpc": 0,
+    "competition": 0,
+    "trend": ""
+  },
+  {
+    "mode": "scripts/templates to product/service",
+    "keyword": "how to apologize to your wife",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 170,
+    "cpc": 0.61,
+    "competition": 0.1,
+    "trend": "0.43,0.35,0.43,1.00,0.53,0.43,0.28,0.23,0.35,0.23,0.53,0.23"
+  },
+  {
+    "mode": "scripts/templates to product/service",
+    "keyword": "difficult conversation script",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 0,
+    "cpc": 0,
+    "competition": 0,
+    "trend": "0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00"
+  },
+  {
+    "mode": "scripts/templates to product/service",
+    "keyword": "couples communication exercises",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 480,
+    "cpc": 1.03,
+    "competition": 0.71,
+    "trend": "0.30,0.24,0.45,0.45,0.24,0.36,0.55,0.36,0.10,0.10,0.10,0.10"
+  },
+  {
+    "mode": "scripts/templates to product/service",
+    "keyword": "marriage counseling questions",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 880,
+    "cpc": 0.8,
+    "competition": 0.4,
+    "trend": "0.76,0.76,0.67,0.76,0.67,0.55,0.55,0.24,0.55,0.55,0.67,0.55"
+  },
+  {
+    "mode": "routine/challenge to subscription/product",
+    "keyword": "morning routine for anxiety",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 20,
+    "cpc": 0,
+    "competition": 0,
+    "trend": "0.00,0.21,0.21,0.21,0.21,0.14,0.21,0.00,0.07,0.00,0.07,0.00"
+  },
+  {
+    "mode": "routine/challenge to subscription/product",
+    "keyword": "daily gratitude journal",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 590,
+    "cpc": 0.59,
+    "competition": 1,
+    "trend": "0.10,0.13,0.16,0.13,0.10,0.16,0.16,0.27,0.24,0.27,0.16,0.20"
+  },
+  {
+    "mode": "routine/challenge to subscription/product",
+    "keyword": "guided journal for anxiety",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 40,
+    "cpc": 0.6,
+    "competition": 0.77,
+    "trend": "0.09,0.09,0.33,0.09,0.33,0.33,0.33,0.09,0.42,0.42,0.09,0.14"
+  },
+  {
+    "mode": "routine/challenge to subscription/product",
+    "keyword": "habit tracker app",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 3600,
+    "cpc": 1.05,
+    "competition": 0.27,
+    "trend": "0.36,0.54,0.28,0.43,0.54,0.43,0.36,0.36,0.81,0.81,0.66,0.43"
+  },
+  {
+    "mode": "routine/challenge to subscription/product",
+    "keyword": "self care checklist",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 880,
+    "cpc": 1.21,
+    "competition": 1,
+    "trend": "0.41,0.41,0.30,0.30,0.36,0.30,0.36,0.24,0.24,0.36,0.24,0.24"
+  },
+  {
+    "mode": "gift/problem recipient",
+    "keyword": "christian gifts for men",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 1900,
+    "cpc": 0.56,
+    "competition": 1,
+    "trend": "0.12,0.16,0.19,0.10,0.10,0.16,0.19,0.44,0.66,0.16,0.54,0.12"
+  },
+  {
+    "mode": "gift/problem recipient",
+    "keyword": "gifts for anxious people",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 140,
+    "cpc": 0.35,
+    "competition": 1,
+    "trend": "0.01,0.02,0.01,0.01,0.01,0.01,0.02,0.07,0.13,0.01,0.01,0.01"
+  },
+  {
+    "mode": "gift/problem recipient",
+    "keyword": "spiritual gifts for women",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 210,
+    "cpc": 0.54,
+    "competition": 1,
+    "trend": "0.10,0.10,0.10,0.06,0.10,0.06,0.08,0.24,0.30,0.08,0.08,0.05"
+  },
+  {
+    "mode": "gift/problem recipient",
+    "keyword": "gifts for someone going through hard times",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 0,
+    "cpc": 0,
+    "competition": 0,
+    "trend": ""
+  },
+  {
+    "mode": "gift/problem recipient",
+    "keyword": "encouragement gifts for women",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 20,
+    "cpc": 0.68,
+    "competition": 1,
+    "trend": "0.60,0.60,0.80,0.00,0.20,1.00,0.60,0.00,0.20,0.00,0.40,0.40"
+  },
+  {
+    "mode": "relationship/family course/service",
+    "keyword": "marriage communication course",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 20,
+    "cpc": 4.73,
+    "competition": 0.64,
+    "trend": "0.18,0.18,0.18,0.18,0.18,0.18,0.18,0.18,0.18,0.18,0.18,0.18"
+  },
+  {
+    "mode": "relationship/family course/service",
+    "keyword": "online marriage counseling",
+    "paid_count": 5,
+    "domains": [
+      "ourritual.com",
+      "lsptherapy.com",
+      "forbes.com",
+      "thesterlinggroupdc.com"
+    ],
+    "urls": [
+      "https://www.ourritual.com/",
+      "https://lsptherapy.com/services/couples-psychotherapy/",
+      "https://www.forbes.com/health/l/best-online-couples-counseling/",
+      "https://www.thesterlinggroupdc.com/"
+    ],
+    "search_volume": 4400,
+    "cpc": 20.5,
+    "competition": 0.4,
+    "trend": "0.29,0.35,0.66,0.54,0.44,0.66,1.00,0.54,0.54,0.44,0.29,0.66"
+  },
+  {
+    "mode": "relationship/family course/service",
+    "keyword": "christian marriage counseling online",
+    "paid_count": 1,
+    "domains": [
+      "forbes.com"
+    ],
+    "urls": [
+      "https://www.forbes.com/health/l/best-christian-counseling/"
+    ],
+    "search_volume": 390,
+    "cpc": 11.94,
+    "competition": 0.67,
+    "trend": "0.43,0.66,0.81,1.00,1.00,0.81,0.81,0.81,0.81,0.81,0.66,0.66"
+  },
+  {
+    "mode": "relationship/family course/service",
+    "keyword": "couples therapy app",
+    "paid_count": 2,
+    "domains": [
+      "forbes.com",
+      "ourritual.com"
+    ],
+    "urls": [
+      "https://www.forbes.com/health/l/best-online-couples-counseling/",
+      "https://www.ourritual.com/relationship-support"
+    ],
+    "search_volume": 390,
+    "cpc": 7.62,
+    "competition": 0.43,
+    "trend": "0.08,0.25,0.25,0.20,0.20,0.20,0.03,0.16,0.20,0.25,0.16,0.16"
+  },
+  {
+    "mode": "relationship/family course/service",
+    "keyword": "relationship coaching online",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 140,
+    "cpc": 11.05,
+    "competition": 0.34,
+    "trend": "0.80,0.66,0.66,1.00,1.00,0.52,0.23,0.09,0.33,0.33,0.33,0.52"
+  },
+  {
+    "mode": "physical anchor/reminder product",
+    "keyword": "prayer bracelet",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 1300,
+    "cpc": 0.57,
+    "competition": 1,
+    "trend": "0.44,0.55,0.24,0.34,0.44,0.44,0.55,0.55,1.00,0.30,0.20,0.44"
+  },
+  {
+    "mode": "physical anchor/reminder product",
+    "keyword": "anxiety bracelet",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 1300,
+    "cpc": 0.48,
+    "competition": 1,
+    "trend": "0.29,0.29,0.29,0.36,0.36,0.29,0.22,0.22,0.29,0.29,0.16,0.22"
+  },
+  {
+    "mode": "physical anchor/reminder product",
+    "keyword": "mindfulness bracelet",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 210,
+    "cpc": 0.8,
+    "competition": 0.99,
+    "trend": "0.18,0.14,0.29,0.29,0.29,0.35,1.00,1.00,0.54,0.66,0.35,0.29"
+  },
+  {
+    "mode": "physical anchor/reminder product",
+    "keyword": "habit tracking bracelet",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 20,
+    "cpc": 0,
+    "competition": 1,
+    "trend": "1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00"
+  },
+  {
+    "mode": "physical anchor/reminder product",
+    "keyword": "wearable reminder device",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 20,
+    "cpc": 0.64,
+    "competition": 0.88,
+    "trend": "0.66,0.66,0.66,0.66,0.66,0.66,0.66,0.66,0.66,0.66,0.66,0.66"
+  },
+  {
+    "mode": "faith/general commercial adjacent",
+    "keyword": "daily devotional for women",
+    "paid_count": 3,
+    "domains": [
+      "reviveourhearts.com",
+      "walkingwithpurpose.com",
+      "heritageky.org"
+    ],
+    "urls": [
+      "https://www.reviveourhearts.com/podcast/revive-our-hearts/",
+      "https://walkingwithpurpose.com/bible-study/young-adult-women/",
+      "https://heritageky.org/resources/daily-devotional/"
+    ],
+    "search_volume": 9900,
+    "cpc": 0.59,
+    "competition": 0.99,
+    "trend": "0.36,0.36,0.36,0.44,0.66,0.44,0.44,0.66,0.29,0.44,0.44,0.66"
+  },
+  {
+    "mode": "faith/general commercial adjacent",
+    "keyword": "christian devotional for anxiety",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 0,
+    "cpc": 0,
+    "competition": 0,
+    "trend": ""
+  },
+  {
+    "mode": "faith/general commercial adjacent",
+    "keyword": "prayer journal",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 6600,
+    "cpc": 0.43,
+    "competition": 1,
+    "trend": "0.44,0.44,0.44,0.54,0.54,0.54,0.54,0.66,0.54,0.66,0.44,0.54"
+  },
+  {
+    "mode": "faith/general commercial adjacent",
+    "keyword": "bible study journal",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 1600,
+    "cpc": 0.4,
+    "competition": 1,
+    "trend": "0.34,0.55,0.55,0.44,0.55,0.65,0.65,0.65,0.82,0.82,0.65,0.44"
+  },
+  {
+    "mode": "faith/general commercial adjacent",
+    "keyword": "christian meditation for anxiety",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 210,
+    "cpc": 1.35,
+    "competition": 0.27,
+    "trend": "0.43,0.65,0.65,0.65,1.00,0.65,0.43,0.53,0.43,0.34,0.34,0.65"
+  },
+  {
+    "mode": "decision/moment faith content",
+    "keyword": "prayer before making a decision",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 20,
+    "cpc": 0,
+    "competition": 0.33,
+    "trend": "0.09,0.09,0.09,0.09,0.09,0.09,0.09,0.09,0.09,0.09,0.09,0.09"
+  },
+  {
+    "mode": "decision/moment faith content",
+    "keyword": "bible verses before making a decision",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 0,
+    "cpc": 0,
+    "competition": 0,
+    "trend": ""
+  },
+  {
+    "mode": "decision/moment faith content",
+    "keyword": "prayer before difficult conversation",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 0,
+    "cpc": 0,
+    "competition": 0,
+    "trend": "0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00,0.00"
+  },
+  {
+    "mode": "decision/moment faith content",
+    "keyword": "bible verses when overwhelmed",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 210,
+    "cpc": 0.01,
+    "competition": 0.35,
+    "trend": "0.44,0.44,0.23,0.28,0.54,0.44,0.35,0.44,0.44,0.44,0.44,0.44"
+  },
+  {
+    "mode": "decision/moment faith content",
+    "keyword": "prayer when overwhelmed",
+    "paid_count": 0,
+    "domains": [],
+    "urls": [],
+    "search_volume": 90,
+    "cpc": 0.15,
+    "competition": 0.2,
+    "trend": "0.52,0.41,0.29,0.41,0.82,0.64,0.52,0.41,0.41,0.41,0.52,0.41"
+  }
+]

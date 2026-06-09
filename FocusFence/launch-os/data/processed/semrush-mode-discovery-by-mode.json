@@ -1,0 +1,153 @@
+[
+  {
+    "mode": "relationship/family course/service",
+    "keywords": 5,
+    "with_paid": 3,
+    "total_paid": 8,
+    "domains": [
+      "ourritual.com",
+      "lsptherapy.com",
+      "forbes.com",
+      "thesterlinggroupdc.com"
+    ],
+    "examples": [
+      {
+        "keyword": "online marriage counseling",
+        "paid_count": 5,
+        "domains": [
+          "ourritual.com",
+          "lsptherapy.com",
+          "forbes.com",
+          "thesterlinggroupdc.com"
+        ]
+      },
+      {
+        "keyword": "christian marriage counseling online",
+        "paid_count": 1,
+        "domains": [
+          "forbes.com"
+        ]
+      },
+      {
+        "keyword": "couples therapy app",
+        "paid_count": 2,
+        "domains": [
+          "forbes.com",
+          "ourritual.com"
+        ]
+      }
+    ]
+  },
+  {
+    "mode": "faith/general commercial adjacent",
+    "keywords": 5,
+    "with_paid": 1,
+    "total_paid": 3,
+    "domains": [
+      "reviveourhearts.com",
+      "walkingwithpurpose.com",
+      "heritageky.org"
+    ],
+    "examples": [
+      {
+        "keyword": "daily devotional for women",
+        "paid_count": 3,
+        "domains": [
+          "reviveourhearts.com",
+          "walkingwithpurpose.com",
+          "heritageky.org"
+        ]
+      }
+    ]
+  },
+  {
+    "mode": "quiz/diagnostic to plan",
+    "keywords": 5,
+    "with_paid": 1,
+    "total_paid": 1,
+    "domains": [
+      "risescience.com"
+    ],
+    "examples": [
+      {
+        "keyword": "sleep quiz",
+        "paid_count": 1,
+        "domains": [
+          "risescience.com"
+        ]
+      }
+    ]
+  },
+  {
+    "mode": "review/comparison to product",
+    "keywords": 5,
+    "with_paid": 0,
+    "total_paid": 0,
+    "domains": [],
+    "examples": []
+  },
+  {
+    "mode": "alternative to habit/app",
+    "keywords": 5,
+    "with_paid": 0,
+    "total_paid": 0,
+    "domains": [],
+    "examples": []
+  },
+  {
+    "mode": "bad habit reduction product",
+    "keywords": 5,
+    "with_paid": 0,
+    "total_paid": 0,
+    "domains": [],
+    "examples": []
+  },
+  {
+    "mode": "moment intervention tool",
+    "keywords": 5,
+    "with_paid": 0,
+    "total_paid": 0,
+    "domains": [],
+    "examples": []
+  },
+  {
+    "mode": "scripts/templates to product/service",
+    "keywords": 5,
+    "with_paid": 0,
+    "total_paid": 0,
+    "domains": [],
+    "examples": []
+  },
+  {
+    "mode": "routine/challenge to subscription/product",
+    "keywords": 5,
+    "with_paid": 0,
+    "total_paid": 0,
+    "domains": [],
+    "examples": []
+  },
+  {
+    "mode": "gift/problem recipient",
+    "keywords": 5,
+    "with_paid": 0,
+    "total_paid": 0,
+    "domains": [],
+    "examples": []
+  },
+  {
+    "mode": "physical anchor/reminder product",
+    "keywords": 5,
+    "with_paid": 0,
+    "total_paid": 0,
+    "domains": [],
+    "examples": []
+  },
+  {
+    "mode": "decision/moment faith content",
+    "keywords": 5,
+    "with_paid": 0,
+    "total_paid": 0,
+    "domains": [],
+    "examples": []
+  }
+]
